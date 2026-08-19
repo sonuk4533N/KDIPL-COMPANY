@@ -1,0 +1,57 @@
+# KDIPL Operations Platform
+
+Phase 0 engineering foundation for Kumar Designs India Private Limited's internal operations platform. The repository intentionally contains no ERP business workflows yet.
+
+## Foundation
+
+- Next.js App Router, React, strict TypeScript, and Tailwind CSS
+- PostgreSQL with Prisma migrations and UUID identifiers
+- Minimal Argon2id password authentication with opaque database sessions
+- Centralized permissions, audit logging, transaction numbering, storage, errors, and structured logging
+- Responsive KDIPL application shell based on the approved Pass 2/3 design direction
+- Vitest, PostgreSQL integration tests, Playwright, and GitHub Actions
+
+## Local setup
+
+1. Install Node.js 22+, npm 11+, and Docker Desktop.
+2. Copy `.env.example` to `.env` and replace `AUTH_SECRET` with at least 32 random characters.
+3. Optionally set `BOOTSTRAP_ADMIN_EMAIL`, `BOOTSTRAP_ADMIN_PASSWORD`, and `BOOTSTRAP_ADMIN_NAME` for a development administrator.
+4. Start PostgreSQL: `docker compose up -d postgres postgres-test`.
+5. Install and prepare the application:
+
+```bash
+npm ci
+npm run db:generate
+npm run db:migrate:deploy
+npm run db:seed
+npm run dev
+```
+
+On Windows PowerShell systems that block npm scripts, use `npm.cmd` in place of `npm`.
+
+## Quality commands
+
+```bash
+npm run format:check
+npm run lint
+npm run typecheck
+npm run test:unit
+npm run test:integration
+npm run test:e2e
+npm run build
+```
+
+Database tests require `RUN_DATABASE_TESTS=1` and an isolated `TEST_DATABASE_URL`. Never point the integration suite at development or production data.
+
+## Documentation
+
+- [Architecture](docs/architecture.md)
+- [Database](docs/database.md)
+- [RBAC](docs/rbac.md)
+- [Workflow conventions](docs/workflows.md)
+- [Business rules and unresolved decisions](docs/business-rules.md)
+- [Development guide](docs/development.md)
+
+## Phase boundary
+
+The next milestone is **Phase 1 — Authentication, Employees, Users, Roles & Permissions**. Do not begin Projects, Sites, Material Requirements, procurement, inventory, accounts, or reporting workflows until their approved phases.
