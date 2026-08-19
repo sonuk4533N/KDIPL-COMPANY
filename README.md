@@ -37,8 +37,8 @@ npm run lint
 npm run typecheck
 npm run test:unit
 npm run test:integration
-npm run test:e2e
 npm run build
+npm run test:e2e
 ```
 
 Database tests require `RUN_DATABASE_TESTS=1` and an isolated `TEST_DATABASE_URL`. Never point the integration suite at development or production data.

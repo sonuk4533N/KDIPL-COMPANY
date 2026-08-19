@@ -23,7 +23,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "npm run dev",
+    command: "node node_modules/next/dist/bin/next start",
     url: `${process.env.APP_URL ?? "http://localhost:3000"}/login`,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
