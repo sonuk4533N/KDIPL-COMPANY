@@ -100,7 +100,9 @@ describe.skipIf(!enabled)("PostgreSQL foundation", () => {
         transaction,
       ),
     );
-    expect(await testDb!.auditLog.findFirstOrThrow({ where: { entityId } })).toMatchObject({
+    expect(
+      await testDb!.auditLog.findFirstOrThrow({ where: { entityId } }),
+    ).toMatchObject({
       action: "UPDATE",
       after: { value: "safe", password: "[REDACTED]" },
     });
@@ -143,8 +145,12 @@ describe.skipIf(!enabled)("PostgreSQL foundation", () => {
   it("enforces the shared login-attempt limit", async () => {
     const identifier = `integration-${randomUUID()}`;
     for (let attempt = 0; attempt < 5; attempt += 1) {
-      await expect(consumeLoginAttempt(identifier)).resolves.toMatch(/^[a-f0-9]{64}$/);
+      await expect(consumeLoginAttempt(identifier)).resolves.toMatch(
+        /^[a-f0-9]{64}$/,
+      );
     }
-    await expect(consumeLoginAttempt(identifier)).rejects.toMatchObject({ status: 429 });
+    await expect(consumeLoginAttempt(identifier)).rejects.toMatchObject({
+      status: 429,
+    });
   });
 });
