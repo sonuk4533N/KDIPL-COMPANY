@@ -45,6 +45,9 @@ export interface FileStorageProvider {
 }
 
 export function validateUpload(upload: Omit<StorageUpload, "bytes">): void {
+  if (!/^[A-Z][A-Z0-9_]{1,79}$/.test(upload.documentType)) {
+    throw new AppError("FILE_UPLOAD_ERROR", "Invalid document type.");
+  }
   const extension = path.extname(upload.filename).toLowerCase();
   const extensions = allowedTypes.get(upload.mimeType);
   if (!extensions?.has(extension))
@@ -59,6 +62,32 @@ export function validateUpload(upload: Omit<StorageUpload, "bytes">): void {
       "The file exceeds the allowed size.",
     );
   }
+}
+
+function validateFileSignature(upload: StorageUpload): void {
+  const bytes = upload.bytes;
+  const valid =
+    (upload.mimeType === "application/pdf" &&
+      Buffer.from(bytes.slice(0, 5)).toString() === "%PDF-") ||
+    (upload.mimeType === "image/jpeg" &&
+      bytes[0] === 0xff &&
+      bytes[1] === 0xd8 &&
+      bytes[2] === 0xff) ||
+    (upload.mimeType === "image/png" &&
+      bytes
+        .slice(0, 8)
+        .every(
+          (value, index) =>
+            value === [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a][index],
+        )) ||
+    (upload.mimeType === "image/webp" &&
+      Buffer.from(bytes.slice(0, 4)).toString() === "RIFF" &&
+      Buffer.from(bytes.slice(8, 12)).toString() === "WEBP");
+  if (!valid)
+    throw new AppError(
+      "FILE_UPLOAD_ERROR",
+      "The file contents do not match its declared type.",
+    );
 }
 
 function createStorageKey(upload: StorageUpload) {
@@ -78,6 +107,7 @@ class LocalStorageProvider implements FileStorageProvider {
 
   async put(upload: StorageUpload): Promise<StoredObject> {
     validateUpload(upload);
+    validateFileSignature(upload);
     const storageKey = createStorageKey(upload);
     const target = this.resolveKey(storageKey);
     await mkdir(path.dirname(target), { recursive: true });
@@ -133,6 +163,7 @@ class S3StorageProvider implements FileStorageProvider {
 
   async put(upload: StorageUpload): Promise<StoredObject> {
     validateUpload(upload);
+    validateFileSignature(upload);
     const storageKey = createStorageKey(upload);
     await this.client.send(
       new PutObjectCommand({

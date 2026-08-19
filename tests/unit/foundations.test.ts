@@ -66,5 +66,13 @@ describe("server foundations", () => {
         documentType: "GST_INVOICE",
       }),
     ).toThrowError(AppError);
+    expect(() =>
+      validateUpload({
+        filename: "invoice.pdf",
+        mimeType: "application/pdf",
+        size: 100,
+        documentType: "../INVOICE",
+      }),
+    ).toThrowError(AppError);
   });
 });
