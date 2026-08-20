@@ -36,6 +36,22 @@ const departments = [
   ["ADMINISTRATION", "Administration"],
 ] as const;
 
+const positions = [
+  ["MANAGING_DIRECTOR", "Managing Director", "MANAGEMENT"],
+  ["PROJECT_DIRECTOR", "Project Director", "PROJECTS"],
+  [
+    "BUSINESS_DEVELOPMENT_DIRECTOR",
+    "Business Development Director",
+    "MANAGEMENT",
+  ],
+  ["PROJECT_MANAGER", "Project Manager", "PROJECTS"],
+  ["PURCHASE_MANAGER", "Purchase Manager", "PROCUREMENT"],
+  ["ACCOUNTS_EXECUTIVE", "Accounts Executive", "ACCOUNTS"],
+  ["SITE_SUPERVISOR", "Site Supervisor", "SITE_OPERATIONS"],
+  ["STORE_KEEPER", "Store Keeper", "STORES"],
+  ["SYSTEM_ADMINISTRATOR", "System Administrator", "ADMINISTRATION"],
+] as const;
+
 async function main() {
   for (const [code, name] of departments) {
     await prisma.department.upsert({
@@ -55,6 +71,18 @@ async function main() {
         isSystem: true,
         description: "Initial KDIPL role; grants remain configurable.",
       },
+    });
+  }
+
+  for (const [code, name, departmentCode] of positions) {
+    const department = await prisma.department.findUniqueOrThrow({
+      where: { code: departmentCode },
+      select: { id: true },
+    });
+    await prisma.position.upsert({
+      where: { code },
+      update: { name, departmentId: department.id, isActive: true },
+      create: { code, name, departmentId: department.id },
     });
   }
 
@@ -108,9 +136,17 @@ async function main() {
       email,
       passwordHash,
       status: "ACTIVE",
+      mustChangePassword: false,
+      passwordChangedAt: new Date(),
       authVersion: { increment: 1 },
     },
-    create: { displayName, email, emailNormalized: email, passwordHash },
+    create: {
+      displayName,
+      email,
+      emailNormalized: email,
+      passwordHash,
+      passwordChangedAt: new Date(),
+    },
   });
   await prisma.userRole.upsert({
     where: { userId_roleId: { userId: user.id, roleId: administratorRole.id } },

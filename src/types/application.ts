@@ -31,6 +31,7 @@ export interface AuthenticatedPrincipal {
   displayName: string;
   email: string;
   employeeId: string | null;
+  mustChangePassword: boolean;
   roleCodes: readonly string[];
   permissions: readonly PermissionCode[];
 }

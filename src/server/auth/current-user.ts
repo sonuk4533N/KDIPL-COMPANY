@@ -8,11 +8,16 @@ import {
   validateSessionToken,
 } from "@/server/auth/session";
 import type { AuthenticatedPrincipal } from "@/types/application";
+import type { AppSession } from "@/types/application";
 
-export async function getCurrentPrincipal(): Promise<AuthenticatedPrincipal | null> {
+export async function getCurrentSession(): Promise<AppSession | null> {
   const token = (await cookies()).get(SESSION_COOKIE_NAME)?.value;
   if (!token) return null;
-  const session = await validateSessionToken(token);
+  return validateSessionToken(token);
+}
+
+export async function getCurrentPrincipal(): Promise<AuthenticatedPrincipal | null> {
+  const session = await getCurrentSession();
   return session?.principal ?? null;
 }
 

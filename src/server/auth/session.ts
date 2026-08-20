@@ -132,6 +132,7 @@ export async function validateSessionToken(
       displayName: session.user.displayName,
       email: session.user.email,
       employeeId: session.user.employeeId,
+      mustChangePassword: session.user.mustChangePassword,
       roleCodes,
       permissions,
     },

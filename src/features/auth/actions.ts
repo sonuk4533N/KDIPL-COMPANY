@@ -18,7 +18,7 @@ import {
 } from "@/server/auth/request-security";
 import {
   createSession,
-  revokeSessionToken,
+  hashSessionToken,
   SESSION_COOKIE_NAME,
 } from "@/server/auth/session";
 import { verifyPassword } from "@/server/auth/password";
@@ -89,6 +89,10 @@ export async function loginAction(
         },
         transaction,
       );
+      await transaction.user.update({
+        where: { id: user.id },
+        data: { lastLoginAt: new Date() },
+      });
       return result;
     });
 
@@ -101,7 +105,12 @@ export async function loginAction(
       expires: created.session.absoluteExpiresAt,
       priority: "high",
     });
-    return { ok: true, data: { redirectTo: "/dashboard" } };
+    return {
+      ok: true,
+      data: {
+        redirectTo: user.mustChangePassword ? "/change-password" : "/dashboard",
+      },
+    };
   } catch (error) {
     logger.error({
       err: error instanceof AppError ? { code: error.code } : error,
@@ -115,7 +124,30 @@ export async function logoutAction(): Promise<never> {
   await validateMutationOrigin();
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
-  if (token) await revokeSessionToken(token);
+  if (token) {
+    const tokenHash = hashSessionToken(token);
+    const session = await db.session.findUnique({
+      where: { tokenHash },
+      select: { id: true, userId: true },
+    });
+    if (session) {
+      await db.$transaction(async (transaction) => {
+        await transaction.session.updateMany({
+          where: { id: session.id, revokedAt: null },
+          data: { revokedAt: new Date() },
+        });
+        await AuditService.record(
+          {
+            actorUserId: session.userId,
+            action: AuditAction.LOGOUT,
+            entityType: "Session",
+            entityId: session.id,
+          },
+          transaction,
+        );
+      });
+    }
+  }
   cookieStore.delete(SESSION_COOKIE_NAME);
   redirect("/login");
 }

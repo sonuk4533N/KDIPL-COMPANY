@@ -47,6 +47,34 @@ export function toCommandError(error: unknown): CommandResult<never> {
       error: { code: error.code, message: error.message, fields: error.fields },
     };
   }
+  const databaseCode =
+    typeof error === "object" && error && "code" in error
+      ? String(error.code)
+      : null;
+  if (databaseCode === "P2002") {
+    return {
+      ok: false,
+      error: {
+        code: "CONFLICT",
+        message: "A record with that code, name, or email already exists.",
+      },
+    };
+  }
+  if (databaseCode === "P2003") {
+    return {
+      ok: false,
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "A selected related record is no longer available.",
+      },
+    };
+  }
+  if (databaseCode === "P2025") {
+    return {
+      ok: false,
+      error: { code: "NOT_FOUND", message: publicMessages.NOT_FOUND },
+    };
+  }
   return {
     ok: false,
     error: { code: "INTERNAL_ERROR", message: publicMessages.INTERNAL_ERROR },

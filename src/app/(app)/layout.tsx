@@ -10,6 +10,7 @@ export default async function ProtectedLayout({
   children: React.ReactNode;
 }) {
   const principal = await requireCurrentPrincipal();
+  if (principal.mustChangePassword) redirect("/change-password");
   if (!hasPermission(principal, "app.access")) redirect("/forbidden");
   return (
     <ToastProvider>
