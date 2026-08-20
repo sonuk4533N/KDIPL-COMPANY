@@ -13,6 +13,8 @@ import {
   validateSessionToken,
 } from "@/server/auth/session";
 import { TransactionNumberService } from "@/server/transactions/transaction-number-service";
+import { CredentialService } from "@/features/auth/credential-service";
+import { hashPassword, verifyPassword } from "@/server/auth/password";
 
 const enabled = process.env.RUN_DATABASE_TESTS === "1";
 const connectionString =
@@ -32,6 +34,7 @@ describe.skipIf(!enabled)("PostgreSQL foundation", () => {
       testDb!.permission.deleteMany(),
       testDb!.role.deleteMany(),
       testDb!.employee.deleteMany(),
+      testDb!.position.deleteMany(),
       testDb!.department.deleteMany(),
       testDb!.businessSequence.deleteMany(),
       testDb!.rateLimitBucket.deleteMany(),
@@ -152,5 +155,89 @@ describe.skipIf(!enabled)("PostgreSQL foundation", () => {
     await expect(consumeLoginAttempt(identifier)).rejects.toMatchObject({
       status: 429,
     });
+  });
+
+  it("persists Phase 1 organization positions and multiple role assignments", async () => {
+    const department = await testDb!.department.create({
+      data: { code: "PHASE1", name: "Phase 1 Department" },
+    });
+    const position = await testDb!.position.create({
+      data: {
+        code: "PHASE1_MANAGER",
+        name: "Phase 1 Manager",
+        departmentId: department.id,
+      },
+    });
+    const employee = await testDb!.employee.create({
+      data: {
+        employeeCode: "P1-001",
+        fullName: "Phase One User",
+        departmentId: department.id,
+        positionId: position.id,
+      },
+    });
+    const roles = await Promise.all([
+      testDb!.role.create({ data: { code: "P1_A", name: "Phase One A" } }),
+      testDb!.role.create({ data: { code: "P1_B", name: "Phase One B" } }),
+    ]);
+    const user = await testDb!.user.create({
+      data: {
+        email: "phase1@kdipl.test",
+        emailNormalized: "phase1@kdipl.test",
+        passwordHash: "test-hash",
+        displayName: employee.fullName,
+        employeeId: employee.id,
+        mustChangePassword: true,
+        roles: {
+          create: roles.map((role) => ({ roleId: role.id })),
+        },
+      },
+      include: {
+        roles: true,
+        employee: { include: { position: true } },
+      },
+    });
+    expect(user.roles).toHaveLength(2);
+    expect(user.employee?.position?.code).toBe("PHASE1_MANAGER");
+    expect(user.mustChangePassword).toBe(true);
+  });
+
+  it("changes a temporary password while retaining only the current session", async () => {
+    const currentPassword = "Temporary!Pass2026";
+    const nextPassword = "Private!Pass2027";
+    const user = await testDb!.user.create({
+      data: {
+        email: "credential@kdipl.test",
+        emailNormalized: "credential@kdipl.test",
+        passwordHash: await hashPassword(currentPassword),
+        displayName: "Credential User",
+        mustChangePassword: true,
+      },
+    });
+    const [current, other] = await testDb!.$transaction(async (transaction) =>
+      Promise.all([
+        createSession(user.id, user.authVersion, {}, transaction),
+        createSession(user.id, user.authVersion, {}, transaction),
+      ]),
+    );
+    const appSession = await validateSessionToken(current.token);
+    expect(appSession).not.toBeNull();
+    await CredentialService.changeOwnPassword(appSession!, {
+      currentPassword,
+      newPassword: nextPassword,
+      confirmPassword: nextPassword,
+    });
+    const updated = await testDb!.user.findUniqueOrThrow({
+      where: { id: user.id },
+    });
+    expect(updated.mustChangePassword).toBe(false);
+    expect(await verifyPassword(updated.passwordHash, nextPassword)).toBe(true);
+    expect(await validateSessionToken(current.token)).not.toBeNull();
+    expect(await validateSessionToken(other.token)).toBeNull();
+    expect(
+      await testDb!.auditLog.count({
+        where: { entityType: "UserCredential", entityId: user.id },
+      }),
+    ).toBe(1);
   });
 });

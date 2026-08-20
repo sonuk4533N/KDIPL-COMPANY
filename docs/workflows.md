@@ -1,6 +1,14 @@
 # Workflow Conventions
 
-Phase 0 defines conventions but does not implement business state machines.
+Phase 1 preserves these conventions and does not implement ERP business state machines.
+
+Identity lifecycle is implemented as explicit commands:
+
+`Employee created → optional login linked → temporary password issued → private password required → active access`
+
+Disabling a user or employee, changing role permissions, assigning roles, or
+resetting a password invalidates affected sessions. Records are deactivated
+rather than deleted so audit references remain intact.
 
 - Every transition is an explicit command with server authorization, validation, idempotency, transaction, audit, and side-effect handling.
 - Operational records are cancelled, reversed, or archived; they are not hard-deleted.

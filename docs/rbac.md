@@ -4,7 +4,11 @@ Authorization combines a named permission with future project/site assignment sc
 
 ## Initial roles
 
-Managing Director, Project Director, Business Development Director, Project Manager, Purchase Manager, Accounts, Site Supervisor, Store Keeper, and System Administrator are seeded. Only the bootstrap System Administrator receives Phase 0 grants. All other grants require KDIPL approval.
+Managing Director, Project Director, Business Development Director, Project Manager, Purchase Manager, Accounts, Site Supervisor, Store Keeper, and System Administrator are seeded. The bootstrap System Administrator receives the catalog so Phase 1 administration is usable. All non-administrator grants still require KDIPL approval.
+
+Phase 1 supports multiple roles per user. Role assignments and permission-grant
+changes are audited and invalidate affected sessions. KDIPL system role codes
+and active status are protected; custom roles can be created and deactivated.
 
 ## Permission catalog
 
@@ -22,4 +26,4 @@ Permissions use `resource.action`, including project view/create/update, materia
 | Store Keeper                  | Receiving, issue, transfer, count              | Adjustment authority and finance visibility   |
 | System Administrator          | Technical administration                       | Must not imply unrestricted business approval |
 
-`canAccessProject` and `canAccessSite` default to denial until assignment models exist. The bootstrap administrator bypass exists only to establish the foundation and must be revisited with Phase 1 policy.
+`canAccessProject` and `canAccessSite` default to denial until assignment models exist. The System Administrator bypass remains limited to establishing technical administration and must not be interpreted as business approval authority.

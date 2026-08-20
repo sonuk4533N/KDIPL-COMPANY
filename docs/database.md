@@ -3,7 +3,7 @@
 ## Models
 
 - `Employee` represents a person in the organization; `User` is an optional login identity linked one-to-one.
-- `Department` and the employee manager relation establish an extensible organization baseline.
+- `Department`, `Position`, and the employee manager relation establish an extensible organization baseline.
 - `Role`, `Permission`, `UserRole`, and `RolePermission` implement configurable many-to-many RBAC.
 - `Session` stores only hashed opaque tokens, expiry, activity, revocation, and privacy-preserving request metadata.
 - `AuditLog` records sanitized actor/action/entity change evidence.
@@ -11,11 +11,20 @@
 - `BusinessSequence` provides atomic `(prefix, year)` numbering.
 - `RateLimitBucket` provides shared authentication throttling without storing raw email/IP keys.
 
+Phase 1 adds credential lifecycle fields to `User`: `mustChangePassword`,
+`passwordChangedAt`, and `lastLoginAt`. Temporary administrator-issued
+passwords set the first flag; successful private password changes clear it and
+revoke other sessions.
+
 All primary identifiers are PostgreSQL UUIDs. Timestamps are stored in UTC and displayed in the configured KDIPL locale/timezone. Relations, composite keys, unique constraints, and lookup/expiry indexes are explicit in `prisma/schema.prisma`.
 
 ## Migrations
 
 Schema changes require reviewed migration files. Production uses `prisma migrate deploy`; `db push` is not a deployment strategy. Backups and restore procedures must be approved before production.
+
+`20260820030000_phase1_identity_access` introduces positions, employee-position
+links, and user credential lifecycle fields without deleting or rewriting
+existing identity records.
 
 ## Transaction numbering
 

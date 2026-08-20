@@ -14,6 +14,7 @@ const principal: AuthenticatedPrincipal = {
   displayName: "Admin",
   email: "admin@kdipl.test",
   employeeId: null,
+  mustChangePassword: false,
   roleCodes: ["SYSTEM_ADMINISTRATOR"],
   permissions: ["app.access", "user.manage"],
 };

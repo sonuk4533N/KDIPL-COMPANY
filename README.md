@@ -1,6 +1,6 @@
 # KDIPL Operations Platform
 
-Phase 0 engineering foundation for Kumar Designs India Private Limited's internal operations platform. The repository intentionally contains no ERP business workflows yet.
+Phase 1 identity and access foundation for Kumar Designs India Private Limited's internal operations platform. The repository intentionally contains no ERP business workflows yet.
 
 ## Foundation
 
@@ -9,6 +9,7 @@ Phase 0 engineering foundation for Kumar Designs India Private Limited's interna
 - Minimal Argon2id password authentication with opaque database sessions
 - Centralized permissions, audit logging, transaction numbering, storage, errors, and structured logging
 - Responsive KDIPL application shell based on the approved Pass 2/3 design direction
+- Employee, department, position, user, role, permission, password, and session administration
 - Vitest, PostgreSQL integration tests, Playwright, and GitHub Actions
 
 ## Local setup
@@ -54,4 +55,4 @@ Database tests require `RUN_DATABASE_TESTS=1` and an isolated `TEST_DATABASE_URL
 
 ## Phase boundary
 
-The next milestone is **Phase 1 — Authentication, Employees, Users, Roles & Permissions**. Do not begin Projects, Sites, Material Requirements, procurement, inventory, accounts, or reporting workflows until their approved phases.
+Phase 1 is **Authentication, Employees, Users, Roles & Permissions**. Projects, Sites, Material Requirements, procurement, inventory, accounts, and reporting workflows remain outside this milestone and must follow their approved implementation phases.

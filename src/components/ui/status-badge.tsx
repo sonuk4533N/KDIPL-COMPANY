@@ -19,6 +19,8 @@ const statusConfig = {
   Partial: { icon: Info, styles: "bg-sky-50 text-sky-800" },
   Completed: { icon: CheckCircle2, styles: "bg-emerald-50 text-emerald-800" },
   Cancelled: { icon: Ban, styles: "bg-slate-100 text-slate-600" },
+  Active: { icon: CheckCircle2, styles: "bg-emerald-50 text-emerald-800" },
+  Disabled: { icon: Ban, styles: "bg-slate-100 text-slate-600" },
 } as const;
 
 export type StandardStatus = keyof typeof statusConfig;

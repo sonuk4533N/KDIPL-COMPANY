@@ -1,6 +1,14 @@
 "use client";
 
-import { Bell, ChevronDown, LogOut, Plus, Search } from "lucide-react";
+import {
+  Bell,
+  ChevronDown,
+  LogOut,
+  Plus,
+  Search,
+  ShieldCheck,
+} from "lucide-react";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
@@ -109,13 +117,24 @@ export function Header({ principal }: { principal: AuthenticatedPrincipal }) {
             <p className="text-xs text-slate-500">{principal.email}</p>
           </div>
           <DropdownSeparator />
+          <Link
+            href="/account/security"
+            role="menuitem"
+            className="flex items-center gap-2 rounded-lg px-3 py-2 text-slate-700 outline-none hover:bg-slate-100 focus-visible:bg-slate-100"
+          >
+            <ShieldCheck className="size-4" />
+            Security & sessions
+          </Link>
+          <DropdownSeparator />
           <form action={logoutAction}>
-            <DropdownItem asChild>
-              <button type="submit" className="w-full">
-                <LogOut className="size-4" />
-                Sign out
-              </button>
-            </DropdownItem>
+            <button
+              type="submit"
+              role="menuitem"
+              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-slate-700 outline-none hover:bg-slate-100 focus-visible:bg-slate-100"
+            >
+              <LogOut className="size-4" />
+              Sign out
+            </button>
           </form>
         </DropdownContent>
       </Dropdown>
