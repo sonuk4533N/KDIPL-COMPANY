@@ -2,6 +2,7 @@ import type {
   AuthenticatedPrincipal,
   PermissionCode,
 } from "@/types/application";
+import { db } from "@/db/prisma";
 import { AppError } from "@/server/errors/app-error";
 
 export function hasPermission(
@@ -19,24 +20,70 @@ export function requirePermission(
   if (!hasPermission(principal, permission)) throw new AppError("FORBIDDEN");
 }
 
-export function canAccessProject(
+export async function canAccessProject(
   principal: AuthenticatedPrincipal | null | undefined,
-  _projectId: string,
-): boolean {
-  void _projectId;
+  projectId: string,
+): Promise<boolean> {
   if (!principal) return false;
   if (principal.roleCodes.includes("SYSTEM_ADMINISTRATOR")) return true;
-  return false;
+  if (!hasPermission(principal, "project.view") || !principal.employeeId)
+    return false;
+  return Boolean(
+    await db.project.findFirst({
+      where: {
+        id: projectId,
+        OR: [
+          {
+            assignments: {
+              some: { employeeId: principal.employeeId, isActive: true },
+            },
+          },
+          {
+            sites: {
+              some: {
+                assignments: {
+                  some: { employeeId: principal.employeeId, isActive: true },
+                },
+              },
+            },
+          },
+        ],
+      },
+      select: { id: true },
+    }),
+  );
 }
 
-export function canAccessSite(
+export async function canAccessSite(
   principal: AuthenticatedPrincipal | null | undefined,
-  _siteId: string,
-): boolean {
-  void _siteId;
+  siteId: string,
+): Promise<boolean> {
   if (!principal) return false;
   if (principal.roleCodes.includes("SYSTEM_ADMINISTRATOR")) return true;
-  return false;
+  if (!hasPermission(principal, "site.view") || !principal.employeeId)
+    return false;
+  return Boolean(
+    await db.site.findFirst({
+      where: {
+        id: siteId,
+        OR: [
+          {
+            assignments: {
+              some: { employeeId: principal.employeeId, isActive: true },
+            },
+          },
+          {
+            project: {
+              assignments: {
+                some: { employeeId: principal.employeeId, isActive: true },
+              },
+            },
+          },
+        ],
+      },
+      select: { id: true },
+    }),
+  );
 }
 
 export const AuthorizationService = {

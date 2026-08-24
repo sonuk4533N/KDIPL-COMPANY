@@ -2,6 +2,7 @@ import {
   Bell,
   Boxes,
   CheckSquare2,
+  Database,
   FolderKanban,
   LayoutDashboard,
   PackageCheck,
@@ -14,6 +15,7 @@ import {
 export const primaryNavigation = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { label: "Projects", href: "/projects", icon: FolderKanban },
+  { label: "Master data", href: "/master-data", icon: Database },
   { label: "Procurement", href: "/procurement", icon: ShoppingCart },
   { label: "Inventory", href: "/inventory", icon: Warehouse },
   { label: "Accounts", href: "/accounts", icon: ReceiptIndianRupee },

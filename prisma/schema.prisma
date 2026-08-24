@@ -40,6 +40,32 @@ enum StorageProvider {
   S3
 }
 
+enum ProjectStatus {
+  PLANNING
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+}
+
+enum SiteStatus {
+  PLANNING
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+}
+
+enum ProjectAssignmentRole {
+  PROJECT_MANAGER
+  PROJECT_MEMBER
+}
+
+enum SiteAssignmentRole {
+  SITE_SUPERVISOR
+  SITE_MEMBER
+}
+
 model Department {
   id          String     @id @default(uuid()) @db.Uuid
   code        String     @unique @db.VarChar(50)
@@ -71,23 +97,25 @@ model Position {
 }
 
 model Employee {
-  id           String      @id @default(uuid()) @db.Uuid
-  employeeCode String      @unique @db.VarChar(50)
-  fullName     String      @db.VarChar(160)
-  designation  String?     @db.VarChar(120)
-  email        String?     @db.VarChar(320)
-  mobile       String?     @db.VarChar(30)
-  isActive     Boolean     @default(true)
-  departmentId String?     @db.Uuid
-  positionId   String?     @db.Uuid
-  managerId    String?     @db.Uuid
-  department   Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
-  position     Position?   @relation(fields: [positionId], references: [id], onDelete: SetNull)
-  manager      Employee?   @relation("EmployeeManager", fields: [managerId], references: [id], onDelete: SetNull)
-  reports      Employee[]  @relation("EmployeeManager")
-  user         User?
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
+  id                 String              @id @default(uuid()) @db.Uuid
+  employeeCode       String              @unique @db.VarChar(50)
+  fullName           String              @db.VarChar(160)
+  designation        String?             @db.VarChar(120)
+  email              String?             @db.VarChar(320)
+  mobile             String?             @db.VarChar(30)
+  isActive           Boolean             @default(true)
+  departmentId       String?             @db.Uuid
+  positionId         String?             @db.Uuid
+  managerId          String?             @db.Uuid
+  department         Department?         @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  position           Position?           @relation(fields: [positionId], references: [id], onDelete: SetNull)
+  manager            Employee?           @relation("EmployeeManager", fields: [managerId], references: [id], onDelete: SetNull)
+  reports            Employee[]          @relation("EmployeeManager")
+  user               User?
+  projectAssignments ProjectAssignment[]
+  siteAssignments    SiteAssignment[]
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
 
   @@index([departmentId])
   @@index([positionId])
@@ -96,24 +124,24 @@ model Employee {
 }
 
 model User {
-  id              String       @id @default(uuid()) @db.Uuid
-  email           String       @db.VarChar(320)
-  emailNormalized String       @unique @db.VarChar(320)
-  passwordHash    String
-  displayName     String       @db.VarChar(160)
-  status          UserStatus   @default(ACTIVE)
-  authVersion     Int          @default(1)
-  mustChangePassword Boolean    @default(false)
-  passwordChangedAt DateTime?
-  lastLoginAt     DateTime?
-  employeeId      String?      @unique @db.Uuid
-  employee        Employee?    @relation(fields: [employeeId], references: [id], onDelete: SetNull)
-  roles           UserRole[]
-  sessions        Session[]
-  auditEvents     AuditLog[]   @relation("AuditActor")
-  uploadedFiles   FileRecord[]
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  id                 String       @id @default(uuid()) @db.Uuid
+  email              String       @db.VarChar(320)
+  emailNormalized    String       @unique @db.VarChar(320)
+  passwordHash       String
+  displayName        String       @db.VarChar(160)
+  status             UserStatus   @default(ACTIVE)
+  authVersion        Int          @default(1)
+  mustChangePassword Boolean      @default(false)
+  passwordChangedAt  DateTime?
+  lastLoginAt        DateTime?
+  employeeId         String?      @unique @db.Uuid
+  employee           Employee?    @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+  roles              UserRole[]
+  sessions           Session[]
+  auditEvents        AuditLog[]   @relation("AuditActor")
+  uploadedFiles      FileRecord[]
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
 
   @@index([status])
 }
@@ -232,4 +260,189 @@ model RateLimitBucket {
   updatedAt   DateTime @updatedAt
 
   @@index([expiresAt])
+}
+
+model Client {
+  id         String    @id @default(uuid()) @db.Uuid
+  clientCode String    @unique @db.VarChar(50)
+  name       String    @unique @db.VarChar(180)
+  address    String?
+  city       String?   @db.VarChar(120)
+  state      String?   @db.VarChar(120)
+  postalCode String?   @db.VarChar(12)
+  phone      String?   @db.VarChar(30)
+  email      String?   @db.VarChar(320)
+  isActive   Boolean   @default(true)
+  projects   Project[]
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([isActive, name])
+}
+
+model Project {
+  id                     String              @id @default(uuid()) @db.Uuid
+  projectCode            String              @unique @db.VarChar(50)
+  name                   String              @db.VarChar(180)
+  clientId               String              @db.Uuid
+  location               String              @db.VarChar(240)
+  description            String?
+  status                 ProjectStatus       @default(PLANNING)
+  startDate              DateTime?           @db.Date
+  expectedCompletionDate DateTime?           @db.Date
+  actualCompletionDate   DateTime?           @db.Date
+  client                 Client              @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  sites                  Site[]
+  assignments            ProjectAssignment[]
+  createdAt              DateTime            @default(now())
+  updatedAt              DateTime            @updatedAt
+
+  @@index([clientId])
+  @@index([status, name])
+  @@index([startDate, expectedCompletionDate])
+}
+
+model Site {
+  id          String           @id @default(uuid()) @db.Uuid
+  siteCode    String           @db.VarChar(50)
+  name        String           @db.VarChar(180)
+  projectId   String           @db.Uuid
+  location    String           @db.VarChar(240)
+  address     String?
+  description String?
+  status      SiteStatus       @default(PLANNING)
+  project     Project          @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  assignments SiteAssignment[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@unique([projectId, siteCode])
+  @@index([projectId, status])
+  @@index([status, name])
+}
+
+model ProjectAssignment {
+  id         String                @id @default(uuid()) @db.Uuid
+  projectId  String                @db.Uuid
+  employeeId String                @db.Uuid
+  role       ProjectAssignmentRole
+  isPrimary  Boolean               @default(false)
+  isActive   Boolean               @default(true)
+  startsAt   DateTime              @default(now())
+  endsAt     DateTime?
+  project    Project               @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  employee   Employee              @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  createdAt  DateTime              @default(now())
+  updatedAt  DateTime              @updatedAt
+
+  @@unique([projectId, employeeId, role])
+  @@index([projectId, isActive, role])
+  @@index([employeeId, isActive])
+}
+
+model SiteAssignment {
+  id         String             @id @default(uuid()) @db.Uuid
+  siteId     String             @db.Uuid
+  employeeId String             @db.Uuid
+  role       SiteAssignmentRole
+  isPrimary  Boolean            @default(false)
+  isActive   Boolean            @default(true)
+  startsAt   DateTime           @default(now())
+  endsAt     DateTime?
+  site       Site               @relation(fields: [siteId], references: [id], onDelete: Restrict)
+  employee   Employee           @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+
+  @@unique([siteId, employeeId, role])
+  @@index([siteId, isActive, role])
+  @@index([employeeId, isActive])
+}
+
+model MaterialCategory {
+  id          String     @id @default(uuid()) @db.Uuid
+  code        String     @unique @db.VarChar(50)
+  name        String     @unique @db.VarChar(120)
+  description String?
+  isActive    Boolean    @default(true)
+  materials   Material[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([isActive, name])
+}
+
+model UnitOfMeasure {
+  id           String     @id @default(uuid()) @db.Uuid
+  code         String     @unique @db.VarChar(30)
+  name         String     @unique @db.VarChar(80)
+  symbol       String     @db.VarChar(20)
+  description  String?
+  decimalScale Int        @default(3)
+  isActive     Boolean    @default(true)
+  materials    Material[]
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@index([isActive, name])
+}
+
+model Material {
+  id                String           @id @default(uuid()) @db.Uuid
+  materialCode      String           @unique @db.VarChar(50)
+  name              String           @db.VarChar(180)
+  description       String?
+  categoryId        String           @db.Uuid
+  defaultUnitId     String           @db.Uuid
+  minimumStockLevel Decimal          @default(0) @db.Decimal(18, 3)
+  reorderLevel      Decimal          @default(0) @db.Decimal(18, 3)
+  isActive          Boolean          @default(true)
+  category          MaterialCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  defaultUnit       UnitOfMeasure    @relation(fields: [defaultUnitId], references: [id], onDelete: Restrict)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@unique([name, defaultUnitId])
+  @@index([categoryId, isActive])
+  @@index([defaultUnitId])
+  @@index([isActive, name])
+}
+
+model Supplier {
+  id              String            @id @default(uuid()) @db.Uuid
+  supplierCode    String            @unique @db.VarChar(50)
+  legalName       String            @db.VarChar(180)
+  tradeName       String?           @db.VarChar(180)
+  gstin           String?           @unique @db.VarChar(15)
+  address         String?
+  city            String            @db.VarChar(120)
+  state           String            @db.VarChar(120)
+  postalCode      String?           @db.VarChar(12)
+  phone           String?           @db.VarChar(30)
+  email           String?           @db.VarChar(320)
+  isGstRegistered Boolean           @default(false)
+  isActive        Boolean           @default(true)
+  contacts        SupplierContact[]
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@unique([legalName, city])
+  @@index([isActive, legalName])
+  @@index([state, city])
+}
+
+model SupplierContact {
+  id          String   @id @default(uuid()) @db.Uuid
+  supplierId  String   @db.Uuid
+  name        String   @db.VarChar(160)
+  designation String?  @db.VarChar(120)
+  phone       String?  @db.VarChar(30)
+  email       String?  @db.VarChar(320)
+  isPrimary   Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  supplier    Supplier @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([supplierId, isActive])
 }

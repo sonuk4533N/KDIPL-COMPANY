@@ -1,6 +1,6 @@
 # Role-Based Access Control
 
-Authorization combines a named permission with future project/site assignment scope. UI visibility is convenience only; server checks are authoritative.
+Authorization combines a named permission with project/site assignment scope. UI visibility is convenience only; server checks are authoritative.
 
 ## Initial roles
 
@@ -12,7 +12,7 @@ and active status are protected; custom roles can be created and deactivated.
 
 ## Permission catalog
 
-Permissions use `resource.action`, including project view/create/update, material-requirement view/create/approve, purchase view/create/approve, inventory view/receive/issue/transfer/adjust, invoice view/verify, report view/export, notifications, audit visibility, and user/role management.
+Permissions use `resource.action`. Phase 2 adds project assignment, site view/create/update, catalog view/manage, and supplier view/manage to the existing project, transaction, reporting, audit, and administration catalog.
 
 | Role                          | Expected scope (not yet granted)               | Unresolved authority                          |
 | ----------------------------- | ---------------------------------------------- | --------------------------------------------- |
@@ -26,4 +26,4 @@ Permissions use `resource.action`, including project view/create/update, materia
 | Store Keeper                  | Receiving, issue, transfer, count              | Adjustment authority and finance visibility   |
 | System Administrator          | Technical administration                       | Must not imply unrestricted business approval |
 
-`canAccessProject` and `canAccessSite` default to denial until assignment models exist. The System Administrator bypass remains limited to establishing technical administration and must not be interpreted as business approval authority.
+`canAccessProject` and `canAccessSite` now deny by default and resolve active employee assignments from PostgreSQL. Project-level assignments expose the project's sites; site-only assignments expose the parent context and only assigned sites. The System Administrator bypass remains limited to technical administration and must not be interpreted as business approval authority.

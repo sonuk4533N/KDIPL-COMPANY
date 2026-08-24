@@ -1,6 +1,6 @@
 # KDIPL Operations Platform
 
-Phase 1 identity and access foundation for Kumar Designs India Private Limited's internal operations platform. The repository intentionally contains no ERP business workflows yet.
+Phase 1 identity/access and Phase 2 project/master-data foundation for Kumar Designs India Private Limited's internal operations platform.
 
 ## Foundation
 
@@ -10,6 +10,8 @@ Phase 1 identity and access foundation for Kumar Designs India Private Limited's
 - Centralized permissions, audit logging, transaction numbering, storage, errors, and structured logging
 - Responsive KDIPL application shell based on the approved Pass 2/3 design direction
 - Employee, department, position, user, role, permission, password, and session administration
+- Clients, projects, project sites, project/site teams, and assignment-backed data scope
+- Material categories, units of measure, materials, suppliers, and primary contacts
 - Vitest, PostgreSQL integration tests, Playwright, and GitHub Actions
 
 ## Local setup
@@ -28,7 +30,7 @@ npm run db:seed
 npm run dev
 ```
 
-On Windows PowerShell systems that block npm scripts, use `npm.cmd` in place of `npm`.
+On Windows PowerShell systems that block npm scripts, use `npm.cmd` in place of `npm`. The bootstrap administrator is created only when all three `BOOTSTRAP_ADMIN_*` values are present before `npm.cmd run db:seed`. Sign in with those configured email/password values; rerun the seed after correcting them.
 
 ## Quality commands
 
@@ -52,7 +54,8 @@ Database tests require `RUN_DATABASE_TESTS=1` and an isolated `TEST_DATABASE_URL
 - [Workflow conventions](docs/workflows.md)
 - [Business rules and unresolved decisions](docs/business-rules.md)
 - [Development guide](docs/development.md)
+- [Phase 2 completion record](docs/phase-2-progress.md)
 
 ## Phase boundary
 
-Phase 1 is **Authentication, Employees, Users, Roles & Permissions**. Projects, Sites, Material Requirements, procurement, inventory, accounts, and reporting workflows remain outside this milestone and must follow their approved implementation phases.
+Completed milestones are Phase 1 **Authentication, Employees, Users, Roles & Permissions** and Phase 2 **Clients, Projects, Sites, Assignments & Master Data**. Material requirements, procurement, inventory transactions, accounts, and reporting workflows remain outside this milestone and must follow their approved phases.

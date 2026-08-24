@@ -25,10 +25,10 @@ const foundation = [
     status: "Completed" as const,
   },
   {
-    label: "Business workflows",
-    detail: "Reserved for approved later phases",
+    label: "Project foundation",
+    detail: "Projects, sites, assignments, and masters",
     icon: FileCheck2,
-    status: "Pending" as const,
+    status: "Completed" as const,
   },
 ];
 
@@ -37,9 +37,9 @@ export default async function DashboardPage() {
   return (
     <div>
       <PageHeader
-        eyebrow="Live foundation"
+        eyebrow="Phase 2 foundation"
         title={`Good day, ${principal.displayName.split(" ")[0]}.`}
-        description="The KDIPL Operations Platform is secured and ready for controlled feature development."
+        description="The KDIPL Operations Platform now includes secure project operations and governed master data."
       />
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {foundation.map((item) => (
@@ -116,17 +116,19 @@ export default async function DashboardPage() {
         </Card>
         <Card>
           <CardContent>
-            <h3 className="font-display text-lg font-bold">Next milestone</h3>
+            <h3 className="font-display text-lg font-bold">
+              Phase 2 delivered
+            </h3>
             <p className="mt-2 text-sm leading-6 text-slate-500">
-              Phase 1 will complete employee, user, role, and permission
-              administration without starting ERP transaction workflows.
+              The project and master-data foundation is ready for the later
+              transaction workflows.
             </p>
             <div className="mt-6 space-y-3">
               {[
-                "Employee directory",
-                "User administration",
-                "Role assignments",
-                "Permission management",
+                "Client and project portfolio",
+                "Sites and responsible teams",
+                "Material and unit masters",
+                "Supplier directory and contacts",
               ].map((item) => (
                 <div
                   key={item}

@@ -49,7 +49,9 @@ test("administrator can access Phase 1 identity and account security surfaces", 
   await signInAsBootstrapAdministrator(page);
   await page.goto("/administration");
   await expect(
-    page.getByRole("heading", { name: "Administration", exact: true }),
+    page
+      .getByRole("main")
+      .getByRole("heading", { name: "Administration", exact: true }),
   ).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Create login account" }),
@@ -66,6 +68,50 @@ test("administrator can access Phase 1 identity and account security surfaces", 
   ).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "Login activity" }),
+  ).toBeVisible();
+});
+
+test("administrator can browse the Phase 2 project and master-data foundation", async ({
+  page,
+}) => {
+  await signInAsBootstrapAdministrator(page);
+
+  await page.goto("/projects");
+  await expect(
+    page
+      .getByRole("main")
+      .getByRole("heading", { name: "Projects", exact: true }),
+  ).toBeVisible();
+  await expect(page.getByRole("link", { name: /DLF Residence/ })).toBeVisible();
+  await page.getByRole("link", { name: /DLF Residence/ }).click();
+  await expect(
+    page.getByRole("heading", { name: "DLF Residence" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Assigned sites" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Project team" }),
+  ).toBeVisible();
+
+  await page.goto("/master-data");
+  await expect(
+    page.getByRole("main").getByRole("heading", { name: "Master data" }),
+  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Materials" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Suppliers" })).toBeVisible();
+  await page
+    .getByRole("link", { name: "ABC Building Materials Pvt. Ltd." })
+    .first()
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "ABC Building Materials Pvt. Ltd." }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Organization profile" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Primary contacts" }),
   ).toBeVisible();
 });
 

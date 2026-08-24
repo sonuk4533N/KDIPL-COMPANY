@@ -20,6 +20,8 @@ const statusConfig = {
   Completed: { icon: CheckCircle2, styles: "bg-emerald-50 text-emerald-800" },
   Cancelled: { icon: Ban, styles: "bg-slate-100 text-slate-600" },
   Active: { icon: CheckCircle2, styles: "bg-emerald-50 text-emerald-800" },
+  Planning: { icon: CircleDashed, styles: "bg-blue-50 text-blue-700" },
+  "On hold": { icon: Clock3, styles: "bg-amber-50 text-amber-800" },
   Disabled: { icon: Ban, styles: "bg-slate-100 text-slate-600" },
 } as const;
 
