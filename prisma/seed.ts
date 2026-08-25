@@ -26,7 +26,7 @@ const roles = [
   ["SYSTEM_ADMINISTRATOR", "System Administrator"],
 ] as const;
 
-const phase3RoleGrants = {
+const businessRoleGrants = {
   SITE_SUPERVISOR: [
     "app.access",
     "project.view",
@@ -48,6 +48,16 @@ const phase3RoleGrants = {
     "site.view",
     "material_requirement.view",
     "material_requirement.approve",
+  ],
+  PURCHASE_MANAGER: [
+    "app.access",
+    "project.view",
+    "site.view",
+    "catalog.view",
+    "supplier.view",
+    "material_requirement.view",
+    "purchase.view",
+    "purchase.create",
   ],
 } as const;
 
@@ -764,17 +774,17 @@ async function main() {
     skipDuplicates: true,
   });
 
-  const phase3PermissionCodes = Array.from(
-    new Set(Object.values(phase3RoleGrants).flat()),
+  const businessPermissionCodes = Array.from(
+    new Set(Object.values(businessRoleGrants).flat()),
   );
-  const phase3Permissions = await prisma.permission.findMany({
-    where: { code: { in: phase3PermissionCodes } },
+  const businessPermissions = await prisma.permission.findMany({
+    where: { code: { in: businessPermissionCodes } },
     select: { id: true, code: true },
   });
   const permissionIdByCode = new Map(
-    phase3Permissions.map(({ id, code }) => [code, id]),
+    businessPermissions.map(({ id, code }) => [code, id]),
   );
-  for (const [roleCode, grants] of Object.entries(phase3RoleGrants)) {
+  for (const [roleCode, grants] of Object.entries(businessRoleGrants)) {
     const role = await prisma.role.findUniqueOrThrow({
       where: { code: roleCode },
       select: { id: true },

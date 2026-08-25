@@ -4,7 +4,7 @@ Authorization combines a named permission with project/site assignment scope. UI
 
 ## Initial roles
 
-Managing Director, Project Director, Business Development Director, Project Manager, Purchase Manager, Accounts, Site Supervisor, Store Keeper, and System Administrator are seeded. The bootstrap System Administrator receives the catalog so Phase 1 administration is usable. Confirmed Phase 3 requirement grants are seeded for Site Supervisor, Project Manager, and Project Director; other non-administrator grants still require KDIPL approval.
+Managing Director, Project Director, Business Development Director, Project Manager, Purchase Manager, Accounts, Site Supervisor, Store Keeper, and System Administrator are seeded. The bootstrap System Administrator receives the catalog so Phase 1 administration is usable. Confirmed Phase 3 requirement grants are seeded for Site Supervisor, Project Manager, and Project Director. Phase 4 draft-only sourcing grants are seeded for Purchase Manager; issue, award, approval, and purchase-order authority remain ungranted.
 
 Phase 1 supports multiple roles per user. Role assignments and permission-grant
 changes are audited and invalidate affected sessions. KDIPL system role codes
@@ -20,7 +20,7 @@ Permissions use `resource.action`. Phase 2 adds project assignment, site view/cr
 | Project Director              | Organization-wide requirement oversight        | Future thresholds and delegated authority     |
 | Business Development Director | Future business-development scope              | Module definition                             |
 | Project Manager               | Assigned projects/sites and requirement review | Future procurement authority                  |
-| Purchase Manager              | Procurement and supplier operations            | Purchase approval limits                      |
+| Purchase Manager              | Organization-wide RFQ draft sourcing           | Issue, award, PO, and approval authority      |
 | Accounts                      | Invoice verification and financial reporting   | Payments and GST authority                    |
 | Site Supervisor               | Assigned sites and requirement submission      | Receipt/acknowledgement rules                 |
 | Store Keeper                  | Receiving, issue, transfer, count              | Adjustment authority and finance visibility   |

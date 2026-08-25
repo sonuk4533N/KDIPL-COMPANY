@@ -25,10 +25,10 @@ const foundation = [
     status: "Completed" as const,
   },
   {
-    label: "Operations workflow",
-    detail: "Projects, masters, and requirement approval",
+    label: "Procurement foundation",
+    detail: "Approved demand and controlled RFQ drafts",
     icon: FileCheck2,
-    status: "Completed" as const,
+    status: "Draft" as const,
   },
 ];
 
@@ -37,9 +37,9 @@ export default async function DashboardPage() {
   return (
     <div>
       <PageHeader
-        eyebrow="Phase 3 complete"
+        eyebrow="Phase 4 underway"
         title={`Good day, ${principal.displayName.split(" ")[0]}.`}
-        description="The KDIPL Operations Platform now includes secure project operations, governed master data, and controlled material requirement approval."
+        description="The KDIPL Operations Platform now carries approved material demand into a controlled RFQ draft workspace."
       />
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {foundation.map((item) => (

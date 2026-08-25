@@ -85,6 +85,10 @@ enum MaterialRequirementWorkflowAction {
   SEND_BACK
 }
 
+enum RequestForQuotationStatus {
+  DRAFT
+}
+
 model Department {
   id          String     @id @default(uuid()) @db.Uuid
   code        String     @unique @db.VarChar(50)
@@ -163,6 +167,7 @@ model User {
   materialRequirementsSubmitted MaterialRequirement[]              @relation("MaterialRequirementSubmitter")
   materialRequirementsDecided   MaterialRequirement[]              @relation("MaterialRequirementDecisionActor")
   materialRequirementEvents     MaterialRequirementWorkflowEvent[]
+  requestsForQuotationCreated   RequestForQuotation[]              @relation("RequestForQuotationCreator")
   createdAt                     DateTime                           @default(now())
   updatedAt                     DateTime                           @updatedAt
 
@@ -437,22 +442,23 @@ model Material {
 }
 
 model Supplier {
-  id              String            @id @default(uuid()) @db.Uuid
-  supplierCode    String            @unique @db.VarChar(50)
-  legalName       String            @db.VarChar(180)
-  tradeName       String?           @db.VarChar(180)
-  gstin           String?           @unique @db.VarChar(15)
+  id              String                        @id @default(uuid()) @db.Uuid
+  supplierCode    String                        @unique @db.VarChar(50)
+  legalName       String                        @db.VarChar(180)
+  tradeName       String?                       @db.VarChar(180)
+  gstin           String?                       @unique @db.VarChar(15)
   address         String?
-  city            String            @db.VarChar(120)
-  state           String            @db.VarChar(120)
-  postalCode      String?           @db.VarChar(12)
-  phone           String?           @db.VarChar(30)
-  email           String?           @db.VarChar(320)
-  isGstRegistered Boolean           @default(false)
-  isActive        Boolean           @default(true)
+  city            String                        @db.VarChar(120)
+  state           String                        @db.VarChar(120)
+  postalCode      String?                       @db.VarChar(12)
+  phone           String?                       @db.VarChar(30)
+  email           String?                       @db.VarChar(320)
+  isGstRegistered Boolean                       @default(false)
+  isActive        Boolean                       @default(true)
   contacts        SupplierContact[]
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+  rfqInvitations  RequestForQuotationSupplier[]
+  createdAt       DateTime                      @default(now())
+  updatedAt       DateTime                      @updatedAt
 
   @@unique([legalName, city])
   @@index([isActive, legalName])
@@ -476,30 +482,31 @@ model SupplierContact {
 }
 
 model MaterialRequirement {
-  id                String                             @id @default(uuid()) @db.Uuid
-  requirementNumber String                             @unique @db.VarChar(30)
-  projectId         String                             @db.Uuid
-  siteId            String                             @db.Uuid
-  status            MaterialRequirementStatus          @default(DRAFT)
-  neededBy          DateTime                           @db.Date
-  purpose           String                             @db.VarChar(500)
-  notes             String?
-  createdById       String                             @db.Uuid
-  submittedById     String?                            @db.Uuid
-  submittedByRole   MaterialRequirementSubmitterRole?
-  submittedAt       DateTime?
-  decidedById       String?                            @db.Uuid
-  decidedAt         DateTime?
-  decisionReason    String?                            @db.VarChar(1000)
-  project           Project                            @relation(fields: [projectId], references: [id], onDelete: Restrict)
-  site              Site                               @relation(fields: [siteId, projectId], references: [id, projectId], onDelete: Restrict)
-  createdBy         User                               @relation("MaterialRequirementCreator", fields: [createdById], references: [id], onDelete: Restrict)
-  submittedBy       User?                              @relation("MaterialRequirementSubmitter", fields: [submittedById], references: [id], onDelete: Restrict)
-  decidedBy         User?                              @relation("MaterialRequirementDecisionActor", fields: [decidedById], references: [id], onDelete: Restrict)
-  lines             MaterialRequirementLine[]
-  workflowEvents    MaterialRequirementWorkflowEvent[]
-  createdAt         DateTime                           @default(now())
-  updatedAt         DateTime                           @updatedAt
+  id                   String                             @id @default(uuid()) @db.Uuid
+  requirementNumber    String                             @unique @db.VarChar(30)
+  projectId            String                             @db.Uuid
+  siteId               String                             @db.Uuid
+  status               MaterialRequirementStatus          @default(DRAFT)
+  neededBy             DateTime                           @db.Date
+  purpose              String                             @db.VarChar(500)
+  notes                String?
+  createdById          String                             @db.Uuid
+  submittedById        String?                            @db.Uuid
+  submittedByRole      MaterialRequirementSubmitterRole?
+  submittedAt          DateTime?
+  decidedById          String?                            @db.Uuid
+  decidedAt            DateTime?
+  decisionReason       String?                            @db.VarChar(1000)
+  project              Project                            @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  site                 Site                               @relation(fields: [siteId, projectId], references: [id, projectId], onDelete: Restrict)
+  createdBy            User                               @relation("MaterialRequirementCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  submittedBy          User?                              @relation("MaterialRequirementSubmitter", fields: [submittedById], references: [id], onDelete: Restrict)
+  decidedBy            User?                              @relation("MaterialRequirementDecisionActor", fields: [decidedById], references: [id], onDelete: Restrict)
+  lines                MaterialRequirementLine[]
+  workflowEvents       MaterialRequirementWorkflowEvent[]
+  requestsForQuotation RequestForQuotation[]
+  createdAt            DateTime                           @default(now())
+  updatedAt            DateTime                           @updatedAt
 
   @@index([projectId, status, neededBy])
   @@index([siteId, status])
@@ -544,4 +551,37 @@ model MaterialRequirementWorkflowEvent {
   @@index([requirementId, createdAt])
   @@index([actorUserId, createdAt])
   @@index([action, createdAt])
+}
+
+model RequestForQuotation {
+  id               String                        @id @default(uuid()) @db.Uuid
+  rfqNumber        String                        @unique @db.VarChar(30)
+  requirementId    String                        @db.Uuid
+  status           RequestForQuotationStatus     @default(DRAFT)
+  responseDueDate  DateTime                      @db.Date
+  notes            String?
+  createdById      String                        @db.Uuid
+  requirement      MaterialRequirement           @relation(fields: [requirementId], references: [id], onDelete: Restrict)
+  createdBy        User                          @relation("RequestForQuotationCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  invitedSuppliers RequestForQuotationSupplier[]
+  createdAt        DateTime                      @default(now())
+  updatedAt        DateTime                      @updatedAt
+
+  @@index([requirementId, status])
+  @@index([status, responseDueDate])
+  @@index([createdById, createdAt])
+}
+
+model RequestForQuotationSupplier {
+  rfqId      String              @db.Uuid
+  supplierId String              @db.Uuid
+  isActive   Boolean             @default(true)
+  rfq        RequestForQuotation @relation(fields: [rfqId], references: [id], onDelete: Restrict)
+  supplier   Supplier            @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  createdAt  DateTime            @default(now())
+  updatedAt  DateTime            @updatedAt
+
+  @@id([rfqId, supplierId])
+  @@index([rfqId, isActive])
+  @@index([supplierId])
 }

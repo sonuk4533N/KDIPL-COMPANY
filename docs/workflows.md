@@ -27,6 +27,15 @@ Disabling a user or employee, changing role permissions, assigning roles, or res
 - Rejection and send-back require a reason. Send-back clears current submission fields and returns the record to editable `DRAFT`; immutable workflow history remains.
 - `APPROVED` and `REJECTED` are terminal in this increment. Cancellation, delegation, escalation, thresholds, and emergency bypass remain deferred.
 
+## Phase 4 RFQ draft boundary
+
+- Only an `APPROVED` material requirement can be selected for an RFQ draft.
+- The server re-reads the approved requirement and its active material lines; the browser cannot replace quantities or units.
+- At least one active supplier is selected. Removed supplier links become inactive history.
+- Only the draft creator can edit a draft RFQ.
+- Saving remains `DRAFT` and produces no supplier communication or commercial commitment.
+- Issue, quotation response, comparison, award, approval, PO conversion, revision, cancellation, and emergency transitions remain locked.
+
 ## Phase 2 lifecycles
 
 - Project: `PLANNING → ACTIVE → ON_HOLD → ACTIVE`, with controlled completion or cancellation.

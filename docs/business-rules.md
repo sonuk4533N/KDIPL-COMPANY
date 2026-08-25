@@ -17,6 +17,8 @@
 - Draft material requirements belong to exactly one project/site pair, use material-master units, require positive quantities, and retain removed lines as inactive history.
 - Assigned Site Supervisors and Project Managers may submit requirements. A different assigned Project Manager approves a Site Supervisor submission; a different Project Director approves a Project Manager submission.
 - Requirement creators and submitters cannot approve their own records. System Administrators have no business-approval bypass. Rejection and send-back require reasons.
+- RFQ drafts can reference only approved material requirements and at least one valid supplier. Material scope is read from the approved requirement on the server.
+- RFQ drafts do not issue communications, capture quotations, award suppliers, approve spend, or create purchase orders.
 
 ## KDIPL decisions still required
 

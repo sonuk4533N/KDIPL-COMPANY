@@ -115,6 +115,20 @@ test("administrator can browse the Phase 2 project and master-data foundation", 
   ).toBeVisible();
 });
 
+test("administrator can open the Phase 4 RFQ draft workspace", async ({
+  page,
+}) => {
+  await signInAsBootstrapAdministrator(page);
+  await page.goto("/procurement");
+  await expect(
+    page.getByRole("heading", { name: "Procurement sourcing", exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText("Commercial workflow boundary")).toBeVisible();
+  await expect(
+    page.getByText(/RFQ issue, supplier responses, comparison, award/),
+  ).toBeVisible();
+});
+
 test("administrator can create a Phase 3 material requirement draft", async ({
   page,
 }, testInfo) => {

@@ -1,6 +1,6 @@
 # KDIPL Operations Platform
 
-Phase 1 identity/access, Phase 2 project/master-data, and Phase 3 material requirements with controlled approval for Kumar Designs India Private Limited's internal operations platform.
+Phase 1 identity/access, Phase 2 project/master-data, Phase 3 material requirement approval, and the Phase 4 RFQ draft foundation for Kumar Designs India Private Limited's internal operations platform.
 
 ## Foundation
 
@@ -13,6 +13,7 @@ Phase 1 identity/access, Phase 2 project/master-data, and Phase 3 material requi
 - Clients, projects, project sites, project/site teams, and assignment-backed data scope
 - Material categories, units of measure, materials, suppliers, and primary contacts
 - Numbered, assignment-scoped material requirements with guarded approvals and immutable workflow history
+- Approved-demand procurement queue with numbered, audited RFQ drafts and active supplier scope
 - Vitest, PostgreSQL integration tests, Playwright, and GitHub Actions
 
 ## Local setup
@@ -57,7 +58,8 @@ Database tests require `RUN_DATABASE_TESTS=1` and an isolated `TEST_DATABASE_URL
 - [Development guide](docs/development.md)
 - [Phase 2 completion record](docs/phase-2-progress.md)
 - [Phase 3 progress record](docs/phase-3-progress.md)
+- [Phase 4 progress record](docs/phase-4-progress.md)
 
 ## Phase boundary
 
-Completed milestones are Phase 1 **Authentication, Employees, Users, Roles & Permissions**, Phase 2 **Clients, Projects, Sites, Assignments & Master Data**, and Phase 3 **Material Requirements & Approval**. Procurement, inventory transactions, accounts, and reporting workflows remain outside this milestone and must follow their approved phases.
+Completed milestones are Phase 1 **Authentication, Employees, Users, Roles & Permissions**, Phase 2 **Clients, Projects, Sites, Assignments & Master Data**, and Phase 3 **Material Requirements & Approval**. Phase 4 has started with **RFQ Drafts**; RFQ issue, quotation comparison, supplier award, purchase orders, inventory, accounts, and reporting remain locked to their approved increments.

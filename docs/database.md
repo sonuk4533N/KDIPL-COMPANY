@@ -15,6 +15,7 @@
 - `MaterialCategory`, `UnitOfMeasure`, and `Material` provide normalized material masters with decimal stock-policy defaults.
 - `Supplier` and `SupplierContact` provide GST-aware supplier and primary-contact masters.
 - `MaterialRequirement` and `MaterialRequirementLine` provide the Phase 3 header and immutable-reference line foundation. `MaterialRequirementWorkflowEvent` retains every submission and decision transition. Lines snapshot the selected unit and are deactivated rather than deleted.
+- `RequestForQuotation` and `RequestForQuotationSupplier` provide the Phase 4 draft sourcing foundation. RFQs reference approved immutable demand; removed draft supplier links are deactivated for history.
 
 Phase 1 adds credential lifecycle fields to `User`: `mustChangePassword`,
 `passwordChangedAt`, and `lastLoginAt`. Temporary administrator-issued
@@ -36,6 +37,8 @@ existing identity records.
 `20260825090000_phase3_draft_requirements` adds numbered draft requirements and material lines. A composite site/project foreign key prevents cross-project site references; positive quantity, unique material-line, unit snapshot, and restrictive history constraints are enforced in PostgreSQL.
 
 `20260825160000_phase3_requirement_approval` adds submitted/approved/rejected states, accountable submitter and decision actors, and immutable workflow events. PostgreSQL check constraints reject incomplete header states, invalid transitions, and missing rejection/send-back reasons.
+
+`20260825190000_phase4_rfq_drafts` adds numbered RFQ drafts and restrictive supplier invitation links. The RFQ status enum intentionally contains only `DRAFT` until issue, quotation, award, and purchase-order rules are confirmed.
 
 ## Transaction numbering
 
