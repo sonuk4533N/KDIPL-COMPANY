@@ -1,6 +1,6 @@
 # KDIPL Operations Platform
 
-Phase 1 identity/access, Phase 2 project/master-data, Phase 3 material requirement approval, and the Phase 4 RFQ draft foundation for Kumar Designs India Private Limited's internal operations platform.
+Phase 1 identity/access, Phase 2 project/master-data, Phase 3 material requirement approval, and Phase 4 commercial sourcing for Kumar Designs India Private Limited's internal operations platform.
 
 ## Foundation
 
@@ -13,7 +13,7 @@ Phase 1 identity/access, Phase 2 project/master-data, Phase 3 material requireme
 - Clients, projects, project sites, project/site teams, and assignment-backed data scope
 - Material categories, units of measure, materials, suppliers, and primary contacts
 - Numbered, assignment-scoped material requirements with guarded approvals and immutable workflow history
-- Approved-demand procurement queue with numbered, audited RFQ drafts and active supplier scope
+- Controlled RFQ issue, documented supplier quotation comparison, independent approval, and automatic draft purchase orders
 - Vitest, PostgreSQL integration tests, Playwright, and GitHub Actions
 
 ## Local setup
@@ -62,4 +62,4 @@ Database tests require `RUN_DATABASE_TESTS=1` and an isolated `TEST_DATABASE_URL
 
 ## Phase boundary
 
-Completed milestones are Phase 1 **Authentication, Employees, Users, Roles & Permissions**, Phase 2 **Clients, Projects, Sites, Assignments & Master Data**, and Phase 3 **Material Requirements & Approval**. Phase 4 has started with **RFQ Drafts**; RFQ issue, quotation comparison, supplier award, purchase orders, inventory, accounts, and reporting remain locked to their approved increments.
+Completed milestones are Phase 1 **Authentication, Employees, Users, Roles & Permissions**, Phase 2 **Clients, Projects, Sites, Assignments & Master Data**, Phase 3 **Material Requirements & Approval**, and the approved Phase 4 **RFQ Commercial Workflow through Draft PO Creation**. External supplier communication, PO issue/amendment, inventory, accounts, and reporting remain locked to future approved increments.

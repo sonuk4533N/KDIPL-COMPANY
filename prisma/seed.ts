@@ -48,6 +48,8 @@ const businessRoleGrants = {
     "site.view",
     "material_requirement.view",
     "material_requirement.approve",
+    "purchase.view",
+    "purchase.approve",
   ],
   PURCHASE_MANAGER: [
     "app.access",

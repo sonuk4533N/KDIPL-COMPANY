@@ -115,7 +115,7 @@ test("administrator can browse the Phase 2 project and master-data foundation", 
   ).toBeVisible();
 });
 
-test("administrator can open the Phase 4 RFQ draft workspace", async ({
+test("administrator can open the Phase 4 commercial sourcing workspace", async ({
   page,
 }) => {
   await signInAsBootstrapAdministrator(page);
@@ -123,9 +123,12 @@ test("administrator can open the Phase 4 RFQ draft workspace", async ({
   await expect(
     page.getByRole("heading", { name: "Procurement sourcing", exact: true }),
   ).toBeVisible();
-  await expect(page.getByText("Commercial workflow boundary")).toBeVisible();
+  await expect(page.getByText("Controlled commercial workflow")).toBeVisible();
   await expect(
-    page.getByText(/RFQ issue, supplier responses, comparison, award/),
+    page.getByText(/Purchase Managers issue and recommend/),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("main").getByText("Draft purchase orders", { exact: true }),
   ).toBeVisible();
 });
 

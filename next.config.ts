@@ -4,6 +4,9 @@ const isDevelopment = process.env.NODE_ENV === "development";
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   turbopack: { root: process.cwd() },
+  experimental: {
+    serverActions: { bodySizeLimit: "11mb" },
+  },
   async headers() {
     return [
       {

@@ -17,14 +17,18 @@
 - Draft material requirements belong to exactly one project/site pair, use material-master units, require positive quantities, and retain removed lines as inactive history.
 - Assigned Site Supervisors and Project Managers may submit requirements. A different assigned Project Manager approves a Site Supervisor submission; a different Project Director approves a Project Manager submission.
 - Requirement creators and submitters cannot approve their own records. System Administrators have no business-approval bypass. Rejection and send-back require reasons.
-- RFQ drafts can reference only approved material requirements and at least one valid supplier. Material scope is read from the approved requirement on the server.
-- RFQ drafts do not issue communications, capture quotations, award suppliers, approve spend, or create purchase orders.
+- RFQ drafts can reference only approved material requirements. Material scope is read from the approved requirement on the server.
+- A Purchase Manager issues an RFQ to at least three active invited suppliers, records one documented quotation per supplier, and recommends a supplier with mandatory justification.
+- Quotation line totals, subtotal, GST, freight, and landed total are calculated with server-side decimal arithmetic in INR.
+- A different Project Director approves, rejects, or sends back the recommendation. Creators/recommenders cannot self-approve, and System Administrators cannot perform business approval.
+- Approval creates one draft purchase order atomically. Rejection, send-back, and cancellation require reasons. Emergency purchasing and delegation are disabled.
 
 ## KDIPL decisions still required
 
 - Organization scale, branches, stores, warehouses, project/site relationships, and cross-project assignments
-- Approval thresholds, delegation, escalation, and emergency bypasses beyond the confirmed Phase 3 one-level policy
-- Quotation requirements, one-time vendors, supplier selection evidence, and cancellation rules
+- Approval thresholds, multi-level approvals, escalation, alternate approvers, and future delegation policy
+- One-time vendors, supplier communication delivery, quotation revisions, and late-response exceptions
+- Draft purchase-order issue, amendments, cancellation, supplier acceptance, and downstream receipt rules
 - Cash custody/settlement and GST, Tally, payable, payment, and invoice-verification treatment
 - Negative-stock policy, adjustment authority, transfer receipt/discrepancy handling, physical count, and project closure
 - Required document types, retention, download visibility, and signed-access duration

@@ -1,6 +1,6 @@
 # Workflow Conventions
 
-Phase 2 applies these conventions to project and site master lifecycles. Phase 3 applies them to the confirmed material-requirement approval workflow without starting procurement or inventory transactions.
+Phase 2 applies these conventions to project and site master lifecycles. Phase 3 applies them to material-requirement approval, and Phase 4 applies them to commercial sourcing through draft purchase-order creation.
 
 Identity lifecycle is implemented as explicit commands:
 
@@ -27,14 +27,18 @@ Disabling a user or employee, changing role permissions, assigning roles, or res
 - Rejection and send-back require a reason. Send-back clears current submission fields and returns the record to editable `DRAFT`; immutable workflow history remains.
 - `APPROVED` and `REJECTED` are terminal in this increment. Cancellation, delegation, escalation, thresholds, and emergency bypass remain deferred.
 
-## Phase 4 RFQ draft boundary
+## Phase 4 commercial sourcing workflow
 
 - Only an `APPROVED` material requirement can be selected for an RFQ draft.
 - The server re-reads the approved requirement and its active material lines; the browser cannot replace quantities or units.
-- At least one active supplier is selected. Removed supplier links become inactive history.
+- Drafts can start with one supplier; issue requires at least three active invited suppliers. Removed supplier links become inactive history.
 - Only the draft creator can edit a draft RFQ.
-- Saving remains `DRAFT` and produces no supplier communication or commercial commitment.
-- Issue, quotation response, comparison, award, approval, PO conversion, revision, cancellation, and emergency transitions remain locked.
+- Only a Purchase Manager can issue, record quotations, recommend, or cancel. Issue changes `DRAFT → ISSUED` and locks the RFQ scope.
+- Each invited supplier can have one quotation with every requirement line priced and a supporting document attached. The server calculates GST and landed total.
+- A recommendation requires justification and changes `ISSUED → RECOMMENDED`.
+- A different Project Director can approve (`RECOMMENDED → APPROVED`), reject (`RECOMMENDED → REJECTED`), or send back with a reason (`RECOMMENDED → ISSUED`). System Administrators cannot decide.
+- Approval atomically creates one `DRAFT` purchase order. Cancellation is allowed from `DRAFT` or `ISSUED` and requires a reason.
+- External supplier delivery, quotation revision, PO issue/amendment, delegation, thresholds, and emergency purchasing remain disabled.
 
 ## Phase 2 lifecycles
 

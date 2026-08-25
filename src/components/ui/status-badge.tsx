@@ -13,6 +13,8 @@ import { cn } from "@/lib/cn";
 const statusConfig = {
   Draft: { icon: CircleDashed, styles: "bg-slate-100 text-slate-700" },
   Submitted: { icon: Send, styles: "bg-blue-50 text-blue-700" },
+  Issued: { icon: Send, styles: "bg-blue-50 text-blue-700" },
+  Recommended: { icon: Clock3, styles: "bg-amber-50 text-amber-800" },
   Pending: { icon: Clock3, styles: "bg-amber-50 text-amber-800" },
   Approved: { icon: CheckCircle2, styles: "bg-emerald-50 text-emerald-800" },
   Rejected: { icon: XCircle, styles: "bg-red-50 text-red-800" },

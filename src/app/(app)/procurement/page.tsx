@@ -9,6 +9,7 @@ import {
 
 import { PageHeader } from "@/components/shared/page-header";
 import { Alert } from "@/components/ui/alert";
+import { ButtonLink } from "@/components/ui/button-link";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { ApplicationState } from "@/components/ui/states";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -34,16 +35,19 @@ export default async function ProcurementPage() {
     (total, rfq) => total + rfq.invitedSuppliers.length,
     0,
   );
+  const purchaseOrders = workspace.rfqs.flatMap((rfq) =>
+    rfq.purchaseOrder ? [{ ...rfq.purchaseOrder, rfq }] : [],
+  );
 
   return (
     <div className="space-y-7">
       <PageHeader
-        eyebrow="Phase 4 · RFQ draft foundation"
+        eyebrow="Phase 4 · commercial sourcing"
         title="Procurement sourcing"
-        description="Prepare controlled RFQ drafts from approved material requirements while issue, award, and purchase-order rules remain locked."
+        description="Issue RFQs, compare documented supplier quotations, route recommendations for independent approval, and create controlled draft purchase orders."
       />
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Card>
           <CardContent>
             <ClipboardList className="size-5 text-blue-700" />
@@ -56,7 +60,7 @@ export default async function ProcurementPage() {
         <Card>
           <CardContent>
             <FileText className="size-5 text-blue-700" />
-            <p className="mt-3 text-sm text-slate-500">RFQ drafts</p>
+            <p className="mt-3 text-sm text-slate-500">RFQs</p>
             <p className="mt-1 font-display text-2xl font-extrabold text-slate-950">
               {workspace.rfqs.length}
             </p>
@@ -71,18 +75,26 @@ export default async function ProcurementPage() {
             </p>
           </CardContent>
         </Card>
+        <Card>
+          <CardContent>
+            <FileText className="size-5 text-blue-700" />
+            <p className="mt-3 text-sm text-slate-500">Draft purchase orders</p>
+            <p className="mt-1 font-display text-2xl font-extrabold text-slate-950">
+              {purchaseOrders.length}
+            </p>
+          </CardContent>
+        </Card>
       </div>
 
-      <Alert>
+      <Alert variant="success">
         <div>
           <p className="flex items-center gap-2 font-semibold">
             <LockKeyhole className="size-4" />
-            Commercial workflow boundary
+            Controlled commercial workflow
           </p>
           <p className="mt-1">
-            RFQ issue, supplier responses, comparison, award, approval,
-            cancellation, and purchase-order creation remain unavailable until
-            KDIPL confirms those rules.
+            Purchase Managers issue and recommend; an independent Project
+            Director approves or rejects. Approval creates a draft PO only.
           </p>
         </div>
       </Alert>
@@ -118,10 +130,10 @@ export default async function ProcurementPage() {
       <section className="space-y-4">
         <div>
           <h2 className="font-display text-lg font-bold text-slate-950">
-            RFQ draft register
+            RFQ register
           </h2>
           <p className="mt-1 text-sm text-slate-500">
-            {workspace.rfqs.length} drafts visible in your sourcing scope
+            {workspace.rfqs.length} RFQs visible in your sourcing scope
           </p>
         </div>
         {workspace.rfqs.length ? (
@@ -138,7 +150,7 @@ export default async function ProcurementPage() {
                         {rfq.requirement.purpose}
                       </h3>
                     </div>
-                    <StatusBadge status="Draft" />
+                    <StatusBadge status={rfq.statusLabel} />
                   </div>
                   <div className="mt-4 space-y-2 text-sm text-slate-600">
                     <p>
@@ -156,7 +168,7 @@ export default async function ProcurementPage() {
                   </div>
                   <div className="mt-4 border-t border-slate-100 pt-4">
                     <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Draft suppliers
+                      Invited suppliers
                     </p>
                     <p className="mt-2 text-sm text-slate-700">
                       {rfq.invitedSuppliers
@@ -169,6 +181,13 @@ export default async function ProcurementPage() {
                     <p className="mt-2 text-xs text-slate-500">
                       Created by {rfq.createdBy.displayName}
                     </p>
+                    <ButtonLink
+                      href={`/procurement/rfqs/${rfq.id}`}
+                      variant="secondary"
+                      className="mt-4"
+                    >
+                      Open RFQ
+                    </ButtonLink>
                   </div>
                 </CardContent>
               </Card>
@@ -182,6 +201,53 @@ export default async function ProcurementPage() {
           />
         )}
       </section>
+
+      {purchaseOrders.length ? (
+        <section className="space-y-4">
+          <div>
+            <h2 className="font-display text-lg font-bold text-slate-950">
+              Draft purchase order register
+            </h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Generated only from approved supplier recommendations
+            </p>
+          </div>
+          <div className="grid gap-4 lg:grid-cols-2">
+            {purchaseOrders.map((purchaseOrder) => (
+              <Card key={purchaseOrder.id}>
+                <CardContent>
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-wider text-blue-700">
+                        {purchaseOrder.poNumber}
+                      </p>
+                      <h3 className="mt-1 font-display text-lg font-bold text-slate-950">
+                        {purchaseOrder.supplier.tradeName ??
+                          purchaseOrder.supplier.legalName}
+                      </h3>
+                    </div>
+                    <StatusBadge status="Draft" />
+                  </div>
+                  <p className="mt-3 text-sm text-slate-600">
+                    {purchaseOrder.rfq.rfqNumber} · expected delivery{" "}
+                    {purchaseOrder.expectedDeliveryDate}
+                  </p>
+                  <p className="mt-2 font-semibold text-slate-950">
+                    INR {purchaseOrder.totalAmount}
+                  </p>
+                  <ButtonLink
+                    href={`/procurement/rfqs/${purchaseOrder.rfq.id}`}
+                    variant="secondary"
+                    className="mt-4"
+                  >
+                    Open source RFQ
+                  </ButtonLink>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }

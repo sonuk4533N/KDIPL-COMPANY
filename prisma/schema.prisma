@@ -24,6 +24,7 @@ enum AuditAction {
   APPROVE
   REJECT
   SEND_BACK
+  RECOMMEND
   CANCEL
   VERIFY
   RECEIVE
@@ -87,6 +88,24 @@ enum MaterialRequirementWorkflowAction {
 
 enum RequestForQuotationStatus {
   DRAFT
+  ISSUED
+  RECOMMENDED
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum RequestForQuotationWorkflowAction {
+  ISSUE
+  RECOMMEND
+  APPROVE
+  REJECT
+  SEND_BACK
+  CANCEL
+}
+
+enum PurchaseOrderStatus {
+  DRAFT
 }
 
 model Department {
@@ -147,29 +166,35 @@ model Employee {
 }
 
 model User {
-  id                            String                             @id @default(uuid()) @db.Uuid
-  email                         String                             @db.VarChar(320)
-  emailNormalized               String                             @unique @db.VarChar(320)
-  passwordHash                  String
-  displayName                   String                             @db.VarChar(160)
-  status                        UserStatus                         @default(ACTIVE)
-  authVersion                   Int                                @default(1)
-  mustChangePassword            Boolean                            @default(false)
-  passwordChangedAt             DateTime?
-  lastLoginAt                   DateTime?
-  employeeId                    String?                            @unique @db.Uuid
-  employee                      Employee?                          @relation(fields: [employeeId], references: [id], onDelete: SetNull)
-  roles                         UserRole[]
-  sessions                      Session[]
-  auditEvents                   AuditLog[]                         @relation("AuditActor")
-  uploadedFiles                 FileRecord[]
-  materialRequirementsCreated   MaterialRequirement[]              @relation("MaterialRequirementCreator")
-  materialRequirementsSubmitted MaterialRequirement[]              @relation("MaterialRequirementSubmitter")
-  materialRequirementsDecided   MaterialRequirement[]              @relation("MaterialRequirementDecisionActor")
-  materialRequirementEvents     MaterialRequirementWorkflowEvent[]
-  requestsForQuotationCreated   RequestForQuotation[]              @relation("RequestForQuotationCreator")
-  createdAt                     DateTime                           @default(now())
-  updatedAt                     DateTime                           @updatedAt
+  id                              String                             @id @default(uuid()) @db.Uuid
+  email                           String                             @db.VarChar(320)
+  emailNormalized                 String                             @unique @db.VarChar(320)
+  passwordHash                    String
+  displayName                     String                             @db.VarChar(160)
+  status                          UserStatus                         @default(ACTIVE)
+  authVersion                     Int                                @default(1)
+  mustChangePassword              Boolean                            @default(false)
+  passwordChangedAt               DateTime?
+  lastLoginAt                     DateTime?
+  employeeId                      String?                            @unique @db.Uuid
+  employee                        Employee?                          @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+  roles                           UserRole[]
+  sessions                        Session[]
+  auditEvents                     AuditLog[]                         @relation("AuditActor")
+  uploadedFiles                   FileRecord[]
+  materialRequirementsCreated     MaterialRequirement[]              @relation("MaterialRequirementCreator")
+  materialRequirementsSubmitted   MaterialRequirement[]              @relation("MaterialRequirementSubmitter")
+  materialRequirementsDecided     MaterialRequirement[]              @relation("MaterialRequirementDecisionActor")
+  materialRequirementEvents       MaterialRequirementWorkflowEvent[]
+  requestsForQuotationCreated     RequestForQuotation[]              @relation("RequestForQuotationCreator")
+  requestsForQuotationIssued      RequestForQuotation[]              @relation("RequestForQuotationIssuer")
+  requestsForQuotationRecommended RequestForQuotation[]              @relation("RequestForQuotationRecommender")
+  requestsForQuotationDecided     RequestForQuotation[]              @relation("RequestForQuotationDecisionActor")
+  requestForQuotationEvents       RequestForQuotationWorkflowEvent[]
+  supplierQuotationsRecorded      SupplierQuotation[]                @relation("SupplierQuotationRecorder")
+  purchaseOrdersCreated           PurchaseOrder[]                    @relation("PurchaseOrderCreator")
+  createdAt                       DateTime                           @default(now())
+  updatedAt                       DateTime                           @updatedAt
 
   @@index([status])
 }
@@ -256,16 +281,17 @@ model AuditLog {
 }
 
 model FileRecord {
-  id              String          @id @default(uuid()) @db.Uuid
-  filename        String          @db.VarChar(255)
-  mimeType        String          @db.VarChar(160)
-  size            BigInt
-  storageKey      String          @unique @db.VarChar(500)
-  storageProvider StorageProvider
-  documentType    String          @db.VarChar(80)
-  uploadedById    String?         @db.Uuid
-  uploadedBy      User?           @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
-  uploadedAt      DateTime        @default(now())
+  id                String                     @id @default(uuid()) @db.Uuid
+  filename          String                     @db.VarChar(255)
+  mimeType          String                     @db.VarChar(160)
+  size              BigInt
+  storageKey        String                     @unique @db.VarChar(500)
+  storageProvider   StorageProvider
+  documentType      String                     @db.VarChar(80)
+  uploadedById      String?                    @db.Uuid
+  uploadedBy        User?                      @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+  quotationDocument SupplierQuotationDocument?
+  uploadedAt        DateTime                   @default(now())
 
   @@index([uploadedById, uploadedAt])
   @@index([documentType, uploadedAt])
@@ -404,17 +430,19 @@ model MaterialCategory {
 }
 
 model UnitOfMeasure {
-  id               String                    @id @default(uuid()) @db.Uuid
-  code             String                    @unique @db.VarChar(30)
-  name             String                    @unique @db.VarChar(80)
-  symbol           String                    @db.VarChar(20)
-  description      String?
-  decimalScale     Int                       @default(3)
-  isActive         Boolean                   @default(true)
-  materials        Material[]
-  requirementLines MaterialRequirementLine[]
-  createdAt        DateTime                  @default(now())
-  updatedAt        DateTime                  @updatedAt
+  id                 String                    @id @default(uuid()) @db.Uuid
+  code               String                    @unique @db.VarChar(30)
+  name               String                    @unique @db.VarChar(80)
+  symbol             String                    @db.VarChar(20)
+  description        String?
+  decimalScale       Int                       @default(3)
+  isActive           Boolean                   @default(true)
+  materials          Material[]
+  requirementLines   MaterialRequirementLine[]
+  quotationLines     SupplierQuotationLine[]
+  purchaseOrderLines PurchaseOrderLine[]
+  createdAt          DateTime                  @default(now())
+  updatedAt          DateTime                  @updatedAt
 
   @@index([isActive, name])
 }
@@ -457,6 +485,8 @@ model Supplier {
   isActive        Boolean                       @default(true)
   contacts        SupplierContact[]
   rfqInvitations  RequestForQuotationSupplier[]
+  quotations      SupplierQuotation[]
+  purchaseOrders  PurchaseOrder[]
   createdAt       DateTime                      @default(now())
   updatedAt       DateTime                      @updatedAt
 
@@ -516,19 +546,21 @@ model MaterialRequirement {
 }
 
 model MaterialRequirementLine {
-  id            String              @id @default(uuid()) @db.Uuid
-  requirementId String              @db.Uuid
-  materialId    String              @db.Uuid
-  unitId        String              @db.Uuid
-  quantity      Decimal             @db.Decimal(18, 3)
-  notes         String?             @db.VarChar(500)
-  position      Int                 @default(0)
-  isActive      Boolean             @default(true)
-  requirement   MaterialRequirement @relation(fields: [requirementId], references: [id], onDelete: Restrict)
-  material      Material            @relation(fields: [materialId], references: [id], onDelete: Restrict)
-  unit          UnitOfMeasure       @relation(fields: [unitId], references: [id], onDelete: Restrict)
-  createdAt     DateTime            @default(now())
-  updatedAt     DateTime            @updatedAt
+  id                 String                  @id @default(uuid()) @db.Uuid
+  requirementId      String                  @db.Uuid
+  materialId         String                  @db.Uuid
+  unitId             String                  @db.Uuid
+  quantity           Decimal                 @db.Decimal(18, 3)
+  notes              String?                 @db.VarChar(500)
+  position           Int                     @default(0)
+  isActive           Boolean                 @default(true)
+  requirement        MaterialRequirement     @relation(fields: [requirementId], references: [id], onDelete: Restrict)
+  material           Material                @relation(fields: [materialId], references: [id], onDelete: Restrict)
+  unit               UnitOfMeasure           @relation(fields: [unitId], references: [id], onDelete: Restrict)
+  quotationLines     SupplierQuotationLine[]
+  purchaseOrderLines PurchaseOrderLine[]
+  createdAt          DateTime                @default(now())
+  updatedAt          DateTime                @updatedAt
 
   @@unique([requirementId, materialId])
   @@index([requirementId, isActive, position])
@@ -554,22 +586,41 @@ model MaterialRequirementWorkflowEvent {
 }
 
 model RequestForQuotation {
-  id               String                        @id @default(uuid()) @db.Uuid
-  rfqNumber        String                        @unique @db.VarChar(30)
-  requirementId    String                        @db.Uuid
-  status           RequestForQuotationStatus     @default(DRAFT)
-  responseDueDate  DateTime                      @db.Date
-  notes            String?
-  createdById      String                        @db.Uuid
-  requirement      MaterialRequirement           @relation(fields: [requirementId], references: [id], onDelete: Restrict)
-  createdBy        User                          @relation("RequestForQuotationCreator", fields: [createdById], references: [id], onDelete: Restrict)
-  invitedSuppliers RequestForQuotationSupplier[]
-  createdAt        DateTime                      @default(now())
-  updatedAt        DateTime                      @updatedAt
+  id                     String                             @id @default(uuid()) @db.Uuid
+  rfqNumber              String                             @unique @db.VarChar(30)
+  requirementId          String                             @db.Uuid
+  status                 RequestForQuotationStatus          @default(DRAFT)
+  responseDueDate        DateTime                           @db.Date
+  notes                  String?
+  createdById            String                             @db.Uuid
+  issuedById             String?                            @db.Uuid
+  issuedAt               DateTime?
+  recommendedQuotationId String?                            @unique @db.Uuid
+  recommendedById        String?                            @db.Uuid
+  recommendedAt          DateTime?
+  recommendationReason   String?                            @db.VarChar(1000)
+  decidedById            String?                            @db.Uuid
+  decidedAt              DateTime?
+  decisionReason         String?                            @db.VarChar(1000)
+  requirement            MaterialRequirement                @relation(fields: [requirementId], references: [id], onDelete: Restrict)
+  createdBy              User                               @relation("RequestForQuotationCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  issuedBy               User?                              @relation("RequestForQuotationIssuer", fields: [issuedById], references: [id], onDelete: Restrict)
+  recommendedQuotation   SupplierQuotation?                 @relation("RecommendedQuotation", fields: [recommendedQuotationId], references: [id], onDelete: Restrict)
+  recommendedBy          User?                              @relation("RequestForQuotationRecommender", fields: [recommendedById], references: [id], onDelete: Restrict)
+  decidedBy              User?                              @relation("RequestForQuotationDecisionActor", fields: [decidedById], references: [id], onDelete: Restrict)
+  invitedSuppliers       RequestForQuotationSupplier[]
+  quotations             SupplierQuotation[]                @relation("RfqQuotations")
+  workflowEvents         RequestForQuotationWorkflowEvent[]
+  purchaseOrder          PurchaseOrder?
+  createdAt              DateTime                           @default(now())
+  updatedAt              DateTime                           @updatedAt
 
   @@index([requirementId, status])
   @@index([status, responseDueDate])
   @@index([createdById, createdAt])
+  @@index([issuedById, issuedAt])
+  @@index([recommendedById, recommendedAt])
+  @@index([decidedById, decidedAt])
 }
 
 model RequestForQuotationSupplier {
@@ -584,4 +635,135 @@ model RequestForQuotationSupplier {
   @@id([rfqId, supplierId])
   @@index([rfqId, isActive])
   @@index([supplierId])
+}
+
+model RequestForQuotationWorkflowEvent {
+  id          String                            @id @default(uuid()) @db.Uuid
+  rfqId       String                            @db.Uuid
+  action      RequestForQuotationWorkflowAction
+  fromStatus  RequestForQuotationStatus
+  toStatus    RequestForQuotationStatus
+  actorUserId String                            @db.Uuid
+  reason      String?                           @db.VarChar(1000)
+  rfq         RequestForQuotation               @relation(fields: [rfqId], references: [id], onDelete: Restrict)
+  actorUser   User                              @relation(fields: [actorUserId], references: [id], onDelete: Restrict)
+  createdAt   DateTime                          @default(now())
+
+  @@index([rfqId, createdAt])
+  @@index([actorUserId, createdAt])
+  @@index([action, createdAt])
+}
+
+model SupplierQuotation {
+  id                  String                      @id @default(uuid()) @db.Uuid
+  rfqId               String                      @db.Uuid
+  supplierId          String                      @db.Uuid
+  quoteReference      String                      @db.VarChar(100)
+  quoteDate           DateTime                    @db.Date
+  validUntil          DateTime                    @db.Date
+  offeredDeliveryDate DateTime                    @db.Date
+  paymentTerms        String                      @db.VarChar(500)
+  currency            String                      @default("INR") @db.Char(3)
+  subtotal            Decimal                     @db.Decimal(18, 2)
+  gstRate             Decimal                     @db.Decimal(5, 2)
+  gstAmount           Decimal                     @db.Decimal(18, 2)
+  freightAmount       Decimal                     @default(0) @db.Decimal(18, 2)
+  landedTotal         Decimal                     @db.Decimal(18, 2)
+  notes               String?
+  recordedById        String                      @db.Uuid
+  rfq                 RequestForQuotation         @relation("RfqQuotations", fields: [rfqId], references: [id], onDelete: Restrict)
+  supplier            Supplier                    @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  recordedBy          User                        @relation("SupplierQuotationRecorder", fields: [recordedById], references: [id], onDelete: Restrict)
+  lines               SupplierQuotationLine[]
+  documents           SupplierQuotationDocument[]
+  recommendedFor      RequestForQuotation?        @relation("RecommendedQuotation")
+  purchaseOrder       PurchaseOrder?
+  createdAt           DateTime                    @default(now())
+  updatedAt           DateTime                    @updatedAt
+
+  @@unique([rfqId, supplierId])
+  @@unique([supplierId, quoteReference])
+  @@index([rfqId, landedTotal])
+  @@index([supplierId, quoteDate])
+  @@index([recordedById, createdAt])
+}
+
+model SupplierQuotationLine {
+  id                String                  @id @default(uuid()) @db.Uuid
+  quotationId       String                  @db.Uuid
+  requirementLineId String                  @db.Uuid
+  unitId            String                  @db.Uuid
+  quantity          Decimal                 @db.Decimal(18, 3)
+  unitPrice         Decimal                 @db.Decimal(18, 2)
+  lineSubtotal      Decimal                 @db.Decimal(18, 2)
+  quotation         SupplierQuotation       @relation(fields: [quotationId], references: [id], onDelete: Restrict)
+  requirementLine   MaterialRequirementLine @relation(fields: [requirementLineId], references: [id], onDelete: Restrict)
+  unit              UnitOfMeasure           @relation(fields: [unitId], references: [id], onDelete: Restrict)
+  purchaseOrderLine PurchaseOrderLine?
+  createdAt         DateTime                @default(now())
+
+  @@unique([quotationId, requirementLineId])
+  @@index([requirementLineId])
+  @@index([unitId])
+}
+
+model SupplierQuotationDocument {
+  id           String            @id @default(uuid()) @db.Uuid
+  quotationId  String            @db.Uuid
+  fileRecordId String            @unique @db.Uuid
+  quotation    SupplierQuotation @relation(fields: [quotationId], references: [id], onDelete: Restrict)
+  fileRecord   FileRecord        @relation(fields: [fileRecordId], references: [id], onDelete: Restrict)
+  createdAt    DateTime          @default(now())
+
+  @@index([quotationId, createdAt])
+}
+
+model PurchaseOrder {
+  id                   String              @id @default(uuid()) @db.Uuid
+  poNumber             String              @unique @db.VarChar(30)
+  rfqId                String              @unique @db.Uuid
+  quotationId          String              @unique @db.Uuid
+  supplierId           String              @db.Uuid
+  status               PurchaseOrderStatus @default(DRAFT)
+  currency             String              @default("INR") @db.Char(3)
+  subtotal             Decimal             @db.Decimal(18, 2)
+  gstRate              Decimal             @db.Decimal(5, 2)
+  gstAmount            Decimal             @db.Decimal(18, 2)
+  freightAmount        Decimal             @db.Decimal(18, 2)
+  totalAmount          Decimal             @db.Decimal(18, 2)
+  expectedDeliveryDate DateTime            @db.Date
+  paymentTerms         String              @db.VarChar(500)
+  createdById          String              @db.Uuid
+  rfq                  RequestForQuotation @relation(fields: [rfqId], references: [id], onDelete: Restrict)
+  quotation            SupplierQuotation   @relation(fields: [quotationId], references: [id], onDelete: Restrict)
+  supplier             Supplier            @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  createdBy            User                @relation("PurchaseOrderCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  lines                PurchaseOrderLine[]
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+
+  @@index([supplierId, status])
+  @@index([createdById, createdAt])
+}
+
+model PurchaseOrderLine {
+  id                String                  @id @default(uuid()) @db.Uuid
+  purchaseOrderId   String                  @db.Uuid
+  quotationLineId   String                  @unique @db.Uuid
+  requirementLineId String                  @db.Uuid
+  unitId            String                  @db.Uuid
+  quantity          Decimal                 @db.Decimal(18, 3)
+  unitPrice         Decimal                 @db.Decimal(18, 2)
+  lineSubtotal      Decimal                 @db.Decimal(18, 2)
+  position          Int                     @default(0)
+  purchaseOrder     PurchaseOrder           @relation(fields: [purchaseOrderId], references: [id], onDelete: Restrict)
+  quotation         SupplierQuotationLine   @relation(fields: [quotationLineId], references: [id], onDelete: Restrict)
+  requirementLine   MaterialRequirementLine @relation(fields: [requirementLineId], references: [id], onDelete: Restrict)
+  unit              UnitOfMeasure           @relation(fields: [unitId], references: [id], onDelete: Restrict)
+  createdAt         DateTime                @default(now())
+
+  @@unique([purchaseOrderId, requirementLineId])
+  @@index([purchaseOrderId, position])
+  @@index([requirementLineId])
+  @@index([unitId])
 }

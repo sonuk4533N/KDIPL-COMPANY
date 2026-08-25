@@ -15,7 +15,9 @@
 - `MaterialCategory`, `UnitOfMeasure`, and `Material` provide normalized material masters with decimal stock-policy defaults.
 - `Supplier` and `SupplierContact` provide GST-aware supplier and primary-contact masters.
 - `MaterialRequirement` and `MaterialRequirementLine` provide the Phase 3 header and immutable-reference line foundation. `MaterialRequirementWorkflowEvent` retains every submission and decision transition. Lines snapshot the selected unit and are deactivated rather than deleted.
-- `RequestForQuotation` and `RequestForQuotationSupplier` provide the Phase 4 draft sourcing foundation. RFQs reference approved immutable demand; removed draft supplier links are deactivated for history.
+- `RequestForQuotation`, `RequestForQuotationSupplier`, and `RequestForQuotationWorkflowEvent` provide the Phase 4 sourcing state machine and immutable transition history.
+- `SupplierQuotation`, `SupplierQuotationLine`, and `SupplierQuotationDocument` retain documented commercial offers and server-calculated INR totals.
+- `PurchaseOrder` and `PurchaseOrderLine` retain the draft PO created from an independently approved quotation.
 
 Phase 1 adds credential lifecycle fields to `User`: `mustChangePassword`,
 `passwordChangedAt`, and `lastLoginAt`. Temporary administrator-issued
@@ -38,7 +40,9 @@ existing identity records.
 
 `20260825160000_phase3_requirement_approval` adds submitted/approved/rejected states, accountable submitter and decision actors, and immutable workflow events. PostgreSQL check constraints reject incomplete header states, invalid transitions, and missing rejection/send-back reasons.
 
-`20260825190000_phase4_rfq_drafts` adds numbered RFQ drafts and restrictive supplier invitation links. The RFQ status enum intentionally contains only `DRAFT` until issue, quotation, award, and purchase-order rules are confirmed.
+`20260825190000_phase4_rfq_drafts` adds numbered RFQ drafts and restrictive supplier invitation links.
+
+`20260825210000_phase4_commercial_workflow` adds RFQ issue/recommendation/decision states, accountable workflow actors and events, documented supplier quotations and lines, and draft purchase orders. PostgreSQL checks enforce valid transition evidence, mandatory reasons, commercial dates, INR arithmetic, and restrictive source-chain relationships.
 
 ## Transaction numbering
 
