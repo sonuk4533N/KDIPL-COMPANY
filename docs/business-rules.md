@@ -15,12 +15,13 @@
 - Material minimum and reorder defaults are global Phase 2 policy values; reorder level cannot be lower than minimum stock.
 - Registered suppliers require a structurally valid GSTIN; unregistered suppliers store no GSTIN.
 - Draft material requirements belong to exactly one project/site pair, use material-master units, require positive quantities, and retain removed lines as inactive history.
-- Requirement submission and approval transitions remain unavailable until authority, threshold, delegation, and self-approval rules are approved.
+- Assigned Site Supervisors and Project Managers may submit requirements. A different assigned Project Manager approves a Site Supervisor submission; a different Project Director approves a Project Manager submission.
+- Requirement creators and submitters cannot approve their own records. System Administrators have no business-approval bypass. Rejection and send-back require reasons.
 
 ## KDIPL decisions still required
 
 - Organization scale, branches, stores, warehouses, project/site relationships, and cross-project assignments
-- Approval chain, thresholds, delegation, self-approval restrictions, and emergency bypasses
+- Approval thresholds, delegation, escalation, and emergency bypasses beyond the confirmed Phase 3 one-level policy
 - Quotation requirements, one-time vendors, supplier selection evidence, and cancellation rules
 - Cash custody/settlement and GST, Tally, payable, payment, and invoice-verification treatment
 - Negative-stock policy, adjustment authority, transfer receipt/discrepancy handling, physical count, and project closure

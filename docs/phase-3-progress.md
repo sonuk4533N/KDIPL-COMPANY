@@ -1,23 +1,26 @@
-# Phase 3 — Material Requirement Draft Foundation
+# Phase 3 — Material Requirements & Approval
 
-Phase 3 has started with the policy-independent draft layer. It intentionally does not implement submission, approval, rejection, send-back, delegation, escalation, or emergency bypass behavior until KDIPL confirms the governing rules.
+Phase 3 is complete for the confirmed initial approval policy. Material requirements now move through guarded, auditable workflow transitions without introducing delegation, monetary thresholds, escalation, or procurement behavior.
 
-## Delivered in this increment
+## Delivered
 
-- Numbered material requirement drafts tied to one project and one site.
-- Assignment-scoped visibility and mutation authorization.
-- Validated material lines with positive decimal quantities and trusted unit snapshots.
-- Draft editing that preserves removed lines as inactive history rather than deleting operational rows.
-- Atomic header, line, sequence, and audit transactions.
-- Responsive list, create, and detail/edit screens for desktop and mobile use.
-- Database constraints for project/site consistency, line uniqueness, quantity, and referential history.
+- Numbered material requirement drafts tied to one open project/site pair.
+- Assignment-scoped visibility, trusted material-master units, positive quantities, and inactive line history.
+- `DRAFT → SUBMITTED → APPROVED | REJECTED` transitions and reasoned `SUBMITTED → DRAFT` send-back.
+- Submission by an assigned Site Supervisor or Project Manager.
+- Approval of Site Supervisor submissions by a different assigned Project Manager.
+- Approval of Project Manager submissions by a different Project Director.
+- Explicit self-approval protection for both the draft creator and submitter.
+- Explicit prohibition on business approval by System Administrators.
+- Required reasons for rejection and send-back.
+- Atomic status guards, immutable workflow events, and audit evidence for every transition.
+- Requirement register, approval queue, decision controls, and workflow history.
 
-## Locked pending KDIPL decisions
+## Deliberately deferred
 
-- Submitter and reviewer roles, approval levels, value or material thresholds, and escalation.
-- Delegation periods, alternate approvers, and absence handling.
-- Self-approval and segregation-of-duty rules.
-- Rejection, send-back, resubmission, cancellation, and emergency requirements.
-- Notification recipients, response time targets, and required supporting documents.
+- Delegation, alternate approvers, absence handling, escalation, and response-time targets.
+- Value/material thresholds, multi-level approvals, and emergency bypass.
+- Requirement cancellation and notification delivery.
+- Quotation, supplier-selection, purchase-order, inventory, and accounts behavior belonging to later phases.
 
-The PostgreSQL status enum currently contains only `DRAFT`. Later workflow states will be added only with an approved transition and authorization specification.
+Sent-back requirements become editable drafts and must be submitted again. Rejected and approved requirements are terminal in this increment.

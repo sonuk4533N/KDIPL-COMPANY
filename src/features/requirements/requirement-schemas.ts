@@ -51,9 +51,36 @@ export const requirementDraftSchema = z
     });
   });
 
+export const requirementSubmitSchema = z.object({
+  requirementId: z.string().uuid(),
+});
+
+export const requirementDecisionSchema = z
+  .object({
+    requirementId: z.string().uuid(),
+    decision: z.enum(["APPROVE", "REJECT", "SEND_BACK"]),
+    reason: z.string().trim().max(1_000).optional(),
+  })
+  .superRefine((value, context) => {
+    if (
+      (value.decision === "REJECT" || value.decision === "SEND_BACK") &&
+      !value.reason
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["reason"],
+        message: "Give a reason for rejecting or sending back a requirement.",
+      });
+    }
+  });
+
 export function requirementDateInput(value: string): Date {
   return new Date(`${value}T00:00:00.000Z`);
 }
 
 export type RequirementDraftInput = z.infer<typeof requirementDraftSchema>;
 export type RequirementLineInput = z.infer<typeof requirementLineSchema>;
+export type RequirementSubmitInput = z.infer<typeof requirementSubmitSchema>;
+export type RequirementDecisionInput = z.infer<
+  typeof requirementDecisionSchema
+>;

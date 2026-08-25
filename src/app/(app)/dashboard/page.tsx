@@ -25,8 +25,8 @@ const foundation = [
     status: "Completed" as const,
   },
   {
-    label: "Project foundation",
-    detail: "Projects, sites, assignments, and masters",
+    label: "Operations workflow",
+    detail: "Projects, masters, and requirement approval",
     icon: FileCheck2,
     status: "Completed" as const,
   },
@@ -37,9 +37,9 @@ export default async function DashboardPage() {
   return (
     <div>
       <PageHeader
-        eyebrow="Phase 2 foundation"
+        eyebrow="Phase 3 complete"
         title={`Good day, ${principal.displayName.split(" ")[0]}.`}
-        description="The KDIPL Operations Platform now includes secure project operations and governed master data."
+        description="The KDIPL Operations Platform now includes secure project operations, governed master data, and controlled material requirement approval."
       />
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {foundation.map((item) => (
@@ -117,18 +117,18 @@ export default async function DashboardPage() {
         <Card>
           <CardContent>
             <h3 className="font-display text-lg font-bold">
-              Phase 2 delivered
+              Phase 3 delivered
             </h3>
             <p className="mt-2 text-sm leading-6 text-slate-500">
-              The project and master-data foundation is ready for the later
-              transaction workflows.
+              Material requirements now move from draft through a guarded,
+              auditable approval decision.
             </p>
             <div className="mt-6 space-y-3">
               {[
-                "Client and project portfolio",
-                "Sites and responsible teams",
-                "Material and unit masters",
-                "Supplier directory and contacts",
+                "Assignment-based requirement submission",
+                "Segregated Project Manager/Director approval",
+                "Reasoned rejection and send-back",
+                "Immutable workflow and audit history",
               ].map((item) => (
                 <div
                   key={item}

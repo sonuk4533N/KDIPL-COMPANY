@@ -11,8 +11,14 @@ import type { RequirementWorkspace } from "@/features/requirements/requirement-q
 
 export function RequirementList({
   requirements,
+  title = "Requirement register",
+  emptyTitle = "No matching requirements",
+  emptyDescription = "Create the first draft or try a different search.",
 }: {
   requirements: RequirementWorkspace["requirements"];
+  title?: string;
+  emptyTitle?: string;
+  emptyDescription?: string;
 }) {
   const [search, setSearch] = useState("");
   const visible = useMemo(() => {
@@ -44,7 +50,7 @@ export function RequirementList({
       </Card>
       <div>
         <h2 className="font-display text-lg font-bold text-slate-950">
-          Draft register
+          {title}
         </h2>
         <p className="mt-1 text-sm text-slate-500" aria-live="polite">
           Showing {visible.length} of {requirements.length} requirements
@@ -67,7 +73,7 @@ export function RequirementList({
                     {requirement.purpose}
                   </h3>
                 </div>
-                <StatusBadge status="Draft" />
+                <StatusBadge status={requirement.statusLabel} />
               </div>
               <div className="mt-4 space-y-2 text-sm text-slate-600">
                 <p>{requirement.project.name}</p>
@@ -89,10 +95,8 @@ export function RequirementList({
         </div>
       ) : (
         <div className="rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center">
-          <p className="font-semibold text-slate-900">No matching drafts</p>
-          <p className="mt-2 text-sm text-slate-500">
-            Create the first draft or try a different search.
-          </p>
+          <p className="font-semibold text-slate-900">{emptyTitle}</p>
+          <p className="mt-2 text-sm text-slate-500">{emptyDescription}</p>
         </div>
       )}
     </div>

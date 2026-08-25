@@ -2,7 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 
-import { requirementDraftSchema } from "@/features/requirements/requirement-schemas";
+import {
+  requirementDecisionSchema,
+  requirementDraftSchema,
+  requirementSubmitSchema,
+} from "@/features/requirements/requirement-schemas";
 import { RequirementService } from "@/features/requirements/requirement-service";
 import { getCurrentPrincipal } from "@/server/auth/current-user";
 import { validateMutationOrigin } from "@/server/auth/request-security";
@@ -14,6 +18,13 @@ export type RequirementActionState = CommandResult<{ id: string }> | null;
 
 function optionalValue(value: FormDataEntryValue | null) {
   return typeof value === "string" && value.trim() ? value : undefined;
+}
+
+function revalidateRequirement(id: string) {
+  revalidatePath("/requirements");
+  revalidatePath(`/requirements/${id}`);
+  revalidatePath("/approvals");
+  revalidatePath("/dashboard");
 }
 
 export async function saveRequirementDraftAction(
@@ -52,8 +63,73 @@ export async function saveRequirementDraftAction(
       };
     }
     const result = await RequirementService.saveDraft(principal, parsed.data);
-    revalidatePath("/requirements");
-    revalidatePath(`/requirements/${result.id}`);
+    revalidateRequirement(result.id);
+    return { ok: true, data: result };
+  } catch (error) {
+    return toCommandError(error);
+  }
+}
+
+export async function submitRequirementAction(
+  _previous: RequirementActionState,
+  formData: FormData,
+): Promise<RequirementActionState> {
+  try {
+    await validateMutationOrigin();
+    const principal = await getCurrentPrincipal();
+    requirePermission(principal, "material_requirement.create");
+    const parsed = requirementSubmitSchema.safeParse({
+      requirementId: optionalValue(formData.get("requirementId")),
+    });
+    if (!parsed.success) {
+      return {
+        ok: false,
+        error: {
+          code: "VALIDATION_ERROR",
+          message: "Select a valid requirement to submit.",
+          fields: parsed.error.flatten().fieldErrors as Record<
+            string,
+            string[]
+          >,
+        },
+      };
+    }
+    const result = await RequirementService.submit(principal, parsed.data);
+    revalidateRequirement(result.id);
+    return { ok: true, data: result };
+  } catch (error) {
+    return toCommandError(error);
+  }
+}
+
+export async function decideRequirementAction(
+  _previous: RequirementActionState,
+  formData: FormData,
+): Promise<RequirementActionState> {
+  try {
+    await validateMutationOrigin();
+    const principal = await getCurrentPrincipal();
+    requirePermission(principal, "material_requirement.approve");
+    const parsed = requirementDecisionSchema.safeParse({
+      requirementId: optionalValue(formData.get("requirementId")),
+      decision: optionalValue(formData.get("decision")),
+      reason: optionalValue(formData.get("reason")),
+    });
+    if (!parsed.success) {
+      return {
+        ok: false,
+        error: {
+          code: "VALIDATION_ERROR",
+          message: "Review the approval decision.",
+          fields: parsed.error.flatten().fieldErrors as Record<
+            string,
+            string[]
+          >,
+        },
+      };
+    }
+    const result = await RequirementService.decide(principal, parsed.data);
+    revalidateRequirement(result.id);
     return { ok: true, data: result };
   } catch (error) {
     return toCommandError(error);

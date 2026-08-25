@@ -26,6 +26,31 @@ const roles = [
   ["SYSTEM_ADMINISTRATOR", "System Administrator"],
 ] as const;
 
+const phase3RoleGrants = {
+  SITE_SUPERVISOR: [
+    "app.access",
+    "project.view",
+    "site.view",
+    "material_requirement.view",
+    "material_requirement.create",
+  ],
+  PROJECT_MANAGER: [
+    "app.access",
+    "project.view",
+    "site.view",
+    "material_requirement.view",
+    "material_requirement.create",
+    "material_requirement.approve",
+  ],
+  PROJECT_DIRECTOR: [
+    "app.access",
+    "project.view",
+    "site.view",
+    "material_requirement.view",
+    "material_requirement.approve",
+  ],
+} as const;
+
 const departments = [
   ["MANAGEMENT", "Management"],
   ["PROJECTS", "Projects"],
@@ -632,13 +657,7 @@ async function seedPhase3Draft(createdById: string) {
   }
   const requirement = await prisma.materialRequirement.upsert({
     where: { requirementNumber: "MR-2026-0000" },
-    update: {
-      projectId: project.id,
-      siteId: site.id,
-      neededBy: dateOnly("2026-09-15"),
-      purpose: "Electrical rough-in materials",
-      notes: "Reserved demo draft; not submitted for approval.",
-    },
+    update: {},
     create: {
       requirementNumber: "MR-2026-0000",
       projectId: project.id,
@@ -648,8 +667,12 @@ async function seedPhase3Draft(createdById: string) {
       notes: "Reserved demo draft; not submitted for approval.",
       createdById,
     },
-    select: { id: true },
+    select: { id: true, status: true },
   });
+  if (requirement.status !== "DRAFT") {
+    console.info("Retained submitted Phase 3 demo requirement unchanged.");
+    return;
+  }
   const quantities = new Map([
     ["MAT-CBL-4SQ", "250"],
     ["MAT-PVC-25MM", "120"],
@@ -740,6 +763,30 @@ async function main() {
     })),
     skipDuplicates: true,
   });
+
+  const phase3PermissionCodes = Array.from(
+    new Set(Object.values(phase3RoleGrants).flat()),
+  );
+  const phase3Permissions = await prisma.permission.findMany({
+    where: { code: { in: phase3PermissionCodes } },
+    select: { id: true, code: true },
+  });
+  const permissionIdByCode = new Map(
+    phase3Permissions.map(({ id, code }) => [code, id]),
+  );
+  for (const [roleCode, grants] of Object.entries(phase3RoleGrants)) {
+    const role = await prisma.role.findUniqueOrThrow({
+      where: { code: roleCode },
+      select: { id: true },
+    });
+    await prisma.rolePermission.createMany({
+      data: grants.map((code) => ({
+        roleId: role.id,
+        permissionId: requiredId(permissionIdByCode, code),
+      })),
+      skipDuplicates: true,
+    });
+  }
 
   await seedPhase2();
 

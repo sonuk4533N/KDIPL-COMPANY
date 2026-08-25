@@ -145,7 +145,10 @@ test("administrator can create a Phase 3 material requirement draft", async ({
 
   await expect(page).toHaveURL(/\/requirements\/[0-9a-f-]+$/);
   await expect(page.getByRole("heading", { name: purpose })).toBeVisible();
-  await expect(page.getByText("Approval workflow is locked")).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Approval workflow" }),
+  ).toBeVisible();
+  await expect(page.getByText(/No workflow action is available/)).toBeVisible();
 });
 
 test("administrator can provision an employee with forced temporary-password replacement", async ({

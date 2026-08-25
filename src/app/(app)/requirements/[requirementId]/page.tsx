@@ -19,11 +19,5 @@ export default async function RequirementDetailPage({
   }
   const detail = await getRequirementDetail(principal, requirementId);
   if (!detail) notFound();
-  const canEdit =
-    hasPermission(principal, "material_requirement.create") &&
-    detail.requirement.createdById === principal.userId &&
-    detail.projects.some(
-      (project) => project.id === detail.requirement.project.id,
-    );
-  return <RequirementDetailView detail={detail} canEdit={canEdit} />;
+  return <RequirementDetailView detail={detail} />;
 }

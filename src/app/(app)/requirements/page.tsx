@@ -1,4 +1,4 @@
-import { ClipboardList, FilePenLine, LockKeyhole, Plus } from "lucide-react";
+import { ClipboardList, FilePenLine, Plus, Send } from "lucide-react";
 
 import { PageHeader } from "@/components/shared/page-header";
 import { ButtonLink } from "@/components/ui/button-link";
@@ -27,12 +27,15 @@ export default async function RequirementsPage() {
     (total, requirement) => total + requirement.lines.length,
     0,
   );
+  const submittedCount = workspace.requirements.filter(
+    ({ status }) => status === "SUBMITTED",
+  ).length;
   return (
     <div className="space-y-7">
       <PageHeader
         eyebrow="Phase 3 · Draft foundation"
         title="Material requirements"
-        description="Capture project-site demand with controlled material lines while approval policy remains locked for confirmation."
+        description="Capture project-site demand, submit it through assignment-based approval, and retain a complete decision history."
         action={
           canCreate &&
           workspace.projects.length &&
@@ -48,7 +51,7 @@ export default async function RequirementsPage() {
         <Card>
           <CardContent>
             <ClipboardList className="size-5 text-blue-700" />
-            <p className="mt-3 text-sm text-slate-500">Visible drafts</p>
+            <p className="mt-3 text-sm text-slate-500">Visible requirements</p>
             <p className="mt-1 font-display text-2xl font-extrabold text-slate-950">
               {workspace.requirements.length}
             </p>
@@ -65,9 +68,11 @@ export default async function RequirementsPage() {
         </Card>
         <Card>
           <CardContent>
-            <LockKeyhole className="size-5 text-amber-700" />
-            <p className="mt-3 text-sm text-slate-500">Approval state</p>
-            <p className="mt-1 font-semibold text-slate-950">Policy locked</p>
+            <Send className="size-5 text-amber-700" />
+            <p className="mt-3 text-sm text-slate-500">Awaiting approval</p>
+            <p className="mt-1 font-display text-2xl font-extrabold text-slate-950">
+              {submittedCount}
+            </p>
           </CardContent>
         </Card>
       </div>

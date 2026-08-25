@@ -14,7 +14,7 @@
 - `ProjectAssignment` and `SiteAssignment` relate active employees to scoped responsibilities without duplicating names.
 - `MaterialCategory`, `UnitOfMeasure`, and `Material` provide normalized material masters with decimal stock-policy defaults.
 - `Supplier` and `SupplierContact` provide GST-aware supplier and primary-contact masters.
-- `MaterialRequirement` and `MaterialRequirementLine` provide the Phase 3 draft header and immutable-reference line foundation. Lines snapshot the selected unit and are deactivated rather than deleted.
+- `MaterialRequirement` and `MaterialRequirementLine` provide the Phase 3 header and immutable-reference line foundation. `MaterialRequirementWorkflowEvent` retains every submission and decision transition. Lines snapshot the selected unit and are deactivated rather than deleted.
 
 Phase 1 adds credential lifecycle fields to `User`: `mustChangePassword`,
 `passwordChangedAt`, and `lastLoginAt`. Temporary administrator-issued
@@ -33,7 +33,9 @@ existing identity records.
 
 `20260823184544_phase2_project_foundation` adds the Phase 2 hierarchy and master-data tables. Its reviewed PostgreSQL constraints protect date ordering, nonnegative stock levels, unit precision, GST registration consistency, assignment periods, one active primary manager/supervisor, and one active primary supplier contact. Parent/master records use restrictive foreign keys; application workflows deactivate or close records instead of hard-deleting them.
 
-`20260825090000_phase3_draft_requirements` adds numbered draft requirements and material lines. A composite site/project foreign key prevents cross-project site references; positive quantity, unique material-line, unit snapshot, and restrictive history constraints are enforced in PostgreSQL. The requirement status enum contains only `DRAFT` until approval rules are confirmed.
+`20260825090000_phase3_draft_requirements` adds numbered draft requirements and material lines. A composite site/project foreign key prevents cross-project site references; positive quantity, unique material-line, unit snapshot, and restrictive history constraints are enforced in PostgreSQL.
+
+`20260825160000_phase3_requirement_approval` adds submitted/approved/rejected states, accountable submitter and decision actors, and immutable workflow events. PostgreSQL check constraints reject incomplete header states, invalid transitions, and missing rejection/send-back reasons.
 
 ## Transaction numbering
 

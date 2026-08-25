@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { requirementDraftSchema } from "@/features/requirements/requirement-schemas";
+import {
+  requirementDecisionSchema,
+  requirementDraftSchema,
+} from "@/features/requirements/requirement-schemas";
 
 const validDraft = {
   projectId: "11111111-1111-4111-8111-111111111111",
@@ -59,5 +62,28 @@ describe("Phase 3 material requirement validation", () => {
     expect(
       requirementDraftSchema.safeParse({ ...validDraft, lines: [] }).success,
     ).toBe(false);
+  });
+
+  it("requires a reason for rejection and send-back decisions", () => {
+    const requirementId = "11111111-1111-4111-8111-111111111111";
+    expect(
+      requirementDecisionSchema.safeParse({
+        requirementId,
+        decision: "APPROVE",
+      }).success,
+    ).toBe(true);
+    for (const decision of ["REJECT", "SEND_BACK"] as const) {
+      expect(
+        requirementDecisionSchema.safeParse({ requirementId, decision })
+          .success,
+      ).toBe(false);
+      expect(
+        requirementDecisionSchema.safeParse({
+          requirementId,
+          decision,
+          reason: "Clarify the requested quantity.",
+        }).success,
+      ).toBe(true);
+    }
   });
 });
