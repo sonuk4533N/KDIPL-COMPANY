@@ -115,6 +115,39 @@ test("administrator can browse the Phase 2 project and master-data foundation", 
   ).toBeVisible();
 });
 
+test("administrator can create a Phase 3 material requirement draft", async ({
+  page,
+}, testInfo) => {
+  await signInAsBootstrapAdministrator(page);
+  await page.goto("/requirements");
+  await expect(
+    page
+      .getByRole("main")
+      .getByRole("heading", { name: "Material requirements", exact: true }),
+  ).toBeVisible();
+
+  const suffix = `${testInfo.project.name.startsWith("mobile") ? "M" : "D"}${Date.now()}`;
+  const purpose = `E2E electrical requirement ${suffix}`;
+  const form = page.locator("form").filter({
+    has: page.getByRole("button", { name: "Create draft" }),
+  });
+  await form
+    .getByLabel("Project")
+    .selectOption({ label: "DLF Residence · PRJ-DLF-001" });
+  await form.getByLabel("Site").selectOption({ label: "Floor 3 · FLOOR-03" });
+  await form.getByLabel("Needed by").fill("2026-10-15");
+  await form.getByLabel("Purpose").fill(purpose);
+  await form
+    .getByLabel("Material 1")
+    .selectOption({ label: "PVC Conduit 25mm · MAT-PVC-25MM · m" });
+  await form.getByLabel(/Quantity/).fill("25.500");
+  await form.getByRole("button", { name: "Create draft" }).click();
+
+  await expect(page).toHaveURL(/\/requirements\/[0-9a-f-]+$/);
+  await expect(page.getByRole("heading", { name: purpose })).toBeVisible();
+  await expect(page.getByText("Approval workflow is locked")).toBeVisible();
+});
+
 test("administrator can provision an employee with forced temporary-password replacement", async ({
   page,
 }, testInfo) => {

@@ -66,6 +66,10 @@ enum SiteAssignmentRole {
   SITE_MEMBER
 }
 
+enum MaterialRequirementStatus {
+  DRAFT
+}
+
 model Department {
   id          String     @id @default(uuid()) @db.Uuid
   code        String     @unique @db.VarChar(50)
@@ -124,24 +128,25 @@ model Employee {
 }
 
 model User {
-  id                 String       @id @default(uuid()) @db.Uuid
-  email              String       @db.VarChar(320)
-  emailNormalized    String       @unique @db.VarChar(320)
-  passwordHash       String
-  displayName        String       @db.VarChar(160)
-  status             UserStatus   @default(ACTIVE)
-  authVersion        Int          @default(1)
-  mustChangePassword Boolean      @default(false)
-  passwordChangedAt  DateTime?
-  lastLoginAt        DateTime?
-  employeeId         String?      @unique @db.Uuid
-  employee           Employee?    @relation(fields: [employeeId], references: [id], onDelete: SetNull)
-  roles              UserRole[]
-  sessions           Session[]
-  auditEvents        AuditLog[]   @relation("AuditActor")
-  uploadedFiles      FileRecord[]
-  createdAt          DateTime     @default(now())
-  updatedAt          DateTime     @updatedAt
+  id                          String                @id @default(uuid()) @db.Uuid
+  email                       String                @db.VarChar(320)
+  emailNormalized             String                @unique @db.VarChar(320)
+  passwordHash                String
+  displayName                 String                @db.VarChar(160)
+  status                      UserStatus            @default(ACTIVE)
+  authVersion                 Int                   @default(1)
+  mustChangePassword          Boolean               @default(false)
+  passwordChangedAt           DateTime?
+  lastLoginAt                 DateTime?
+  employeeId                  String?               @unique @db.Uuid
+  employee                    Employee?             @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+  roles                       UserRole[]
+  sessions                    Session[]
+  auditEvents                 AuditLog[]            @relation("AuditActor")
+  uploadedFiles               FileRecord[]
+  materialRequirementsCreated MaterialRequirement[] @relation("MaterialRequirementCreator")
+  createdAt                   DateTime              @default(now())
+  updatedAt                   DateTime              @updatedAt
 
   @@index([status])
 }
@@ -281,21 +286,22 @@ model Client {
 }
 
 model Project {
-  id                     String              @id @default(uuid()) @db.Uuid
-  projectCode            String              @unique @db.VarChar(50)
-  name                   String              @db.VarChar(180)
-  clientId               String              @db.Uuid
-  location               String              @db.VarChar(240)
+  id                     String                @id @default(uuid()) @db.Uuid
+  projectCode            String                @unique @db.VarChar(50)
+  name                   String                @db.VarChar(180)
+  clientId               String                @db.Uuid
+  location               String                @db.VarChar(240)
   description            String?
-  status                 ProjectStatus       @default(PLANNING)
-  startDate              DateTime?           @db.Date
-  expectedCompletionDate DateTime?           @db.Date
-  actualCompletionDate   DateTime?           @db.Date
-  client                 Client              @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  status                 ProjectStatus         @default(PLANNING)
+  startDate              DateTime?             @db.Date
+  expectedCompletionDate DateTime?             @db.Date
+  actualCompletionDate   DateTime?             @db.Date
+  client                 Client                @relation(fields: [clientId], references: [id], onDelete: Restrict)
   sites                  Site[]
   assignments            ProjectAssignment[]
-  createdAt              DateTime            @default(now())
-  updatedAt              DateTime            @updatedAt
+  materialRequirements   MaterialRequirement[]
+  createdAt              DateTime              @default(now())
+  updatedAt              DateTime              @updatedAt
 
   @@index([clientId])
   @@index([status, name])
@@ -303,20 +309,22 @@ model Project {
 }
 
 model Site {
-  id          String           @id @default(uuid()) @db.Uuid
-  siteCode    String           @db.VarChar(50)
-  name        String           @db.VarChar(180)
-  projectId   String           @db.Uuid
-  location    String           @db.VarChar(240)
-  address     String?
-  description String?
-  status      SiteStatus       @default(PLANNING)
-  project     Project          @relation(fields: [projectId], references: [id], onDelete: Restrict)
-  assignments SiteAssignment[]
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
+  id                   String                @id @default(uuid()) @db.Uuid
+  siteCode             String                @db.VarChar(50)
+  name                 String                @db.VarChar(180)
+  projectId            String                @db.Uuid
+  location             String                @db.VarChar(240)
+  address              String?
+  description          String?
+  status               SiteStatus            @default(PLANNING)
+  project              Project               @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  assignments          SiteAssignment[]
+  materialRequirements MaterialRequirement[]
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
 
   @@unique([projectId, siteCode])
+  @@unique([id, projectId])
   @@index([projectId, status])
   @@index([status, name])
 }
@@ -373,34 +381,36 @@ model MaterialCategory {
 }
 
 model UnitOfMeasure {
-  id           String     @id @default(uuid()) @db.Uuid
-  code         String     @unique @db.VarChar(30)
-  name         String     @unique @db.VarChar(80)
-  symbol       String     @db.VarChar(20)
-  description  String?
-  decimalScale Int        @default(3)
-  isActive     Boolean    @default(true)
-  materials    Material[]
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  id               String                    @id @default(uuid()) @db.Uuid
+  code             String                    @unique @db.VarChar(30)
+  name             String                    @unique @db.VarChar(80)
+  symbol           String                    @db.VarChar(20)
+  description      String?
+  decimalScale     Int                       @default(3)
+  isActive         Boolean                   @default(true)
+  materials        Material[]
+  requirementLines MaterialRequirementLine[]
+  createdAt        DateTime                  @default(now())
+  updatedAt        DateTime                  @updatedAt
 
   @@index([isActive, name])
 }
 
 model Material {
-  id                String           @id @default(uuid()) @db.Uuid
-  materialCode      String           @unique @db.VarChar(50)
-  name              String           @db.VarChar(180)
+  id                String                    @id @default(uuid()) @db.Uuid
+  materialCode      String                    @unique @db.VarChar(50)
+  name              String                    @db.VarChar(180)
   description       String?
-  categoryId        String           @db.Uuid
-  defaultUnitId     String           @db.Uuid
-  minimumStockLevel Decimal          @default(0) @db.Decimal(18, 3)
-  reorderLevel      Decimal          @default(0) @db.Decimal(18, 3)
-  isActive          Boolean          @default(true)
-  category          MaterialCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  defaultUnit       UnitOfMeasure    @relation(fields: [defaultUnitId], references: [id], onDelete: Restrict)
-  createdAt         DateTime         @default(now())
-  updatedAt         DateTime         @updatedAt
+  categoryId        String                    @db.Uuid
+  defaultUnitId     String                    @db.Uuid
+  minimumStockLevel Decimal                   @default(0) @db.Decimal(18, 3)
+  reorderLevel      Decimal                   @default(0) @db.Decimal(18, 3)
+  isActive          Boolean                   @default(true)
+  category          MaterialCategory          @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  defaultUnit       UnitOfMeasure             @relation(fields: [defaultUnitId], references: [id], onDelete: Restrict)
+  requirementLines  MaterialRequirementLine[]
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
 
   @@unique([name, defaultUnitId])
   @@index([categoryId, isActive])
@@ -445,4 +455,47 @@ model SupplierContact {
   updatedAt   DateTime @updatedAt
 
   @@index([supplierId, isActive])
+}
+
+model MaterialRequirement {
+  id                String                    @id @default(uuid()) @db.Uuid
+  requirementNumber String                    @unique @db.VarChar(30)
+  projectId         String                    @db.Uuid
+  siteId            String                    @db.Uuid
+  status            MaterialRequirementStatus @default(DRAFT)
+  neededBy          DateTime                  @db.Date
+  purpose           String                    @db.VarChar(500)
+  notes             String?
+  createdById       String                    @db.Uuid
+  project           Project                   @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  site              Site                      @relation(fields: [siteId, projectId], references: [id, projectId], onDelete: Restrict)
+  createdBy         User                      @relation("MaterialRequirementCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  lines             MaterialRequirementLine[]
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
+
+  @@index([projectId, status, neededBy])
+  @@index([siteId, status])
+  @@index([createdById, createdAt])
+}
+
+model MaterialRequirementLine {
+  id            String              @id @default(uuid()) @db.Uuid
+  requirementId String              @db.Uuid
+  materialId    String              @db.Uuid
+  unitId        String              @db.Uuid
+  quantity      Decimal             @db.Decimal(18, 3)
+  notes         String?             @db.VarChar(500)
+  position      Int                 @default(0)
+  isActive      Boolean             @default(true)
+  requirement   MaterialRequirement @relation(fields: [requirementId], references: [id], onDelete: Restrict)
+  material      Material            @relation(fields: [materialId], references: [id], onDelete: Restrict)
+  unit          UnitOfMeasure       @relation(fields: [unitId], references: [id], onDelete: Restrict)
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  @@unique([requirementId, materialId])
+  @@index([requirementId, isActive, position])
+  @@index([materialId])
+  @@index([unitId])
 }

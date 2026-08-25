@@ -26,6 +26,7 @@ import type { AuthenticatedPrincipal } from "@/types/application";
 const labels: Record<string, string> = {
   dashboard: "Dashboard",
   projects: "Projects",
+  requirements: "Material requirements",
   procurement: "Procurement",
   inventory: "Inventory",
   accounts: "Accounts",
@@ -76,12 +77,16 @@ export function Header({ principal }: { principal: AuthenticatedPrincipal }) {
           </Button>
         </DropdownTrigger>
         <DropdownContent>
-          <DropdownItem disabled>Material Requirement</DropdownItem>
+          <DropdownItem asChild>
+            <Link href="/requirements#new-requirement">
+              Material Requirement
+            </Link>
+          </DropdownItem>
           <DropdownItem disabled>Purchase</DropdownItem>
           <DropdownItem disabled>Goods Receipt</DropdownItem>
           <DropdownSeparator />
           <p className="px-3 py-2 text-xs text-slate-500">
-            Actions arrive in later phases.
+            Purchase and receipt actions arrive in later phases.
           </p>
         </DropdownContent>
       </Dropdown>

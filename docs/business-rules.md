@@ -14,6 +14,8 @@
 - One active primary project manager, site supervisor, and supplier contact is enforced at a time.
 - Material minimum and reorder defaults are global Phase 2 policy values; reorder level cannot be lower than minimum stock.
 - Registered suppliers require a structurally valid GSTIN; unregistered suppliers store no GSTIN.
+- Draft material requirements belong to exactly one project/site pair, use material-master units, require positive quantities, and retain removed lines as inactive history.
+- Requirement submission and approval transitions remain unavailable until authority, threshold, delegation, and self-approval rules are approved.
 
 ## KDIPL decisions still required
 

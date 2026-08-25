@@ -2,6 +2,7 @@ import {
   Bell,
   Boxes,
   CheckSquare2,
+  ClipboardList,
   Database,
   FolderKanban,
   LayoutDashboard,
@@ -15,6 +16,7 @@ import {
 export const primaryNavigation = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { label: "Projects", href: "/projects", icon: FolderKanban },
+  { label: "Requirements", href: "/requirements", icon: ClipboardList },
   { label: "Master data", href: "/master-data", icon: Database },
   { label: "Procurement", href: "/procurement", icon: ShoppingCart },
   { label: "Inventory", href: "/inventory", icon: Warehouse },
@@ -33,7 +35,7 @@ export const administrationNavigation = {
 export const supervisorMobileNavigation = [
   { label: "Home", href: "/dashboard", icon: LayoutDashboard },
   { label: "Sites", href: "/projects", icon: FolderKanban },
-  { label: "Request", href: "/procurement", icon: PackageCheck },
+  { label: "Request", href: "/requirements", icon: PackageCheck },
   { label: "Alerts", href: "/notifications", icon: Bell },
   { label: "More", href: "/administration", icon: Settings },
 ] as const;

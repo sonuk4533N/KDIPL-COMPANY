@@ -607,6 +607,81 @@ async function seedPhase2() {
   );
 }
 
+async function seedPhase3Draft(createdById: string) {
+  const project = await prisma.project.findUniqueOrThrow({
+    where: { projectCode: "PRJ-DLF-001" },
+    select: { id: true },
+  });
+  const site = await prisma.site.findUniqueOrThrow({
+    where: {
+      projectId_siteCode: {
+        projectId: project.id,
+        siteCode: "FLOOR-03",
+      },
+    },
+    select: { id: true },
+  });
+  const materials = await prisma.material.findMany({
+    where: {
+      materialCode: { in: ["MAT-CBL-4SQ", "MAT-PVC-25MM"] },
+    },
+    select: { id: true, materialCode: true, defaultUnitId: true },
+  });
+  if (materials.length !== 2) {
+    throw new Error("Missing seeded Phase 3 draft materials.");
+  }
+  const requirement = await prisma.materialRequirement.upsert({
+    where: { requirementNumber: "MR-2026-0000" },
+    update: {
+      projectId: project.id,
+      siteId: site.id,
+      neededBy: dateOnly("2026-09-15"),
+      purpose: "Electrical rough-in materials",
+      notes: "Reserved demo draft; not submitted for approval.",
+    },
+    create: {
+      requirementNumber: "MR-2026-0000",
+      projectId: project.id,
+      siteId: site.id,
+      neededBy: dateOnly("2026-09-15"),
+      purpose: "Electrical rough-in materials",
+      notes: "Reserved demo draft; not submitted for approval.",
+      createdById,
+    },
+    select: { id: true },
+  });
+  const quantities = new Map([
+    ["MAT-CBL-4SQ", "250"],
+    ["MAT-PVC-25MM", "120"],
+  ]);
+  for (const [position, material] of materials
+    .sort((left, right) => left.materialCode.localeCompare(right.materialCode))
+    .entries()) {
+    await prisma.materialRequirementLine.upsert({
+      where: {
+        requirementId_materialId: {
+          requirementId: requirement.id,
+          materialId: material.id,
+        },
+      },
+      update: {
+        unitId: material.defaultUnitId,
+        quantity: quantities.get(material.materialCode),
+        position,
+        isActive: true,
+      },
+      create: {
+        requirementId: requirement.id,
+        materialId: material.id,
+        unitId: material.defaultUnitId,
+        quantity: quantities.get(material.materialCode)!,
+        position,
+      },
+    });
+  }
+  console.info("Seeded Phase 3 draft material requirement.");
+}
+
 async function main() {
   for (const [code, name] of departments) {
     await prisma.department.upsert({
@@ -710,6 +785,7 @@ async function main() {
     update: {},
     create: { userId: user.id, roleId: administratorRole.id },
   });
+  await seedPhase3Draft(user.id);
   console.info(`Seeded bootstrap administrator for ${email}.`);
 }
 

@@ -12,7 +12,7 @@ and active status are protected; custom roles can be created and deactivated.
 
 ## Permission catalog
 
-Permissions use `resource.action`. Phase 2 adds project assignment, site view/create/update, catalog view/manage, and supplier view/manage to the existing project, transaction, reporting, audit, and administration catalog.
+Permissions use `resource.action`. Phase 2 adds project assignment, site view/create/update, catalog view/manage, and supplier view/manage to the existing project, transaction, reporting, audit, and administration catalog. Phase 3 draft requirements use `material_requirement.view` and `material_requirement.create`; the existing approval permission remains unused until the approval policy is confirmed.
 
 | Role                          | Expected scope (not yet granted)               | Unresolved authority                          |
 | ----------------------------- | ---------------------------------------------- | --------------------------------------------- |

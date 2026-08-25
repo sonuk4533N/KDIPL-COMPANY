@@ -1,6 +1,6 @@
 # Workflow Conventions
 
-Phase 2 applies these conventions to project and site master lifecycles without starting procurement or inventory transactions.
+Phase 2 applies these conventions to project and site master lifecycles. Phase 3 now applies them to material-requirement drafts without starting an unapproved approval workflow, procurement, or inventory transactions.
 
 Identity lifecycle is implemented as explicit commands:
 
@@ -17,6 +17,15 @@ rather than deleted so audit references remain intact.
 - Partial receiving, damaged material, partial issue, discrepancies, and send-back/resubmission remain first-class future states.
 
 The proposed `DRAFT → SUBMITTED → UNDER_REVIEW → APPROVED | REJECTED | CHANGES_REQUESTED` pattern is illustrative only. KDIPL must approve each workflow and segregation-of-duty rule before implementation.
+
+## Phase 3 draft boundary
+
+- Material requirements can be created and edited only in `DRAFT`.
+- Each draft belongs to one visible project/site pair and contains at least one active material line.
+- Units are derived from the material master on the server and stored on the line as history.
+- Only the draft creator can edit the draft; scoped users with view permission can inspect it.
+- Removing a line deactivates it. Draft headers and lines are not hard-deleted.
+- Submit, approval, rejection, send-back, cancellation, and delegation commands are locked pending KDIPL policy.
 
 ## Phase 2 lifecycles
 
