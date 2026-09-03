@@ -108,6 +108,29 @@ enum PurchaseOrderStatus {
   DRAFT
 }
 
+enum InventoryLocationType {
+  CENTRAL_STORE
+  PROJECT_STORE
+  SITE_STORE
+}
+
+enum GoodsReceiptStatus {
+  DRAFT
+  POSTED
+  CANCELLED
+}
+
+enum StockTransactionType {
+  OPENING
+  RECEIPT
+  ISSUE
+  TRANSFER_IN
+  TRANSFER_OUT
+  ADJUSTMENT_IN
+  ADJUSTMENT_OUT
+  REVERSAL
+}
+
 model Department {
   id          String     @id @default(uuid()) @db.Uuid
   code        String     @unique @db.VarChar(50)
@@ -193,6 +216,10 @@ model User {
   requestForQuotationEvents       RequestForQuotationWorkflowEvent[]
   supplierQuotationsRecorded      SupplierQuotation[]                @relation("SupplierQuotationRecorder")
   purchaseOrdersCreated           PurchaseOrder[]                    @relation("PurchaseOrderCreator")
+  goodsReceiptsCreated            GoodsReceipt[]                     @relation("GoodsReceiptCreator")
+  goodsReceiptsPosted             GoodsReceipt[]                     @relation("GoodsReceiptPoster")
+  goodsReceiptsCancelled          GoodsReceipt[]                     @relation("GoodsReceiptCanceller")
+  stockTransactionsCreated        StockTransaction[]                 @relation("StockTransactionCreator")
   createdAt                       DateTime                           @default(now())
   updatedAt                       DateTime                           @updatedAt
 
@@ -349,6 +376,7 @@ model Project {
   sites                  Site[]
   assignments            ProjectAssignment[]
   materialRequirements   MaterialRequirement[]
+  inventoryLocations     InventoryLocation[]
   createdAt              DateTime              @default(now())
   updatedAt              DateTime              @updatedAt
 
@@ -369,6 +397,7 @@ model Site {
   project              Project               @relation(fields: [projectId], references: [id], onDelete: Restrict)
   assignments          SiteAssignment[]
   materialRequirements MaterialRequirement[]
+  inventoryLocations   InventoryLocation[]
   createdAt            DateTime              @default(now())
   updatedAt            DateTime              @updatedAt
 
@@ -441,6 +470,8 @@ model UnitOfMeasure {
   requirementLines   MaterialRequirementLine[]
   quotationLines     SupplierQuotationLine[]
   purchaseOrderLines PurchaseOrderLine[]
+  goodsReceiptLines  GoodsReceiptLine[]
+  stockTransactions  StockTransaction[]
   createdAt          DateTime                  @default(now())
   updatedAt          DateTime                  @updatedAt
 
@@ -460,6 +491,8 @@ model Material {
   category          MaterialCategory          @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   defaultUnit       UnitOfMeasure             @relation(fields: [defaultUnitId], references: [id], onDelete: Restrict)
   requirementLines  MaterialRequirementLine[]
+  goodsReceiptLines GoodsReceiptLine[]
+  stockTransactions StockTransaction[]
   createdAt         DateTime                  @default(now())
   updatedAt         DateTime                  @updatedAt
 
@@ -739,6 +772,7 @@ model PurchaseOrder {
   supplier             Supplier            @relation(fields: [supplierId], references: [id], onDelete: Restrict)
   createdBy            User                @relation("PurchaseOrderCreator", fields: [createdById], references: [id], onDelete: Restrict)
   lines                PurchaseOrderLine[]
+  goodsReceipts        GoodsReceipt[]
   createdAt            DateTime            @default(now())
   updatedAt            DateTime            @updatedAt
 
@@ -760,10 +794,107 @@ model PurchaseOrderLine {
   quotation         SupplierQuotationLine   @relation(fields: [quotationLineId], references: [id], onDelete: Restrict)
   requirementLine   MaterialRequirementLine @relation(fields: [requirementLineId], references: [id], onDelete: Restrict)
   unit              UnitOfMeasure           @relation(fields: [unitId], references: [id], onDelete: Restrict)
+  goodsReceiptLines GoodsReceiptLine[]
   createdAt         DateTime                @default(now())
 
   @@unique([purchaseOrderId, requirementLineId])
   @@index([purchaseOrderId, position])
   @@index([requirementLineId])
   @@index([unitId])
+}
+
+model InventoryLocation {
+  id                String                @id @default(uuid()) @db.Uuid
+  locationCode      String                @unique @db.VarChar(50)
+  name              String                @db.VarChar(180)
+  type              InventoryLocationType
+  projectId         String?               @db.Uuid
+  siteId            String?               @db.Uuid
+  isActive          Boolean               @default(true)
+  project           Project?              @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  site              Site?                 @relation(fields: [siteId, projectId], references: [id, projectId], onDelete: Restrict)
+  goodsReceipts     GoodsReceipt[]
+  stockTransactions StockTransaction[]
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+
+  @@index([projectId, isActive])
+  @@index([siteId, isActive])
+}
+
+model GoodsReceipt {
+  id                   String             @id @default(uuid()) @db.Uuid
+  grnNumber            String             @unique @db.VarChar(30)
+  purchaseOrderId      String             @db.Uuid
+  locationId           String             @db.Uuid
+  status               GoodsReceiptStatus @default(DRAFT)
+  supplierDeliveryNote String?            @db.VarChar(100)
+  receivedAt           DateTime?
+  notes                String?
+  createdById          String             @db.Uuid
+  postedById           String?            @db.Uuid
+  postedAt             DateTime?
+  cancelledById        String?            @db.Uuid
+  cancelledAt          DateTime?
+  cancellationReason   String?            @db.VarChar(1000)
+  purchaseOrder        PurchaseOrder      @relation(fields: [purchaseOrderId], references: [id], onDelete: Restrict)
+  location             InventoryLocation  @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  createdBy            User               @relation("GoodsReceiptCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  postedBy             User?              @relation("GoodsReceiptPoster", fields: [postedById], references: [id], onDelete: Restrict)
+  cancelledBy          User?              @relation("GoodsReceiptCanceller", fields: [cancelledById], references: [id], onDelete: Restrict)
+  lines                GoodsReceiptLine[]
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  @@index([purchaseOrderId, status])
+  @@index([locationId, status])
+}
+
+model GoodsReceiptLine {
+  id                  String             @id @default(uuid()) @db.Uuid
+  goodsReceiptId      String             @db.Uuid
+  purchaseOrderLineId String             @db.Uuid
+  materialId          String             @db.Uuid
+  unitId              String             @db.Uuid
+  orderedQuantity     Decimal            @db.Decimal(18, 3)
+  receivedQuantity    Decimal            @db.Decimal(18, 3)
+  acceptedQuantity    Decimal            @db.Decimal(18, 3)
+  damagedQuantity     Decimal            @default(0) @db.Decimal(18, 3)
+  rejectedQuantity    Decimal            @default(0) @db.Decimal(18, 3)
+  notes               String?            @db.VarChar(500)
+  goodsReceipt        GoodsReceipt       @relation(fields: [goodsReceiptId], references: [id], onDelete: Restrict)
+  purchaseOrderLine   PurchaseOrderLine  @relation(fields: [purchaseOrderLineId], references: [id], onDelete: Restrict)
+  material            Material           @relation(fields: [materialId], references: [id], onDelete: Restrict)
+  unit                UnitOfMeasure      @relation(fields: [unitId], references: [id], onDelete: Restrict)
+  stockTransactions   StockTransaction[]
+  createdAt           DateTime           @default(now())
+
+  @@unique([goodsReceiptId, purchaseOrderLineId])
+  @@index([goodsReceiptId])
+  @@index([materialId])
+}
+
+model StockTransaction {
+  id                 String               @id @default(uuid()) @db.Uuid
+  transactionNumber  String               @unique @db.VarChar(30)
+  type               StockTransactionType
+  locationId         String               @db.Uuid
+  materialId         String               @db.Uuid
+  unitId             String               @db.Uuid
+  quantity           Decimal              @db.Decimal(18, 3)
+  goodsReceiptLineId String?              @db.Uuid
+  reversalOfId       String?              @db.Uuid
+  reason             String?              @db.VarChar(1000)
+  createdById        String               @db.Uuid
+  location           InventoryLocation    @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  material           Material             @relation(fields: [materialId], references: [id], onDelete: Restrict)
+  unit               UnitOfMeasure        @relation(fields: [unitId], references: [id], onDelete: Restrict)
+  goodsReceiptLine   GoodsReceiptLine?    @relation(fields: [goodsReceiptLineId], references: [id], onDelete: Restrict)
+  reversalOf         StockTransaction?    @relation("StockTransactionReversal", fields: [reversalOfId], references: [id], onDelete: Restrict)
+  reversals          StockTransaction[]   @relation("StockTransactionReversal")
+  createdBy          User                 @relation("StockTransactionCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt          DateTime             @default(now())
+
+  @@index([locationId, materialId, createdAt])
+  @@index([materialId, createdAt])
 }

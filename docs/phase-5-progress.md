@@ -5,6 +5,8 @@ Phase 5 has started with the inventory-safe database and domain foundation. The 
 ## Delivered in this increment
 
 - Inventory-location model for central, project, and site stores with scope constraints.
+- Prisma enums, relations, and query models for inventory locations, goods receipts, receipt lines, and stock transactions.
+- Composite site/project referential integrity preventing a site store from being attached to the wrong project.
 - Numbered goods-receipt (GRN) header and line structures.
 - Separate ordered, received, accepted, damaged, and rejected quantities.
 - Partial-receipt domain validation and cumulative over-receipt protection.
@@ -12,6 +14,7 @@ Phase 5 has started with the inventory-safe database and domain foundation. The 
 - Ledger-derived `InventoryStockBalance` database view; there is no mutable stock quantity source of truth.
 - Store Keeper grants for the existing `inventory.view` and `inventory.receive` permissions.
 - Unit coverage for partial receipts, over-receipt prevention, stock direction, and PO-state posting guards.
+- PostgreSQL integration coverage for inventory-location scope and ledger-derived balances, including reversals.
 
 ## Safety boundary
 

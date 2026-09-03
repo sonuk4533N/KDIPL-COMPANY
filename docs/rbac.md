@@ -4,7 +4,7 @@ Authorization combines a named permission with project/site assignment scope. UI
 
 ## Initial roles
 
-Managing Director, Project Director, Business Development Director, Project Manager, Purchase Manager, Accounts, Site Supervisor, Store Keeper, and System Administrator are seeded. The bootstrap System Administrator receives the catalog so Phase 1 administration is usable. Confirmed Phase 3 requirement grants are seeded for Site Supervisor, Project Manager, and Project Director. Phase 4 sourcing grants give the Purchase Manager `purchase.view` and `purchase.create`; Project Directors receive `purchase.view` and `purchase.approve` for independent decisions.
+Managing Director, Project Director, Business Development Director, Project Manager, Purchase Manager, Accounts, Site Supervisor, Store Keeper, and System Administrator are seeded. The bootstrap System Administrator receives the catalog so Phase 1 administration is usable. Confirmed Phase 3 requirement grants are seeded for Site Supervisor, Project Manager, and Project Director. Phase 4 sourcing grants give the Purchase Manager `purchase.view` and `purchase.create`; Project Directors receive `purchase.view` and `purchase.approve` for independent decisions. The Phase 5 foundation grants Store Keepers `inventory.view` and `inventory.receive`; posting remains disabled until the PO receiving gate is approved.
 
 Phase 1 supports multiple roles per user. Role assignments and permission-grant
 changes are audited and invalidate affected sessions. KDIPL system role codes
