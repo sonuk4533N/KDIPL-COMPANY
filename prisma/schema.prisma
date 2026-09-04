@@ -106,6 +106,12 @@ enum RequestForQuotationWorkflowAction {
 
 enum PurchaseOrderStatus {
   DRAFT
+  ISSUED
+  ACCEPTED
+  PARTIALLY_RECEIVED
+  RECEIVED
+  CLOSED
+  CANCELLED
 }
 
 enum InventoryLocationType {
@@ -216,12 +222,16 @@ model User {
   requestForQuotationEvents       RequestForQuotationWorkflowEvent[]
   supplierQuotationsRecorded      SupplierQuotation[]                @relation("SupplierQuotationRecorder")
   purchaseOrdersCreated           PurchaseOrder[]                    @relation("PurchaseOrderCreator")
+  purchaseOrdersIssued            PurchaseOrder[]                    @relation("PurchaseOrderIssuer")
+  purchaseOrderAcceptancesRecorded PurchaseOrder[]                   @relation("PurchaseOrderAcceptanceRecorder")
+  purchaseOrdersClosed            PurchaseOrder[]                    @relation("PurchaseOrderCloser")
+  purchaseOrdersCancelled         PurchaseOrder[]                    @relation("PurchaseOrderCanceller")
   goodsReceiptsCreated            GoodsReceipt[]                     @relation("GoodsReceiptCreator")
   goodsReceiptsPosted             GoodsReceipt[]                     @relation("GoodsReceiptPoster")
   goodsReceiptsCancelled          GoodsReceipt[]                     @relation("GoodsReceiptCanceller")
   stockTransactionsCreated        StockTransaction[]                 @relation("StockTransactionCreator")
-  createdAt                       DateTime                           @default(now())
-  updatedAt                       DateTime                           @updatedAt
+  createdAt                       DateTime                            @default(now())
+  updatedAt                       DateTime                            @updatedAt
 
   @@index([status])
 }
@@ -752,32 +762,49 @@ model SupplierQuotationDocument {
 }
 
 model PurchaseOrder {
-  id                   String              @id @default(uuid()) @db.Uuid
-  poNumber             String              @unique @db.VarChar(30)
-  rfqId                String              @unique @db.Uuid
-  quotationId          String              @unique @db.Uuid
-  supplierId           String              @db.Uuid
-  status               PurchaseOrderStatus @default(DRAFT)
-  currency             String              @default("INR") @db.Char(3)
-  subtotal             Decimal             @db.Decimal(18, 2)
-  gstRate              Decimal             @db.Decimal(5, 2)
-  gstAmount            Decimal             @db.Decimal(18, 2)
-  freightAmount        Decimal             @db.Decimal(18, 2)
-  totalAmount          Decimal             @db.Decimal(18, 2)
-  expectedDeliveryDate DateTime            @db.Date
-  paymentTerms         String              @db.VarChar(500)
-  createdById          String              @db.Uuid
-  rfq                  RequestForQuotation @relation(fields: [rfqId], references: [id], onDelete: Restrict)
-  quotation            SupplierQuotation   @relation(fields: [quotationId], references: [id], onDelete: Restrict)
-  supplier             Supplier            @relation(fields: [supplierId], references: [id], onDelete: Restrict)
-  createdBy            User                @relation("PurchaseOrderCreator", fields: [createdById], references: [id], onDelete: Restrict)
-  lines                PurchaseOrderLine[]
-  goodsReceipts        GoodsReceipt[]
-  createdAt            DateTime            @default(now())
-  updatedAt            DateTime            @updatedAt
+  id                          String              @id @default(uuid()) @db.Uuid
+  poNumber                    String              @unique @db.VarChar(30)
+  rfqId                       String              @unique @db.Uuid
+  quotationId                 String              @unique @db.Uuid
+  supplierId                  String              @db.Uuid
+  status                      PurchaseOrderStatus @default(DRAFT)
+  currency                    String              @default("INR") @db.Char(3)
+  subtotal                    Decimal             @db.Decimal(18, 2)
+  gstRate                     Decimal             @db.Decimal(5, 2)
+  gstAmount                   Decimal             @db.Decimal(18, 2)
+  freightAmount               Decimal             @db.Decimal(18, 2)
+  totalAmount                 Decimal             @db.Decimal(18, 2)
+  expectedDeliveryDate        DateTime            @db.Date
+  paymentTerms                String              @db.VarChar(500)
+  createdById                 String              @db.Uuid
+  issuedById                  String?             @db.Uuid
+  issuedAt                    DateTime?
+  supplierAcceptedAt          DateTime?
+  supplierAcceptanceReference String?             @db.VarChar(100)
+  acceptedRecordedById        String?             @db.Uuid
+  closedById                  String?             @db.Uuid
+  closedAt                    DateTime?
+  cancelledById               String?             @db.Uuid
+  cancelledAt                 DateTime?
+  cancellationReason          String?             @db.VarChar(1000)
+  rfq                         RequestForQuotation @relation(fields: [rfqId], references: [id], onDelete: Restrict)
+  quotation                   SupplierQuotation   @relation(fields: [quotationId], references: [id], onDelete: Restrict)
+  supplier                    Supplier            @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  createdBy                   User                @relation("PurchaseOrderCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  issuedBy                    User?               @relation("PurchaseOrderIssuer", fields: [issuedById], references: [id], onDelete: Restrict)
+  acceptedRecordedBy          User?               @relation("PurchaseOrderAcceptanceRecorder", fields: [acceptedRecordedById], references: [id], onDelete: Restrict)
+  closedBy                    User?               @relation("PurchaseOrderCloser", fields: [closedById], references: [id], onDelete: Restrict)
+  cancelledBy                 User?               @relation("PurchaseOrderCanceller", fields: [cancelledById], references: [id], onDelete: Restrict)
+  lines                       PurchaseOrderLine[]
+  goodsReceipts               GoodsReceipt[]
+  createdAt                   DateTime            @default(now())
+  updatedAt                   DateTime            @updatedAt
 
   @@index([supplierId, status])
   @@index([createdById, createdAt])
+  @@index([issuedById, issuedAt])
+  @@index([acceptedRecordedById, supplierAcceptedAt])
+  @@index([status, expectedDeliveryDate])
 }
 
 model PurchaseOrderLine {
@@ -823,28 +850,31 @@ model InventoryLocation {
 }
 
 model GoodsReceipt {
-  id                   String             @id @default(uuid()) @db.Uuid
-  grnNumber            String             @unique @db.VarChar(30)
-  purchaseOrderId      String             @db.Uuid
-  locationId           String             @db.Uuid
-  status               GoodsReceiptStatus @default(DRAFT)
-  supplierDeliveryNote String?            @db.VarChar(100)
-  receivedAt           DateTime?
-  notes                String?
-  createdById          String             @db.Uuid
-  postedById           String?            @db.Uuid
-  postedAt             DateTime?
-  cancelledById        String?            @db.Uuid
-  cancelledAt          DateTime?
-  cancellationReason   String?            @db.VarChar(1000)
-  purchaseOrder        PurchaseOrder      @relation(fields: [purchaseOrderId], references: [id], onDelete: Restrict)
-  location             InventoryLocation  @relation(fields: [locationId], references: [id], onDelete: Restrict)
-  createdBy            User               @relation("GoodsReceiptCreator", fields: [createdById], references: [id], onDelete: Restrict)
-  postedBy             User?              @relation("GoodsReceiptPoster", fields: [postedById], references: [id], onDelete: Restrict)
-  cancelledBy          User?              @relation("GoodsReceiptCanceller", fields: [cancelledById], references: [id], onDelete: Restrict)
-  lines                GoodsReceiptLine[]
-  createdAt            DateTime           @default(now())
-  updatedAt            DateTime           @updatedAt
+  id                       String             @id @default(uuid()) @db.Uuid
+  grnNumber                String             @unique @db.VarChar(30)
+  purchaseOrderId          String             @db.Uuid
+  locationId               String             @db.Uuid
+  status                   GoodsReceiptStatus @default(DRAFT)
+  supplierDeliveryNote     String?            @db.VarChar(100)
+  supplierDeliveryNoteDate DateTime?          @db.Date
+  vehicleNumber            String?            @db.VarChar(50)
+  transporter              String?            @db.VarChar(160)
+  receivedAt               DateTime?
+  notes                    String?
+  createdById              String             @db.Uuid
+  postedById               String?            @db.Uuid
+  postedAt                 DateTime?
+  cancelledById            String?            @db.Uuid
+  cancelledAt              DateTime?
+  cancellationReason       String?            @db.VarChar(1000)
+  purchaseOrder            PurchaseOrder      @relation(fields: [purchaseOrderId], references: [id], onDelete: Restrict)
+  location                 InventoryLocation  @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  createdBy                User               @relation("GoodsReceiptCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  postedBy                 User?              @relation("GoodsReceiptPoster", fields: [postedById], references: [id], onDelete: Restrict)
+  cancelledBy              User?              @relation("GoodsReceiptCanceller", fields: [cancelledById], references: [id], onDelete: Restrict)
+  lines                    GoodsReceiptLine[]
+  createdAt                DateTime           @default(now())
+  updatedAt                DateTime           @updatedAt
 
   @@index([purchaseOrderId, status])
   @@index([locationId, status])
