@@ -6,6 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/form-controls";
 import { FormFeedback } from "@/components/ui/form-feedback";
 import {
+  closePurchaseOrderAction,
+  type InventoryCompletionActionState,
+} from "@/features/inventory/inventory-completion-actions";
+import {
   cancelPurchaseOrderAction,
   issuePurchaseOrderAction,
   recordSupplierAcceptanceAction,
@@ -35,6 +39,10 @@ export function PurchaseOrderControls({
     cancelPurchaseOrderAction,
     null,
   );
+  const [closeState, closeAction, closePending] = useActionState<
+    InventoryCompletionActionState,
+    FormData
+  >(closePurchaseOrderAction, null);
   const acceptanceFields = fieldsFor(acceptState);
 
   if (status === "DRAFT") {
@@ -130,8 +138,33 @@ export function PurchaseOrderControls({
 
   if (status === "RECEIVED") {
     return (
-      <div className="mt-4 border-t border-slate-100 pt-4 text-sm text-emerald-700">
-        Fully received. Close-out remains a separate controlled action.
+      <div className="mt-4 space-y-3 border-t border-slate-100 pt-4">
+        <p className="text-sm text-emerald-700">
+          Fully received. Close the PO after all damaged/rejected exceptions are resolved.
+        </p>
+        <form action={closeAction} className="space-y-3">
+          <input type="hidden" name="purchaseOrderId" value={purchaseOrderId} />
+          <Button type="submit" disabled={closePending}>
+            {closePending ? "Closing PO..." : "Close purchase order"}
+          </Button>
+          <FormFeedback state={closeState} success="Purchase order closed." />
+        </form>
+      </div>
+    );
+  }
+
+  if (status === "CLOSED") {
+    return (
+      <div className="mt-4 border-t border-slate-100 pt-4 text-sm text-slate-600">
+        Purchase order closed. Receiving is locked.
+      </div>
+    );
+  }
+
+  if (status === "CANCELLED") {
+    return (
+      <div className="mt-4 border-t border-slate-100 pt-4 text-sm text-slate-600">
+        Purchase order cancelled.
       </div>
     );
   }
