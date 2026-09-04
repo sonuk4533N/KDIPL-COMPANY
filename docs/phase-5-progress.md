@@ -7,6 +7,7 @@ Phase 5 now implements the confirmed purchase-order receiving path and ledger-ba
 - Inventory locations for central, project, and site stores.
 - Purchase-order lifecycle foundation: `DRAFT → ISSUED → ACCEPTED → PARTIALLY_RECEIVED → RECEIVED → CLOSED`, with controlled cancellation before posted receipts.
 - Purchase Manager-only PO issue, supplier-acceptance recording, and cancellation commands.
+- Procurement UI controls for PO issue and supplier-acceptance recording.
 - GRN draft creation against supplier-accepted purchase orders only.
 - Store Keeper receiving plus controlled Site Supervisor direct-site receiving restricted to the assigned site store.
 - GRN fields for delivery note, date, transporter, vehicle, received time, and remarks.
@@ -32,12 +33,11 @@ Phase 5 now implements the confirmed purchase-order receiving path and ledger-ba
 ## Remaining Phase 5 work before merge/completion
 
 1. Synchronize the Prisma schema `PurchaseOrderStatus` enum and new PO lifecycle fields with the migration so generated client types exactly match the database.
-2. Add Purchase Manager UI controls for PO issue and supplier acceptance in Procurement.
-3. Add explicit PO close command/UI after full receipt.
-4. Add GRN draft editing/cancellation before posting.
-5. Add damaged/rejected return/replacement register and document/photo evidence workflow.
-6. Add integration tests for concurrent duplicate posting and cumulative partial receipts against PostgreSQL.
-7. Run `format:check`, lint, typecheck, unit tests, integration tests, production build, and E2E; fix all failures before merge.
+2. Add explicit PO close command/UI after full receipt.
+3. Add GRN draft editing/cancellation before posting.
+4. Add damaged/rejected return/replacement register and document/photo evidence workflow.
+5. Add PostgreSQL integration tests for concurrent duplicate posting and cumulative partial receipts.
+6. Run `format:check`, lint, typecheck, unit tests, integration tests, production build, and E2E; fix all failures before merge.
 
 ## Deferred to Phase 6
 
