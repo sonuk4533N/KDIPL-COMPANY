@@ -13,10 +13,18 @@ import { ButtonLink } from "@/components/ui/button-link";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { ApplicationState } from "@/components/ui/states";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { PurchaseOrderControls } from "@/features/inventory/purchase-order-controls";
 import { RfqDraftForm } from "@/features/procurement/rfq-form";
 import { getProcurementWorkspace } from "@/features/procurement/rfq-queries";
 import { getCurrentPrincipal } from "@/server/auth/current-user";
 import { hasPermission } from "@/server/authorization/authorization";
+
+function poStatusLabel(status: unknown) {
+  return String(status)
+    .toLowerCase()
+    .replaceAll("_", " ")
+    .replace(/^./, (value) => value.toUpperCase());
+}
 
 export default async function ProcurementPage() {
   const principal = await getCurrentPrincipal();
@@ -42,9 +50,9 @@ export default async function ProcurementPage() {
   return (
     <div className="space-y-7">
       <PageHeader
-        eyebrow="Phase 4 · commercial sourcing"
+        eyebrow="Phases 4–5 · sourcing and PO receiving readiness"
         title="Procurement sourcing"
-        description="Issue RFQs, compare documented supplier quotations, route recommendations for independent approval, and create controlled draft purchase orders."
+        description="Issue RFQs, compare supplier quotations, approve sourcing, then control purchase-order issue and supplier acceptance before inventory receiving."
       />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -78,7 +86,7 @@ export default async function ProcurementPage() {
         <Card>
           <CardContent>
             <FileText className="size-5 text-blue-700" />
-            <p className="mt-3 text-sm text-slate-500">Draft purchase orders</p>
+            <p className="mt-3 text-sm text-slate-500">Purchase orders</p>
             <p className="mt-1 font-display text-2xl font-extrabold text-slate-950">
               {purchaseOrders.length}
             </p>
@@ -90,11 +98,13 @@ export default async function ProcurementPage() {
         <div>
           <p className="flex items-center gap-2 font-semibold">
             <LockKeyhole className="size-4" />
-            Controlled commercial workflow
+            Controlled commercial and receiving boundary
           </p>
           <p className="mt-1">
-            Purchase Managers issue and recommend; an independent Project
-            Director approves or rejects. Approval creates a draft PO only.
+            Purchase Managers source and issue POs. Supplier acceptance is
+            recorded before a PO becomes receivable. Accepted material enters
+            stock only after a Store Keeper or authorized Site Supervisor posts
+            a GRN.
           </p>
         </div>
       </Alert>
@@ -197,7 +207,7 @@ export default async function ProcurementPage() {
           <ApplicationState
             kind="empty"
             title="No RFQ drafts yet"
-            description="Approved requirements are ready to enter the draft sourcing workspace."
+            description="Approved requirements are ready to enter the sourcing workspace."
           />
         )}
       </section>
@@ -206,45 +216,54 @@ export default async function ProcurementPage() {
         <section className="space-y-4">
           <div>
             <h2 className="font-display text-lg font-bold text-slate-950">
-              Draft purchase order register
+              Purchase order register
             </h2>
             <p className="mt-1 text-sm text-slate-500">
-              Generated only from approved supplier recommendations
+              Issue approved POs and record supplier acceptance before receiving
             </p>
           </div>
           <div className="grid gap-4 lg:grid-cols-2">
-            {purchaseOrders.map((purchaseOrder) => (
-              <Card key={purchaseOrder.id}>
-                <CardContent>
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-xs font-bold uppercase tracking-wider text-blue-700">
-                        {purchaseOrder.poNumber}
-                      </p>
-                      <h3 className="mt-1 font-display text-lg font-bold text-slate-950">
-                        {purchaseOrder.supplier.tradeName ??
-                          purchaseOrder.supplier.legalName}
-                      </h3>
+            {purchaseOrders.map((purchaseOrder) => {
+              const status = String(purchaseOrder.status);
+              return (
+                <Card key={purchaseOrder.id}>
+                  <CardContent>
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-xs font-bold uppercase tracking-wider text-blue-700">
+                          {purchaseOrder.poNumber}
+                        </p>
+                        <h3 className="mt-1 font-display text-lg font-bold text-slate-950">
+                          {purchaseOrder.supplier.tradeName ??
+                            purchaseOrder.supplier.legalName}
+                        </h3>
+                      </div>
+                      <StatusBadge status={poStatusLabel(status)} />
                     </div>
-                    <StatusBadge status="Draft" />
-                  </div>
-                  <p className="mt-3 text-sm text-slate-600">
-                    {purchaseOrder.rfq.rfqNumber} · expected delivery{" "}
-                    {purchaseOrder.expectedDeliveryDate}
-                  </p>
-                  <p className="mt-2 font-semibold text-slate-950">
-                    INR {purchaseOrder.totalAmount}
-                  </p>
-                  <ButtonLink
-                    href={`/procurement/rfqs/${purchaseOrder.rfq.id}`}
-                    variant="secondary"
-                    className="mt-4"
-                  >
-                    Open source RFQ
-                  </ButtonLink>
-                </CardContent>
-              </Card>
-            ))}
+                    <p className="mt-3 text-sm text-slate-600">
+                      {purchaseOrder.rfq.rfqNumber} · expected delivery{" "}
+                      {purchaseOrder.expectedDeliveryDate}
+                    </p>
+                    <p className="mt-2 font-semibold text-slate-950">
+                      INR {purchaseOrder.totalAmount}
+                    </p>
+                    <ButtonLink
+                      href={`/procurement/rfqs/${purchaseOrder.rfq.id}`}
+                      variant="secondary"
+                      className="mt-4"
+                    >
+                      Open source RFQ
+                    </ButtonLink>
+                    {canCreate ? (
+                      <PurchaseOrderControls
+                        purchaseOrderId={purchaseOrder.id}
+                        status={status}
+                      />
+                    ) : null}
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         </section>
       ) : null}
