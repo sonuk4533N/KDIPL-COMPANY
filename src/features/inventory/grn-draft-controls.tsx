@@ -41,10 +41,16 @@ export function GrnDraftControls({
       </div>
 
       {editing ? (
-        <form action={updateAction} className="space-y-4 rounded-lg border border-slate-200 p-4">
+        <form
+          action={updateAction}
+          className="space-y-4 rounded-lg border border-slate-200 p-4"
+        >
           <input type="hidden" name="goodsReceiptId" value={receipt.id} />
           <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="Receiving location" htmlFor={`grn-location-${receipt.id}`}>
+            <Field
+              label="Receiving location"
+              htmlFor={`grn-location-${receipt.id}`}
+            >
               <Select
                 id={`grn-location-${receipt.id}`}
                 name="locationId"
@@ -75,7 +81,10 @@ export function GrnDraftControls({
                 maxLength={100}
               />
             </Field>
-            <Field label="Delivery note date" htmlFor={`grn-note-date-${receipt.id}`}>
+            <Field
+              label="Delivery note date"
+              htmlFor={`grn-note-date-${receipt.id}`}
+            >
               <Input
                 id={`grn-note-date-${receipt.id}`}
                 name="supplierDeliveryNoteDate"
@@ -91,7 +100,10 @@ export function GrnDraftControls({
                 maxLength={50}
               />
             </Field>
-            <Field label="Transporter" htmlFor={`grn-transporter-${receipt.id}`}>
+            <Field
+              label="Transporter"
+              htmlFor={`grn-transporter-${receipt.id}`}
+            >
               <Input
                 id={`grn-transporter-${receipt.id}`}
                 name="transporter"
@@ -103,10 +115,18 @@ export function GrnDraftControls({
 
           <div className="space-y-3">
             {receipt.lines.map((line) => (
-              <div key={line.id} className="rounded-lg border border-slate-200 p-3">
-                <input type="hidden" name="goodsReceiptLineId" value={line.id} />
+              <div
+                key={line.id}
+                className="rounded-lg border border-slate-200 p-3"
+              >
+                <input
+                  type="hidden"
+                  name="goodsReceiptLineId"
+                  value={line.id}
+                />
                 <p className="text-sm font-semibold text-slate-900">
-                  {line.material.name} · ordered {line.orderedQuantity} {line.unit.symbol}
+                  {line.material.name} · ordered {line.orderedQuantity}{" "}
+                  {line.unit.symbol}
                 </p>
                 <div className="mt-3 grid gap-3 sm:grid-cols-3">
                   <Field label="Accepted" htmlFor={`accepted-${line.id}`}>
@@ -170,7 +190,10 @@ export function GrnDraftControls({
         </form>
       ) : null}
 
-      <form action={cancelAction} className="space-y-3 rounded-lg border border-slate-200 p-4">
+      <form
+        action={cancelAction}
+        className="space-y-3 rounded-lg border border-slate-200 p-4"
+      >
         <input type="hidden" name="goodsReceiptId" value={receipt.id} />
         <Field label="Cancellation reason" htmlFor={`cancel-grn-${receipt.id}`}>
           <Input
