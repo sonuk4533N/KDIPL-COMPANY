@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   calculateReceiptQuantities,
   canPostGoodsReceipt,
+  purchaseOrderStatusAfterReceipt,
   stockDirectionForTransaction,
 } from "../../src/server/inventory/domain";
 
@@ -11,28 +12,52 @@ describe("Phase 5 inventory domain", () => {
     expect(
       calculateReceiptQuantities({
         orderedQuantity: 500,
-        previouslyReceivedQuantity: 100,
+        previouslyAcceptedQuantity: 100,
+        previouslyDamagedQuantity: 0,
+        previouslyRejectedQuantity: 0,
         acceptedQuantity: 250,
         damagedQuantity: 25,
         rejectedQuantity: 25,
       }),
     ).toEqual({
       receivedQuantity: 300,
-      cumulativeReceivedQuantity: 400,
-      remainingQuantity: 100,
+      cumulativeAcceptedQuantity: 350,
+      cumulativeNonConformingQuantity: 50,
+      remainingAcceptableQuantity: 150,
+      replacementAllowance: 0,
     });
   });
 
-  it("rejects cumulative over-receipt", () => {
+  it("rejects accepted quantity above the purchase-order quantity", () => {
     expect(() =>
       calculateReceiptQuantities({
         orderedQuantity: 500,
-        previouslyReceivedQuantity: 450,
+        previouslyAcceptedQuantity: 450,
+        previouslyDamagedQuantity: 0,
+        previouslyRejectedQuantity: 0,
         acceptedQuantity: 60,
         damagedQuantity: 0,
         rejectedQuantity: 0,
       }),
-    ).toThrow("Receipt exceeds the purchase-order quantity.");
+    ).toThrow("Accepted quantity exceeds the purchase-order quantity.");
+  });
+
+  it("allows replacement delivery only for previously damaged or rejected quantity", () => {
+    expect(
+      calculateReceiptQuantities({
+        orderedQuantity: 100,
+        previouslyAcceptedQuantity: 80,
+        previouslyDamagedQuantity: 10,
+        previouslyRejectedQuantity: 10,
+        acceptedQuantity: 20,
+        damagedQuantity: 0,
+        rejectedQuantity: 0,
+      }),
+    ).toMatchObject({
+      cumulativeAcceptedQuantity: 100,
+      remainingAcceptableQuantity: 0,
+      replacementAllowance: 20,
+    });
   });
 
   it("maps stock-affecting transaction direction", () => {
@@ -40,8 +65,15 @@ describe("Phase 5 inventory domain", () => {
     expect(stockDirectionForTransaction("ISSUE")).toBe("OUT");
   });
 
-  it("does not permit stock posting from the current draft-only PO state", () => {
+  it("permits GRN posting only after supplier acceptance", () => {
     expect(canPostGoodsReceipt("DRAFT")).toBe(false);
-    expect(canPostGoodsReceipt("ISSUED")).toBe(true);
+    expect(canPostGoodsReceipt("ISSUED")).toBe(false);
+    expect(canPostGoodsReceipt("ACCEPTED")).toBe(true);
+    expect(canPostGoodsReceipt("PARTIALLY_RECEIVED")).toBe(true);
+  });
+
+  it("moves the PO to received only when the ordered quantity is accepted", () => {
+    expect(purchaseOrderStatusAfterReceipt(100, 40)).toBe("PARTIALLY_RECEIVED");
+    expect(purchaseOrderStatusAfterReceipt(100, 100)).toBe("RECEIVED");
   });
 });
