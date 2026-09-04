@@ -39,8 +39,15 @@ export async function issuePurchaseOrderAction(
     const parsed = purchaseOrderIdSchema.safeParse({
       purchaseOrderId: optionalValue(formData.get("purchaseOrderId")),
     });
-    if (!parsed.success) return { ok: false, error: { code: "VALIDATION_ERROR", message: "Invalid purchase order." } };
-    const result = await InventoryService.issuePurchaseOrder(principal, parsed.data.purchaseOrderId);
+    if (!parsed.success)
+      return {
+        ok: false,
+        error: { code: "VALIDATION_ERROR", message: "Invalid purchase order." },
+      };
+    const result = await InventoryService.issuePurchaseOrder(
+      principal,
+      parsed.data.purchaseOrderId,
+    );
     revalidateInventory();
     return { ok: true, data: result };
   } catch (error) {
@@ -59,7 +66,9 @@ export async function recordSupplierAcceptanceAction(
     const parsed = purchaseOrderAcceptanceSchema.safeParse({
       purchaseOrderId: optionalValue(formData.get("purchaseOrderId")),
       supplierAcceptedAt: optionalValue(formData.get("supplierAcceptedAt")),
-      supplierAcceptanceReference: optionalValue(formData.get("supplierAcceptanceReference")),
+      supplierAcceptanceReference: optionalValue(
+        formData.get("supplierAcceptanceReference"),
+      ),
     });
     if (!parsed.success) {
       return {
@@ -67,11 +76,17 @@ export async function recordSupplierAcceptanceAction(
         error: {
           code: "VALIDATION_ERROR",
           message: "Record supplier acceptance date and reference.",
-          fields: parsed.error.flatten().fieldErrors as Record<string, string[]>,
+          fields: parsed.error.flatten().fieldErrors as Record<
+            string,
+            string[]
+          >,
         },
       };
     }
-    const result = await InventoryService.recordSupplierAcceptance(principal, parsed.data);
+    const result = await InventoryService.recordSupplierAcceptance(
+      principal,
+      parsed.data,
+    );
     revalidateInventory();
     return { ok: true, data: result };
   } catch (error) {
@@ -92,9 +107,18 @@ export async function cancelPurchaseOrderAction(
       reason: optionalValue(formData.get("reason")),
     });
     if (!parsed.success) {
-      return { ok: false, error: { code: "VALIDATION_ERROR", message: "Provide a cancellation reason." } };
+      return {
+        ok: false,
+        error: {
+          code: "VALIDATION_ERROR",
+          message: "Provide a cancellation reason.",
+        },
+      };
     }
-    const result = await InventoryService.cancelPurchaseOrder(principal, parsed.data);
+    const result = await InventoryService.cancelPurchaseOrder(
+      principal,
+      parsed.data,
+    );
     revalidateInventory();
     return { ok: true, data: result };
   } catch (error) {
@@ -119,7 +143,9 @@ export async function createGoodsReceiptDraftAction(
       purchaseOrderId: optionalValue(formData.get("purchaseOrderId")),
       locationId: optionalValue(formData.get("locationId")),
       supplierDeliveryNote: optionalValue(formData.get("supplierDeliveryNote")),
-      supplierDeliveryNoteDate: optionalValue(formData.get("supplierDeliveryNoteDate")),
+      supplierDeliveryNoteDate: optionalValue(
+        formData.get("supplierDeliveryNoteDate"),
+      ),
       vehicleNumber: optionalValue(formData.get("vehicleNumber")),
       transporter: optionalValue(formData.get("transporter")),
       receivedAt: optionalValue(formData.get("receivedAt")),
@@ -129,7 +155,10 @@ export async function createGoodsReceiptDraftAction(
         acceptedQuantity: accepted[index] ?? "0",
         damagedQuantity: damaged[index] ?? "0",
         rejectedQuantity: rejected[index] ?? "0",
-        notes: typeof lineNotes[index] === "string" && lineNotes[index] ? lineNotes[index] : undefined,
+        notes:
+          typeof lineNotes[index] === "string" && lineNotes[index]
+            ? lineNotes[index]
+            : undefined,
       })),
     });
     if (!parsed.success) {
@@ -138,11 +167,17 @@ export async function createGoodsReceiptDraftAction(
         error: {
           code: "VALIDATION_ERROR",
           message: "Review the GRN quantities and receiving details.",
-          fields: parsed.error.flatten().fieldErrors as Record<string, string[]>,
+          fields: parsed.error.flatten().fieldErrors as Record<
+            string,
+            string[]
+          >,
         },
       };
     }
-    const result = await InventoryService.createGoodsReceiptDraft(principal, parsed.data);
+    const result = await InventoryService.createGoodsReceiptDraft(
+      principal,
+      parsed.data,
+    );
     revalidateInventory();
     return { ok: true, data: result };
   } catch (error) {
@@ -161,8 +196,15 @@ export async function postGoodsReceiptAction(
     const parsed = goodsReceiptIdSchema.safeParse({
       goodsReceiptId: optionalValue(formData.get("goodsReceiptId")),
     });
-    if (!parsed.success) return { ok: false, error: { code: "VALIDATION_ERROR", message: "Invalid GRN." } };
-    const result = await InventoryService.postGoodsReceipt(principal, parsed.data.goodsReceiptId);
+    if (!parsed.success)
+      return {
+        ok: false,
+        error: { code: "VALIDATION_ERROR", message: "Invalid GRN." },
+      };
+    const result = await InventoryService.postGoodsReceipt(
+      principal,
+      parsed.data.goodsReceiptId,
+    );
     revalidateInventory();
     return { ok: true, data: { id: result.id } };
   } catch (error) {
