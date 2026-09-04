@@ -14,14 +14,12 @@ import { validateMutationOrigin } from "@/server/auth/request-security";
 import { toCommandError } from "@/server/errors/app-error";
 import type { CommandResult } from "@/types/application";
 
-export type InventoryCompletionActionState =
-  | CommandResult<{ id: string }>
-  | null;
+export type InventoryCompletionActionState = CommandResult<{
+  id: string;
+}> | null;
 
 function optionalValue(value: FormDataEntryValue | null) {
-  return typeof value === "string" && value.trim()
-    ? value.trim()
-    : undefined;
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
 }
 
 function revalidateInventory() {
@@ -74,7 +72,10 @@ export async function cancelGoodsReceiptAction(
         error: {
           code: "VALIDATION_ERROR",
           message: "Provide a valid GRN and cancellation reason.",
-          fields: parsed.error.flatten().fieldErrors as Record<string, string[]>,
+          fields: parsed.error.flatten().fieldErrors as Record<
+            string,
+            string[]
+          >,
         },
       };
     }
@@ -130,7 +131,10 @@ export async function updateGoodsReceiptDraftAction(
         error: {
           code: "VALIDATION_ERROR",
           message: "Review the GRN draft details and quantities.",
-          fields: parsed.error.flatten().fieldErrors as Record<string, string[]>,
+          fields: parsed.error.flatten().fieldErrors as Record<
+            string,
+            string[]
+          >,
         },
       };
     }
@@ -164,7 +168,10 @@ export async function updateGoodsReceiptExceptionAction(
         error: {
           code: "VALIDATION_ERROR",
           message: "Review the exception status and evidence details.",
-          fields: parsed.error.flatten().fieldErrors as Record<string, string[]>,
+          fields: parsed.error.flatten().fieldErrors as Record<
+            string,
+            string[]
+          >,
         },
       };
     }
