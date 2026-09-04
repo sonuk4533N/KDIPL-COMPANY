@@ -9,7 +9,7 @@ const receivableStatuses = new Set(["ACCEPTED", "PARTIALLY_RECEIVED"]);
 export async function getInventoryWorkspace(principal: AuthenticatedPrincipal) {
   requirePermission(principal, "inventory.view");
 
-  const [locations, purchaseOrders, goodsReceipts, stockBalances] =
+  const [locations, purchaseOrders, goodsReceipts, stockBalances, exceptions] =
     await Promise.all([
       db.inventoryLocation.findMany({
         where: { isActive: true },
@@ -55,10 +55,9 @@ export async function getInventoryWorkspace(principal: AuthenticatedPrincipal) {
           createdBy: { select: { displayName: true } },
           postedBy: { select: { displayName: true } },
           lines: {
-            select: {
-              acceptedQuantity: true,
-              damagedQuantity: true,
-              rejectedQuantity: true,
+            include: {
+              material: { select: { materialCode: true, name: true } },
+              unit: { select: { symbol: true } },
             },
           },
         },
@@ -90,6 +89,51 @@ export async function getInventoryWorkspace(principal: AuthenticatedPrincipal) {
         JOIN "UnitOfMeasure" u ON u."id" = b."unitId"
         WHERE b."quantityOnHand" <> 0
         ORDER BY l."name", m."name"
+      `,
+      db.$queryRaw<
+        Array<{
+          id: string;
+          type: string;
+          status: string;
+          quantity: string;
+          reason: string | null;
+          evidenceReference: string | null;
+          resolutionNotes: string | null;
+          grnNumber: string;
+          poNumber: string;
+          materialCode: string;
+          materialName: string;
+          unitSymbol: string;
+          locationCode: string;
+          locationName: string;
+          createdAt: Date;
+        }>
+      >`
+        SELECT
+          e."id",
+          e."type"::text AS "type",
+          e."status"::text AS "status",
+          e."quantity"::text AS "quantity",
+          e."reason",
+          e."evidenceReference",
+          e."resolutionNotes",
+          g."grnNumber",
+          po."poNumber",
+          m."materialCode",
+          m."name" AS "materialName",
+          u."symbol" AS "unitSymbol",
+          loc."locationCode",
+          loc."name" AS "locationName",
+          e."createdAt"
+        FROM "GoodsReceiptException" e
+        JOIN "GoodsReceiptLine" line ON line."id" = e."goodsReceiptLineId"
+        JOIN "GoodsReceipt" g ON g."id" = line."goodsReceiptId"
+        JOIN "PurchaseOrder" po ON po."id" = g."purchaseOrderId"
+        JOIN "Material" m ON m."id" = line."materialId"
+        JOIN "UnitOfMeasure" u ON u."id" = line."unitId"
+        JOIN "InventoryLocation" loc ON loc."id" = g."locationId"
+        ORDER BY e."createdAt" DESC
+        LIMIT 100
       `,
     ]);
 
@@ -123,13 +167,32 @@ export async function getInventoryWorkspace(principal: AuthenticatedPrincipal) {
     goodsReceipts: goodsReceipts.map((receipt) => ({
       id: receipt.id,
       grnNumber: receipt.grnNumber,
-      status: receipt.status,
+      status: String(receipt.status),
+      purchaseOrderId: receipt.purchaseOrderId,
       poNumber: receipt.purchaseOrder.poNumber,
+      locationId: receipt.locationId,
       location: receipt.location,
+      supplierDeliveryNote: receipt.supplierDeliveryNote,
+      supplierDeliveryNoteDate:
+        receipt.supplierDeliveryNoteDate?.toISOString().slice(0, 10) ?? null,
+      vehicleNumber: receipt.vehicleNumber,
+      transporter: receipt.transporter,
+      notes: receipt.notes,
       createdBy: receipt.createdBy.displayName,
       postedBy: receipt.postedBy?.displayName ?? null,
       receivedAt: receipt.receivedAt?.toISOString() ?? null,
       createdAt: receipt.createdAt.toISOString(),
+      lines: receipt.lines.map((line) => ({
+        id: line.id,
+        purchaseOrderLineId: line.purchaseOrderLineId,
+        material: line.material,
+        unit: line.unit,
+        orderedQuantity: line.orderedQuantity.toString(),
+        acceptedQuantity: line.acceptedQuantity.toString(),
+        damagedQuantity: line.damagedQuantity.toString(),
+        rejectedQuantity: line.rejectedQuantity.toString(),
+        notes: line.notes,
+      })),
       totals: receipt.lines.reduce(
         (totals, line) => ({
           accepted: totals.accepted + Number(line.acceptedQuantity),
@@ -140,6 +203,10 @@ export async function getInventoryWorkspace(principal: AuthenticatedPrincipal) {
       ),
     })),
     stockBalances,
+    exceptions: exceptions.map((exception) => ({
+      ...exception,
+      createdAt: exception.createdAt.toISOString(),
+    })),
   };
 }
 
