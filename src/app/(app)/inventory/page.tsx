@@ -1,4 +1,10 @@
-import { AlertTriangle, Boxes, ClipboardCheck, PackageCheck, Warehouse } from "lucide-react";
+import {
+  AlertTriangle,
+  Boxes,
+  ClipboardCheck,
+  PackageCheck,
+  Warehouse,
+} from "lucide-react";
 
 import { PageHeader } from "@/components/shared/page-header";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -99,7 +105,8 @@ export default async function InventoryPage() {
               Receive material
             </h2>
             <p className="mt-1 text-sm text-slate-500">
-              Only supplier-accepted purchase orders are available. Accepted quantity enters usable stock only after posting.
+              Only supplier-accepted purchase orders are available. Accepted
+              quantity enters usable stock only after posting.
             </p>
           </CardHeader>
           <CardContent>
@@ -155,11 +162,15 @@ export default async function InventoryPage() {
                       {receipt.location.locationCode} · {receipt.location.name}
                     </p>
                     <p>
-                      Accepted {receipt.totals.accepted} · Damaged {receipt.totals.damaged} · Rejected {receipt.totals.rejected}
+                      Accepted {receipt.totals.accepted} · Damaged{" "}
+                      {receipt.totals.damaged} · Rejected{" "}
+                      {receipt.totals.rejected}
                     </p>
                     <p className="text-xs text-slate-500">
                       Created by {receipt.createdBy}
-                      {receipt.postedBy ? ` · Posted by ${receipt.postedBy}` : ""}
+                      {receipt.postedBy
+                        ? ` · Posted by ${receipt.postedBy}`
+                        : ""}
                     </p>
                   </div>
                   {canReceive && receipt.status === "DRAFT" ? (
@@ -190,7 +201,8 @@ export default async function InventoryPage() {
             Damaged and rejected material
           </h2>
           <p className="mt-1 text-sm text-slate-500">
-            Track replacement, return, evidence, and resolution without adding non-conforming material to usable stock.
+            Track replacement, return, evidence, and resolution without adding
+            non-conforming material to usable stock.
           </p>
         </div>
         {workspace.exceptions.length ? (
@@ -207,12 +219,17 @@ export default async function InventoryPage() {
                         {exception.materialName}
                       </h3>
                     </div>
-                    <StatusBadge status={exception.status.replaceAll("_", " ")} />
+                    <StatusBadge
+                      status={exception.status.replaceAll("_", " ")}
+                    />
                   </div>
                   <div className="mt-3 space-y-1 text-sm text-slate-600">
-                    <p>{exception.poNumber} · {exception.locationName}</p>
                     <p>
-                      {exception.quantity} {exception.unitSymbol} · {exception.reason ?? "No reason recorded"}
+                      {exception.poNumber} · {exception.locationName}
+                    </p>
+                    <p>
+                      {exception.quantity} {exception.unitSymbol} ·{" "}
+                      {exception.reason ?? "No reason recorded"}
                     </p>
                   </div>
                   {canReceive ? (

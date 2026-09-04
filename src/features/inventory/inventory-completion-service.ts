@@ -172,7 +172,8 @@ export const InventoryCompletionService = {
         where: { id: purchaseOrderId },
         select: { id: true, status: true },
       });
-      if (!purchaseOrder) throw new AppError("NOT_FOUND", "Purchase order not found.");
+      if (!purchaseOrder)
+        throw new AppError("NOT_FOUND", "Purchase order not found.");
       if (purchaseOrder.status !== "RECEIVED") {
         throw new AppError(
           "INVALID_STATUS_TRANSITION",
@@ -357,7 +358,9 @@ export const InventoryCompletionService = {
           "Record quantities for every GRN line.",
         );
       }
-      const existingById = new Map(receipt.lines.map((line) => [line.id, line]));
+      const existingById = new Map(
+        receipt.lines.map((line) => [line.id, line]),
+      );
       const poLineById = new Map(
         receipt.purchaseOrder.lines.map((line) => [line.id, line]),
       );
@@ -373,7 +376,10 @@ export const InventoryCompletionService = {
         }
         const poLine = poLineById.get(existing.purchaseOrderLineId);
         if (!poLine) {
-          throw new AppError("VALIDATION_ERROR", "Invalid purchase-order line.");
+          throw new AppError(
+            "VALIDATION_ERROR",
+            "Invalid purchase-order line.",
+          );
         }
         const prior = previous.get(poLine.id) ?? {
           accepted: 0,
@@ -473,7 +479,8 @@ export const InventoryCompletionService = {
         FOR UPDATE
       `;
       const current = rows[0];
-      if (!current) throw new AppError("NOT_FOUND", "Receipt exception not found.");
+      if (!current)
+        throw new AppError("NOT_FOUND", "Receipt exception not found.");
       await validateReceivingLocation(transaction, principal, {
         locationId: current.locationId,
         projectId: current.projectId,

@@ -26,28 +26,39 @@ function requirePurchaseManager(principal: AuthenticatedPrincipal) {
     !principal.roleCodes.includes("PURCHASE_MANAGER") ||
     principal.roleCodes.includes("SYSTEM_ADMINISTRATOR")
   ) {
-    throw new AppError("FORBIDDEN", "Only the Purchase Manager can manage purchase-order issue and supplier acceptance.");
+    throw new AppError(
+      "FORBIDDEN",
+      "Only the Purchase Manager can manage purchase-order issue and supplier acceptance.",
+    );
   }
 }
 
 function requireReceivingRole(principal: AuthenticatedPrincipal) {
   const isStoreKeeper = principal.roleCodes.includes("STORE_KEEPER");
   const isSiteSupervisor = principal.roleCodes.includes("SITE_SUPERVISOR");
-  if ((!isStoreKeeper && !isSiteSupervisor) || principal.roleCodes.includes("SYSTEM_ADMINISTRATOR")) {
-    throw new AppError("FORBIDDEN", "Only an authorized Store Keeper or Site Supervisor can receive material.");
+  if (
+    (!isStoreKeeper && !isSiteSupervisor) ||
+    principal.roleCodes.includes("SYSTEM_ADMINISTRATOR")
+  ) {
+    throw new AppError(
+      "FORBIDDEN",
+      "Only an authorized Store Keeper or Site Supervisor can receive material.",
+    );
   }
   return { isStoreKeeper, isSiteSupervisor };
 }
 
 function parseDate(value: string) {
   const date = new Date(`${value}T00:00:00.000Z`);
-  if (Number.isNaN(date.getTime())) throw new AppError("VALIDATION_ERROR", "Invalid date.");
+  if (Number.isNaN(date.getTime()))
+    throw new AppError("VALIDATION_ERROR", "Invalid date.");
   return date;
 }
 
 function parseDateTime(value: string) {
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) throw new AppError("VALIDATION_ERROR", "Invalid receipt date/time.");
+  if (Number.isNaN(date.getTime()))
+    throw new AppError("VALIDATION_ERROR", "Invalid receipt date/time.");
   return date;
 }
 
@@ -78,7 +89,8 @@ async function requireReceivablePurchaseOrder(
       supplier: { select: { legalName: true, tradeName: true } },
     },
   });
-  if (!purchaseOrder) throw new AppError("NOT_FOUND", "Purchase order not found.");
+  if (!purchaseOrder)
+    throw new AppError("NOT_FOUND", "Purchase order not found.");
   const status = String(purchaseOrder.status) as PurchaseOrderStatus;
   if (!canPostGoodsReceipt(status)) {
     throw new AppError(
@@ -98,7 +110,11 @@ async function validateReceivingLocation(
   const location = await transaction.inventoryLocation.findFirst({
     where: { id: values.locationId, isActive: true },
   });
-  if (!location) throw new AppError("VALIDATION_ERROR", "Select an active inventory location.");
+  if (!location)
+    throw new AppError(
+      "VALIDATION_ERROR",
+      "Select an active inventory location.",
+    );
 
   const sameProject = location.projectId === values.projectId;
   const sameSite = location.siteId === values.siteId;
@@ -107,12 +123,18 @@ async function validateReceivingLocation(
     (location.type === "PROJECT_STORE" && sameProject) ||
     (location.type === "SITE_STORE" && sameProject && sameSite);
   if (!allowedForPo) {
-    throw new AppError("FORBIDDEN", "The selected receiving location is outside this purchase order's project/site scope.");
+    throw new AppError(
+      "FORBIDDEN",
+      "The selected receiving location is outside this purchase order's project/site scope.",
+    );
   }
 
   if (roles.isSiteSupervisor) {
     if (location.type !== "SITE_STORE" || !sameSite || !principal.employeeId) {
-      throw new AppError("FORBIDDEN", "Site Supervisors may receive only direct deliveries into their assigned site store.");
+      throw new AppError(
+        "FORBIDDEN",
+        "Site Supervisors may receive only direct deliveries into their assigned site store.",
+      );
     }
     const assignment = await transaction.siteAssignment.findFirst({
       where: {
@@ -124,7 +146,10 @@ async function validateReceivingLocation(
       select: { id: true },
     });
     if (!assignment) {
-      throw new AppError("FORBIDDEN", "An active Site Supervisor assignment is required for direct-site receipt.");
+      throw new AppError(
+        "FORBIDDEN",
+        "An active Site Supervisor assignment is required for direct-site receipt.",
+      );
     }
   }
   return location;
@@ -165,7 +190,10 @@ async function previousReceiptTotals(
 }
 
 export const InventoryService = {
-  async issuePurchaseOrder(principal: AuthenticatedPrincipal, purchaseOrderId: string) {
+  async issuePurchaseOrder(
+    principal: AuthenticatedPrincipal,
+    purchaseOrderId: string,
+  ) {
     requirePermission(principal, "purchase.create");
     requirePurchaseManager(principal);
     return db.$transaction(async (transaction) => {
@@ -179,7 +207,11 @@ export const InventoryService = {
           AND "status" = 'DRAFT'::"PurchaseOrderStatus"
         RETURNING "id"
       `;
-      if (!changed.length) throw new AppError("INVALID_STATUS_TRANSITION", "Only a draft purchase order can be issued.");
+      if (!changed.length)
+        throw new AppError(
+          "INVALID_STATUS_TRANSITION",
+          "Only a draft purchase order can be issued.",
+        );
       await AuditService.record(
         {
           actorUserId: principal.userId,
@@ -213,7 +245,11 @@ export const InventoryService = {
           AND "status" = 'ISSUED'::"PurchaseOrderStatus"
         RETURNING "id"
       `;
-      if (!changed.length) throw new AppError("INVALID_STATUS_TRANSITION", "Only an issued purchase order can be marked supplier accepted.");
+      if (!changed.length)
+        throw new AppError(
+          "INVALID_STATUS_TRANSITION",
+          "Only an issued purchase order can be marked supplier accepted.",
+        );
       await AuditService.record(
         {
           actorUserId: principal.userId,
@@ -244,7 +280,10 @@ export const InventoryService = {
         where: { purchaseOrderId: input.purchaseOrderId, status: "POSTED" },
       });
       if (postedReceipts) {
-        throw new AppError("CONFLICT", "A purchase order with posted receipts cannot be cancelled; use the controlled return/reversal workflow.");
+        throw new AppError(
+          "CONFLICT",
+          "A purchase order with posted receipts cannot be cancelled; use the controlled return/reversal workflow.",
+        );
       }
       const now = new Date();
       const changed = await transaction.$queryRaw<Array<{ id: string }>>`
@@ -280,7 +319,10 @@ export const InventoryService = {
     requirePermission(principal, "inventory.receive");
     return db.$transaction(async (transaction) => {
       if (input.goodsReceiptId) {
-        throw new AppError("VALIDATION_ERROR", "Editing existing GRN drafts will be enabled in the next UI increment; create a new draft for now.");
+        throw new AppError(
+          "VALIDATION_ERROR",
+          "Editing existing GRN drafts will be enabled in the next UI increment; create a new draft for now.",
+        );
       }
       const { purchaseOrder } = await requireReceivablePurchaseOrder(
         transaction,
@@ -291,9 +333,14 @@ export const InventoryService = {
         projectId: purchaseOrder.rfq.requirement.projectId,
         siteId: purchaseOrder.rfq.requirement.siteId,
       });
-      const lineById = new Map(purchaseOrder.lines.map((line) => [line.id, line]));
+      const lineById = new Map(
+        purchaseOrder.lines.map((line) => [line.id, line]),
+      );
       if (input.lines.length !== purchaseOrder.lines.length) {
-        throw new AppError("VALIDATION_ERROR", "Record quantities for every purchase-order line.");
+        throw new AppError(
+          "VALIDATION_ERROR",
+          "Record quantities for every purchase-order line.",
+        );
       }
       const previous = await previousReceiptTotals(
         transaction,
@@ -301,8 +348,16 @@ export const InventoryService = {
       );
       const prepared = input.lines.map((line) => {
         const poLine = lineById.get(line.purchaseOrderLineId);
-        if (!poLine) throw new AppError("VALIDATION_ERROR", "Invalid purchase-order line.");
-        const prior = previous.get(poLine.id) ?? { accepted: 0, damaged: 0, rejected: 0 };
+        if (!poLine)
+          throw new AppError(
+            "VALIDATION_ERROR",
+            "Invalid purchase-order line.",
+          );
+        const prior = previous.get(poLine.id) ?? {
+          accepted: 0,
+          damaged: 0,
+          rejected: 0,
+        };
         const result = calculateReceiptQuantities({
           orderedQuantity: Number(poLine.quantity),
           previouslyAcceptedQuantity: prior.accepted,
@@ -315,12 +370,19 @@ export const InventoryService = {
         return { poLine, input: line, result };
       });
       if (!prepared.some(({ result }) => result.receivedQuantity > 0)) {
-        throw new AppError("VALIDATION_ERROR", "Record at least one received quantity.");
+        throw new AppError(
+          "VALIDATION_ERROR",
+          "Record at least one received quantity.",
+        );
       }
       const now = new Date();
       const goodsReceipt = await transaction.goodsReceipt.create({
         data: {
-          grnNumber: await TransactionNumberService.next("GRN", now, transaction),
+          grnNumber: await TransactionNumberService.next(
+            "GRN",
+            now,
+            transaction,
+          ),
           purchaseOrderId: purchaseOrder.id,
           locationId: location.id,
           supplierDeliveryNote: input.supplierDeliveryNote,
@@ -342,7 +404,11 @@ export const InventoryService = {
           },
         },
       });
-      if (input.supplierDeliveryNoteDate || input.vehicleNumber || input.transporter) {
+      if (
+        input.supplierDeliveryNoteDate ||
+        input.vehicleNumber ||
+        input.transporter
+      ) {
         await transaction.$executeRaw`
           UPDATE "GoodsReceipt"
           SET "supplierDeliveryNoteDate" = ${input.supplierDeliveryNoteDate ? parseDate(input.supplierDeliveryNoteDate) : null},
@@ -370,7 +436,10 @@ export const InventoryService = {
     });
   },
 
-  async postGoodsReceipt(principal: AuthenticatedPrincipal, goodsReceiptId: string) {
+  async postGoodsReceipt(
+    principal: AuthenticatedPrincipal,
+    goodsReceiptId: string,
+  ) {
     requirePermission(principal, "inventory.receive");
     requireReceivingRole(principal);
     return db.$transaction(async (transaction) => {
@@ -382,16 +451,31 @@ export const InventoryService = {
           purchaseOrder: {
             include: {
               lines: true,
-              rfq: { select: { requirement: { select: { projectId: true, siteId: true } } } },
+              rfq: {
+                select: {
+                  requirement: { select: { projectId: true, siteId: true } },
+                },
+              },
             },
           },
         },
       });
       if (!receipt) throw new AppError("NOT_FOUND");
-      if (receipt.status === "POSTED") throw new AppError("DUPLICATE_TRANSACTION", "This GRN is already posted.");
-      if (receipt.status !== "DRAFT") throw new AppError("INVALID_STATUS_TRANSITION");
-      const poStatus = String(receipt.purchaseOrder.status) as PurchaseOrderStatus;
-      if (!canPostGoodsReceipt(poStatus)) throw new AppError("INVALID_STATUS_TRANSITION", "The purchase order is not open for receiving.");
+      if (receipt.status === "POSTED")
+        throw new AppError(
+          "DUPLICATE_TRANSACTION",
+          "This GRN is already posted.",
+        );
+      if (receipt.status !== "DRAFT")
+        throw new AppError("INVALID_STATUS_TRANSITION");
+      const poStatus = String(
+        receipt.purchaseOrder.status,
+      ) as PurchaseOrderStatus;
+      if (!canPostGoodsReceipt(poStatus))
+        throw new AppError(
+          "INVALID_STATUS_TRANSITION",
+          "The purchase order is not open for receiving.",
+        );
       await validateReceivingLocation(transaction, principal, {
         locationId: receipt.locationId,
         projectId: receipt.purchaseOrder.rfq.requirement.projectId,
@@ -402,11 +486,17 @@ export const InventoryService = {
         transaction,
         receipt.purchaseOrder.lines.map(({ id }) => id),
       );
-      const currentByPoLine = new Map(receipt.lines.map((line) => [line.purchaseOrderLineId, line]));
+      const currentByPoLine = new Map(
+        receipt.lines.map((line) => [line.purchaseOrderLineId, line]),
+      );
       const cumulativeAccepted = new Map<string, number>();
       for (const poLine of receipt.purchaseOrder.lines) {
         const line = currentByPoLine.get(poLine.id);
-        const prior = previous.get(poLine.id) ?? { accepted: 0, damaged: 0, rejected: 0 };
+        const prior = previous.get(poLine.id) ?? {
+          accepted: 0,
+          damaged: 0,
+          rejected: 0,
+        };
         const currentAccepted = line ? Number(line.acceptedQuantity) : 0;
         const currentDamaged = line ? Number(line.damagedQuantity) : 0;
         const currentRejected = line ? Number(line.rejectedQuantity) : 0;
@@ -433,7 +523,11 @@ export const InventoryService = {
         if (line.acceptedQuantity.lte(0)) continue;
         await transaction.stockTransaction.create({
           data: {
-            transactionNumber: await TransactionNumberService.next("STK", now, transaction),
+            transactionNumber: await TransactionNumberService.next(
+              "STK",
+              now,
+              transaction,
+            ),
             type: "RECEIPT",
             locationId: receipt.locationId,
             materialId: line.materialId,
@@ -447,7 +541,10 @@ export const InventoryService = {
 
       const fullyReceived = receipt.purchaseOrder.lines.every((line) => {
         const accepted = cumulativeAccepted.get(line.id) ?? 0;
-        return purchaseOrderStatusAfterReceipt(Number(line.quantity), accepted) === "RECEIVED";
+        return (
+          purchaseOrderStatusAfterReceipt(Number(line.quantity), accepted) ===
+          "RECEIVED"
+        );
       });
       const targetStatus = fullyReceived ? "RECEIVED" : "PARTIALLY_RECEIVED";
       const poChanged = await transaction.$queryRaw<Array<{ id: string }>>`
@@ -457,7 +554,11 @@ export const InventoryService = {
           AND "status" IN ('ACCEPTED'::"PurchaseOrderStatus", 'PARTIALLY_RECEIVED'::"PurchaseOrderStatus")
         RETURNING "id"
       `;
-      if (!poChanged.length) throw new AppError("CONFLICT", "Purchase-order receiving state changed concurrently.");
+      if (!poChanged.length)
+        throw new AppError(
+          "CONFLICT",
+          "Purchase-order receiving state changed concurrently.",
+        );
 
       await AuditService.record(
         {
@@ -469,7 +570,9 @@ export const InventoryService = {
           after: {
             status: "POSTED",
             postedAt: now,
-            acceptedStockLines: receipt.lines.filter((line) => line.acceptedQuantity.gt(0)).length,
+            acceptedStockLines: receipt.lines.filter((line) =>
+              line.acceptedQuantity.gt(0),
+            ).length,
           },
         },
         transaction,
@@ -485,7 +588,11 @@ export const InventoryService = {
         },
         transaction,
       );
-      return { id: receipt.id, purchaseOrderId: receipt.purchaseOrderId, purchaseOrderStatus: targetStatus };
+      return {
+        id: receipt.id,
+        purchaseOrderId: receipt.purchaseOrderId,
+        purchaseOrderStatus: targetStatus,
+      };
     });
   },
 };

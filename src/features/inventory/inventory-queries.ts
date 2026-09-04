@@ -210,4 +210,6 @@ export async function getInventoryWorkspace(principal: AuthenticatedPrincipal) {
   };
 }
 
-export type InventoryWorkspace = Awaited<ReturnType<typeof getInventoryWorkspace>>;
+export type InventoryWorkspace = Awaited<
+  ReturnType<typeof getInventoryWorkspace>
+>;
