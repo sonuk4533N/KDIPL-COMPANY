@@ -1,6 +1,8 @@
 export interface ReceiptQuantityInput {
   orderedQuantity: number;
-  previouslyReceivedQuantity: number;
+  previouslyAcceptedQuantity: number;
+  previouslyDamagedQuantity: number;
+  previouslyRejectedQuantity: number;
   acceptedQuantity: number;
   damagedQuantity: number;
   rejectedQuantity: number;
@@ -8,8 +10,10 @@ export interface ReceiptQuantityInput {
 
 export interface ReceiptQuantityResult {
   receivedQuantity: number;
-  cumulativeReceivedQuantity: number;
-  remainingQuantity: number;
+  cumulativeAcceptedQuantity: number;
+  cumulativeNonConformingQuantity: number;
+  remainingAcceptableQuantity: number;
+  replacementAllowance: number;
 }
 
 function assertFiniteNonNegative(value: number, field: string) {
@@ -23,8 +27,16 @@ export function calculateReceiptQuantities(
 ): ReceiptQuantityResult {
   assertFiniteNonNegative(input.orderedQuantity, "orderedQuantity");
   assertFiniteNonNegative(
-    input.previouslyReceivedQuantity,
-    "previouslyReceivedQuantity",
+    input.previouslyAcceptedQuantity,
+    "previouslyAcceptedQuantity",
+  );
+  assertFiniteNonNegative(
+    input.previouslyDamagedQuantity,
+    "previouslyDamagedQuantity",
+  );
+  assertFiniteNonNegative(
+    input.previouslyRejectedQuantity,
+    "previouslyRejectedQuantity",
   );
   assertFiniteNonNegative(input.acceptedQuantity, "acceptedQuantity");
   assertFiniteNonNegative(input.damagedQuantity, "damagedQuantity");
@@ -34,19 +46,41 @@ export function calculateReceiptQuantities(
     throw new Error("orderedQuantity must be greater than zero.");
   }
 
-  const receivedQuantity =
-    input.acceptedQuantity + input.damagedQuantity + input.rejectedQuantity;
-  const cumulativeReceivedQuantity =
-    input.previouslyReceivedQuantity + receivedQuantity;
+  const cumulativeAcceptedQuantity =
+    input.previouslyAcceptedQuantity + input.acceptedQuantity;
 
-  if (cumulativeReceivedQuantity > input.orderedQuantity) {
-    throw new Error("Receipt exceeds the purchase-order quantity.");
+  if (cumulativeAcceptedQuantity > input.orderedQuantity) {
+    throw new Error("Accepted quantity exceeds the purchase-order quantity.");
+  }
+
+  const previousNonConforming =
+    input.previouslyDamagedQuantity + input.previouslyRejectedQuantity;
+  const currentNonConforming = input.damagedQuantity + input.rejectedQuantity;
+  const receivedQuantity = input.acceptedQuantity + currentNonConforming;
+
+  // Replacement deliveries may exceed the original gross delivered quantity only
+  // to replace quantities that were previously damaged or rejected. This prevents
+  // true over-receipt while still supporting supplier replacement material.
+  const replacementAllowance = previousNonConforming;
+  const remainingAcceptableQuantity =
+    input.orderedQuantity - input.previouslyAcceptedQuantity;
+  const maximumCurrentDelivery =
+    remainingAcceptableQuantity + replacementAllowance;
+
+  if (receivedQuantity > maximumCurrentDelivery) {
+    throw new Error(
+      "Delivery exceeds remaining PO quantity plus approved replacement allowance.",
+    );
   }
 
   return {
     receivedQuantity,
-    cumulativeReceivedQuantity,
-    remainingQuantity: input.orderedQuantity - cumulativeReceivedQuantity,
+    cumulativeAcceptedQuantity,
+    cumulativeNonConformingQuantity:
+      previousNonConforming + currentNonConforming,
+    remainingAcceptableQuantity:
+      input.orderedQuantity - cumulativeAcceptedQuantity,
+    replacementAllowance,
   };
 }
 
@@ -68,8 +102,43 @@ export function stockDirectionForTransaction(type: string): StockDirection {
   }
 }
 
-export function canPostGoodsReceipt(purchaseOrderStatus: string): boolean {
-  // Phase 4 currently creates DRAFT purchase orders only. Stock must never be
-  // increased until a later approved increment defines an issued/accepted PO.
-  return purchaseOrderStatus === "ISSUED" || purchaseOrderStatus === "ACCEPTED";
+export type PurchaseOrderStatus =
+  | "DRAFT"
+  | "ISSUED"
+  | "ACCEPTED"
+  | "PARTIALLY_RECEIVED"
+  | "RECEIVED"
+  | "CLOSED"
+  | "CANCELLED";
+
+export function canIssuePurchaseOrder(status: PurchaseOrderStatus): boolean {
+  return status === "DRAFT";
+}
+
+export function canAcceptPurchaseOrder(status: PurchaseOrderStatus): boolean {
+  return status === "ISSUED";
+}
+
+export function canPostGoodsReceipt(status: PurchaseOrderStatus): boolean {
+  // KDIPL confirmed that receiving occurs only after supplier acceptance.
+  return status === "ACCEPTED" || status === "PARTIALLY_RECEIVED";
+}
+
+export function purchaseOrderStatusAfterReceipt(
+  orderedQuantity: number,
+  cumulativeAcceptedQuantity: number,
+): "PARTIALLY_RECEIVED" | "RECEIVED" {
+  if (orderedQuantity <= 0) {
+    throw new Error("orderedQuantity must be greater than zero.");
+  }
+  if (cumulativeAcceptedQuantity < 0) {
+    throw new Error("cumulativeAcceptedQuantity cannot be negative.");
+  }
+  if (cumulativeAcceptedQuantity > orderedQuantity) {
+    throw new Error("Accepted quantity exceeds the purchase-order quantity.");
+  }
+
+  return cumulativeAcceptedQuantity === orderedQuantity
+    ? "RECEIVED"
+    : "PARTIALLY_RECEIVED";
 }
