@@ -44,5 +44,7 @@ export const goodsReceiptIdSchema = z.object({ goodsReceiptId: uuid });
 export type PurchaseOrderAcceptanceInput = z.infer<
   typeof purchaseOrderAcceptanceSchema
 >;
-export type PurchaseOrderCancelInput = z.infer<typeof purchaseOrderCancelSchema>;
+export type PurchaseOrderCancelInput = z.infer<
+  typeof purchaseOrderCancelSchema
+>;
 export type GoodsReceiptDraftInput = z.infer<typeof goodsReceiptDraftSchema>;
