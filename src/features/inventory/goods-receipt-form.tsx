@@ -37,7 +37,11 @@ export function GoodsReceiptForm({
   return (
     <form action={action} className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2">
-        <Field label="Purchase order" htmlFor="grn-po" error={fields?.purchaseOrderId?.[0]}>
+        <Field
+          label="Purchase order"
+          htmlFor="grn-po"
+          error={fields?.purchaseOrderId?.[0]}
+        >
           <Select
             id="grn-po"
             name="purchaseOrderId"
@@ -53,7 +57,11 @@ export function GoodsReceiptForm({
             ))}
           </Select>
         </Field>
-        <Field label="Receiving location" htmlFor="grn-location" error={fields?.locationId?.[0]}>
+        <Field
+          label="Receiving location"
+          htmlFor="grn-location"
+          error={fields?.locationId?.[0]}
+        >
           <Select id="grn-location" name="locationId" required>
             <option value="">Select store/site store</option>
             {locations.map((location) => (
@@ -63,14 +71,27 @@ export function GoodsReceiptForm({
             ))}
           </Select>
         </Field>
-        <Field label="Received date/time" htmlFor="grn-received-at" error={fields?.receivedAt?.[0]}>
-          <Input id="grn-received-at" name="receivedAt" type="datetime-local" required />
+        <Field
+          label="Received date/time"
+          htmlFor="grn-received-at"
+          error={fields?.receivedAt?.[0]}
+        >
+          <Input
+            id="grn-received-at"
+            name="receivedAt"
+            type="datetime-local"
+            required
+          />
         </Field>
         <Field label="Delivery challan / note" htmlFor="grn-note-no">
           <Input id="grn-note-no" name="supplierDeliveryNote" maxLength={100} />
         </Field>
         <Field label="Challan date" htmlFor="grn-note-date">
-          <Input id="grn-note-date" name="supplierDeliveryNoteDate" type="date" />
+          <Input
+            id="grn-note-date"
+            name="supplierDeliveryNoteDate"
+            type="date"
+          />
         </Field>
         <Field label="Vehicle number" htmlFor="grn-vehicle">
           <Input id="grn-vehicle" name="vehicleNumber" maxLength={50} />
@@ -84,10 +105,12 @@ export function GoodsReceiptForm({
         <div className="space-y-3">
           <div className="rounded-xl border border-blue-100 bg-blue-50 p-4 text-sm text-blue-950">
             <p className="font-semibold">
-              {selectedPurchaseOrder.poNumber} · {selectedPurchaseOrder.supplierName}
+              {selectedPurchaseOrder.poNumber} ·{" "}
+              {selectedPurchaseOrder.supplierName}
             </p>
             <p className="mt-1 text-xs text-blue-800">
-              {selectedPurchaseOrder.project.name} · {selectedPurchaseOrder.site.name} · {selectedPurchaseOrder.status}
+              {selectedPurchaseOrder.project.name} ·{" "}
+              {selectedPurchaseOrder.site.name} · {selectedPurchaseOrder.status}
             </p>
           </div>
           <div className="overflow-x-auto rounded-xl border border-slate-200">
@@ -105,21 +128,50 @@ export function GoodsReceiptForm({
                 {selectedPurchaseOrder.lines.map((line) => (
                   <tr key={line.id}>
                     <td className="px-3 py-3">
-                      <input type="hidden" name="purchaseOrderLineId" value={line.id} />
-                      <p className="font-semibold text-slate-900">{line.material.name}</p>
-                      <p className="text-xs text-slate-500">{line.material.materialCode}</p>
+                      <input
+                        type="hidden"
+                        name="purchaseOrderLineId"
+                        value={line.id}
+                      />
+                      <p className="font-semibold text-slate-900">
+                        {line.material.name}
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        {line.material.materialCode}
+                      </p>
                     </td>
                     <td className="px-3 py-3 text-slate-700">
                       {line.quantity} {line.unit.symbol}
                     </td>
                     <td className="px-3 py-3">
-                      <Input name="acceptedQuantity" type="number" min="0" step="0.001" defaultValue="0" required />
+                      <Input
+                        name="acceptedQuantity"
+                        type="number"
+                        min="0"
+                        step="0.001"
+                        defaultValue="0"
+                        required
+                      />
                     </td>
                     <td className="px-3 py-3">
-                      <Input name="damagedQuantity" type="number" min="0" step="0.001" defaultValue="0" required />
+                      <Input
+                        name="damagedQuantity"
+                        type="number"
+                        min="0"
+                        step="0.001"
+                        defaultValue="0"
+                        required
+                      />
                     </td>
                     <td className="px-3 py-3">
-                      <Input name="rejectedQuantity" type="number" min="0" step="0.001" defaultValue="0" required />
+                      <Input
+                        name="rejectedQuantity"
+                        type="number"
+                        min="0"
+                        step="0.001"
+                        defaultValue="0"
+                        required
+                      />
                       <input type="hidden" name="lineNotes" value="" />
                     </td>
                   </tr>
@@ -131,7 +183,12 @@ export function GoodsReceiptForm({
       ) : null}
 
       <Field label="Receiving notes" htmlFor="grn-notes">
-        <Textarea id="grn-notes" name="notes" maxLength={2000} placeholder="Condition, shortage, damage, rejection or receiving remarks" />
+        <Textarea
+          id="grn-notes"
+          name="notes"
+          maxLength={2000}
+          placeholder="Condition, shortage, damage, rejection or receiving remarks"
+        />
       </Field>
 
       <div className="flex flex-wrap items-center gap-3">
@@ -140,7 +197,8 @@ export function GoodsReceiptForm({
           {pending ? "Saving GRN draft..." : "Create GRN draft"}
         </Button>
         <p className="text-xs text-slate-500">
-          Creating a draft does not change stock. Stock increases only when the GRN is posted.
+          Creating a draft does not change stock. Stock increases only when the
+          GRN is posted.
         </p>
       </div>
       <FormFeedback state={state} success="GRN draft created." />
