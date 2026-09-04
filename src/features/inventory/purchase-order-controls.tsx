@@ -92,7 +92,9 @@ export function PurchaseOrderControls({
             </Field>
           </div>
           <Button type="submit" disabled={acceptPending}>
-            {acceptPending ? "Recording acceptance..." : "Record supplier acceptance"}
+            {acceptPending
+              ? "Recording acceptance..."
+              : "Record supplier acceptance"}
           </Button>
           <FormFeedback
             state={acceptState}
@@ -102,7 +104,10 @@ export function PurchaseOrderControls({
 
         <form action={cancelAction} className="space-y-3">
           <input type="hidden" name="purchaseOrderId" value={purchaseOrderId} />
-          <Field label="Cancellation reason" htmlFor={`po-cancel-${purchaseOrderId}`}>
+          <Field
+            label="Cancellation reason"
+            htmlFor={`po-cancel-${purchaseOrderId}`}
+          >
             <Input
               id={`po-cancel-${purchaseOrderId}`}
               name="reason"
@@ -114,7 +119,10 @@ export function PurchaseOrderControls({
           <Button type="submit" variant="secondary" disabled={cancelPending}>
             {cancelPending ? "Cancelling..." : "Cancel PO"}
           </Button>
-          <FormFeedback state={cancelState} success="Purchase order cancelled." />
+          <FormFeedback
+            state={cancelState}
+            success="Purchase order cancelled."
+          />
         </form>
       </div>
     );
@@ -123,7 +131,8 @@ export function PurchaseOrderControls({
   if (status === "ACCEPTED") {
     return (
       <div className="mt-4 border-t border-slate-100 pt-4 text-sm text-emerald-700">
-        Supplier accepted. Material can now be received through the Inventory workspace.
+        Supplier accepted. Material can now be received through the Inventory
+        workspace.
       </div>
     );
   }
@@ -140,7 +149,8 @@ export function PurchaseOrderControls({
     return (
       <div className="mt-4 space-y-3 border-t border-slate-100 pt-4">
         <p className="text-sm text-emerald-700">
-          Fully received. Close the PO after all damaged/rejected exceptions are resolved.
+          Fully received. Close the PO after all damaged/rejected exceptions are
+          resolved.
         </p>
         <form action={closeAction} className="space-y-3">
           <input type="hidden" name="purchaseOrderId" value={purchaseOrderId} />
