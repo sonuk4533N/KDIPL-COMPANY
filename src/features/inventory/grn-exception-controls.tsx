@@ -22,7 +22,10 @@ export function GrnExceptionControls({
     <form action={action} className="space-y-3">
       <input type="hidden" name="exceptionId" value={exception.id} />
       <div className="grid gap-3 sm:grid-cols-2">
-        <Field label="Exception status" htmlFor={`exception-status-${exception.id}`}>
+        <Field
+          label="Exception status"
+          htmlFor={`exception-status-${exception.id}`}
+        >
           <Select
             id={`exception-status-${exception.id}`}
             name="status"
@@ -36,7 +39,10 @@ export function GrnExceptionControls({
             <option value="RESOLVED">Resolved</option>
           </Select>
         </Field>
-        <Field label="Evidence reference" htmlFor={`exception-evidence-${exception.id}`}>
+        <Field
+          label="Evidence reference"
+          htmlFor={`exception-evidence-${exception.id}`}
+        >
           <Input
             id={`exception-evidence-${exception.id}`}
             name="evidenceReference"
@@ -46,7 +52,10 @@ export function GrnExceptionControls({
           />
         </Field>
       </div>
-      <Field label="Resolution notes" htmlFor={`exception-notes-${exception.id}`}>
+      <Field
+        label="Resolution notes"
+        htmlFor={`exception-notes-${exception.id}`}
+      >
         <Textarea
           id={`exception-notes-${exception.id}`}
           name="resolutionNotes"
