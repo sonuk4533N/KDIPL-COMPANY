@@ -10,6 +10,25 @@ Phase 1 supports multiple roles per user. Role assignments and permission-grant
 changes are audited and invalidate affected sessions. KDIPL system role codes
 and active status are protected; custom roles can be created and deactivated.
 
+## Development business accounts
+
+When `DEMO_BUSINESS_PASSWORD` is set during `db:seed`, the seed creates or
+refreshes five active, employee-linked accounts with that shared development
+password. Do not configure this variable in production.
+
+| Role             | Email                       | Data scope                                     |
+| ---------------- | --------------------------- | ---------------------------------------------- |
+| Project Director | project.director@kdipl.test | Organization-wide requirement/procurement view |
+| Project Manager  | project.manager@kdipl.test  | Assigned projects                              |
+| Purchase Manager | purchase.manager@kdipl.test | Organization-wide sourcing                     |
+| Site Supervisor  | site.supervisor@kdipl.test  | Assigned sites and their site stores           |
+| Store Keeper     | store.keeper@kdipl.test     | Organization-wide stores and receiving         |
+
+Primary and mobile navigation is filtered from the authenticated permission
+set. Business action controls also require the designated business role, so the
+System Administrator retains support visibility without being offered
+requirement, commercial, PO, or receiving actions.
+
 ## Permission catalog
 
 Permissions use `resource.action`. Phase 2 adds project assignment, site view/create/update, catalog view/manage, and supplier view/manage to the existing project, transaction, reporting, audit, and administration catalog. Phase 3 uses `material_requirement.view`, `material_requirement.create`, and `material_requirement.approve`; permission alone never replaces live assignment, role, state, or separation-of-duties checks.

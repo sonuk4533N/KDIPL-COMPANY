@@ -321,8 +321,8 @@ describe.skipIf(!enabled)("Phase 5 receiving workflow", () => {
     const assignment = employee.siteAssignments[0];
     expect(assignment).toBeDefined();
     const user = await testDb!.user.upsert({
-      where: { emailNormalized: "phase5-supervisor@kdipl.test" },
-      update: { employeeId: employee.id, status: "ACTIVE" },
+      where: { employeeId: employee.id },
+      update: { status: "ACTIVE" },
       create: {
         email: "phase5-supervisor@kdipl.test",
         emailNormalized: "phase5-supervisor@kdipl.test",

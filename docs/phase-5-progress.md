@@ -16,6 +16,7 @@ Phase 5 is complete on the `phase-5-inventory-foundation` branch. It implements 
 - An inventory UI containing receivable POs, GRN controls/register, exception handling, current balances, and the recent stock ledger.
 - Store Keeper organization-wide inventory operation and Site Supervisor direct-site operation/visibility limited to active Site Supervisor assignments.
 - System Administrator read visibility for support, without business receiving or PO lifecycle authority.
+- Opt-in, employee-linked development logins for Project Director, Project Manager, Purchase Manager, Site Supervisor, and Store Keeper, with permission-filtered desktop/mobile navigation.
 - Audit records for PO transitions, GRN create/edit/cancel/post, exception resolution, and PO close.
 - PostgreSQL guards for location scope, PO/GRN state evidence, PO close, cumulative receipt quantity, GRN source integrity, immutable posted/cancelled GRNs, and immutable stock transactions.
 
@@ -33,15 +34,15 @@ Phase 5 is complete on the `phase-5-inventory-foundation` branch. It implements 
 
 - Unit coverage checks receipt arithmetic, supplier-acceptance gates, partial/replacement rules, and PO receipt-state transitions.
 - PostgreSQL integration coverage checks location constraints, ledger-derived balances and reversals, immutable ledger mutations, installed guard triggers, the complete receiving lifecycle, concurrent final receipt posting, exception resolution, close, audit evidence, and Site Supervisor data scope.
-- Browser coverage checks authenticated application workspaces at desktop and mobile breakpoints, including the Phase 5 inventory workspace.
+- Browser coverage checks authenticated application workspaces at desktop and mobile breakpoints, including all five business-role logins, permitted module visibility, denied administration access, and the Phase 5 inventory workspace.
 
 ## Final quality gate — 2026-09-06
 
 - `format:check`, lint, and TypeScript typecheck: passed.
-- Unit tests: 10 files, 49 tests passed.
-- PostgreSQL integration tests: 7 files, 21 tests passed against a fresh database built from all 13 migrations.
+- Unit tests: 11 files, 51 tests passed.
+- PostgreSQL integration tests: 7 files, 21 tests passed against a fresh database built from all 15 migrations.
 - Next.js production build: passed; all 20 page-data generation tasks completed.
-- Playwright E2E: 16 tests passed across desktop Chromium and mobile Chromium.
+- Playwright E2E: 18 tests passed across desktop Chromium and mobile Chromium.
 - `prisma migrate status`: database schema is up to date.
 
 ## Deferred to Phase 6

@@ -47,6 +47,11 @@ export function Header({ principal }: { principal: AuthenticatedPrincipal }) {
     .join("")
     .toUpperCase();
   const role = principal.roleCodes[0]?.replaceAll("_", " ") ?? "User";
+  const canCreateRequirement =
+    principal.permissions.includes("material_requirement.create") &&
+    !principal.roleCodes.includes("SYSTEM_ADMINISTRATOR") &&
+    (principal.roleCodes.includes("PROJECT_MANAGER") ||
+      principal.roleCodes.includes("SITE_SUPERVISOR"));
   return (
     <header className="sticky top-0 z-30 flex h-[76px] items-center gap-4 border-b border-slate-200 bg-white px-4 md:px-6 lg:px-8">
       <div className="min-w-0 flex-1">
@@ -68,28 +73,24 @@ export function Header({ principal }: { principal: AuthenticatedPrincipal }) {
           />
         </label>
       </div>
-      <Dropdown>
-        <DropdownTrigger asChild>
-          <Button className="hidden sm:inline-flex" size="sm">
-            <Plus className="size-4" />
-            Create
-            <ChevronDown className="size-4" />
-          </Button>
-        </DropdownTrigger>
-        <DropdownContent>
-          <DropdownItem asChild>
-            <Link href="/requirements#new-requirement">
-              Material Requirement
-            </Link>
-          </DropdownItem>
-          <DropdownItem disabled>Purchase</DropdownItem>
-          <DropdownItem disabled>Goods Receipt</DropdownItem>
-          <DropdownSeparator />
-          <p className="px-3 py-2 text-xs text-slate-500">
-            Purchase and receipt actions arrive in later phases.
-          </p>
-        </DropdownContent>
-      </Dropdown>
+      {canCreateRequirement ? (
+        <Dropdown>
+          <DropdownTrigger asChild>
+            <Button className="hidden sm:inline-flex" size="sm">
+              <Plus className="size-4" />
+              Create
+              <ChevronDown className="size-4" />
+            </Button>
+          </DropdownTrigger>
+          <DropdownContent>
+            <DropdownItem asChild>
+              <Link href="/requirements#new-requirement">
+                Material Requirement
+              </Link>
+            </DropdownItem>
+          </DropdownContent>
+        </Dropdown>
+      ) : null}
       <button
         aria-label="Notifications"
         className="relative grid size-10 place-items-center rounded-lg text-slate-500 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"

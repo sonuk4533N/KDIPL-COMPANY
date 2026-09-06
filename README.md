@@ -21,7 +21,7 @@ Phase 1 identity/access, Phase 2 project/master-data, Phase 3 material requireme
 
 1. Install Node.js 22+, npm 11+, and Docker Desktop.
 2. Copy `.env.example` to `.env` and replace `AUTH_SECRET` with at least 32 random characters.
-3. Optionally set `BOOTSTRAP_ADMIN_EMAIL`, `BOOTSTRAP_ADMIN_PASSWORD`, and `BOOTSTRAP_ADMIN_NAME` for a development administrator.
+3. Optionally set `BOOTSTRAP_ADMIN_EMAIL`, `BOOTSTRAP_ADMIN_PASSWORD`, and `BOOTSTRAP_ADMIN_NAME` for a development administrator. Set `DEMO_BUSINESS_PASSWORD` to seed the five development business-role accounts listed in [RBAC](docs/rbac.md).
 4. Start PostgreSQL: `docker compose up -d postgres postgres-test`.
 5. Install and prepare the application:
 

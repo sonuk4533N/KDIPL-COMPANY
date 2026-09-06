@@ -4,29 +4,40 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import {
+  canAccessNavigationItem,
   primaryNavigation,
   storeMobileNavigation,
   supervisorMobileNavigation,
 } from "@/components/layout/navigation";
 import { cn } from "@/lib/cn";
+import type { AuthenticatedPrincipal } from "@/types/application";
 
 export function BottomNavigation({
-  roleCodes,
+  principal,
 }: {
-  roleCodes: readonly string[];
+  principal: AuthenticatedPrincipal;
 }) {
   const pathname = usePathname();
-  const items = roleCodes.includes("SITE_SUPERVISOR")
+  const candidates = principal.roleCodes.includes("SITE_SUPERVISOR")
     ? supervisorMobileNavigation
-    : roleCodes.includes("STORE_KEEPER")
+    : principal.roleCodes.includes("STORE_KEEPER")
       ? storeMobileNavigation
-      : primaryNavigation.slice(0, 4);
+      : primaryNavigation;
+  const items = candidates
+    .filter((item) => canAccessNavigationItem(item, principal.permissions))
+    .slice(0, 5);
   return (
     <nav
       aria-label="Mobile navigation"
       className={cn(
         "fixed inset-x-0 bottom-0 z-40 grid min-h-16 border-t border-slate-200 bg-white px-2 pb-[env(safe-area-inset-bottom)] md:hidden",
-        items.length === 5 ? "grid-cols-5" : "grid-cols-4",
+        items.length === 5
+          ? "grid-cols-5"
+          : items.length === 4
+            ? "grid-cols-4"
+            : items.length === 3
+              ? "grid-cols-3"
+              : "grid-cols-2",
       )}
     >
       {items.map((item) => {

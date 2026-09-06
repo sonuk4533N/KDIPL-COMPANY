@@ -16,6 +16,19 @@ async function signInAsBootstrapAdministrator(
   await expect(page).toHaveURL(/\/dashboard$/);
 }
 
+async function signInAsProjectManager(page: import("@playwright/test").Page) {
+  const password = process.env.DEMO_BUSINESS_PASSWORD;
+  test.skip(
+    !password,
+    "DEMO_BUSINESS_PASSWORD is required for business-role E2E coverage.",
+  );
+  await page.goto("/login");
+  await page.getByLabel("Work email").fill("project.manager@kdipl.test");
+  await page.getByLabel("Password").fill(password!);
+  await page.getByRole("button", { name: "Sign in securely" }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+}
+
 test("protected routes redirect to sign in", async ({ page }) => {
   await page.goto("/dashboard");
   await expect(page).toHaveURL(/\/login$/);
@@ -29,6 +42,7 @@ test("bootstrap administrator can sign in and use the responsive shell", async (
 }, testInfo) => {
   await signInAsBootstrapAdministrator(page);
   await expect(page.getByRole("heading", { name: /Good day/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Create" })).toHaveCount(0);
   if (testInfo.project.name.startsWith("desktop")) {
     await expect(
       page.getByRole("navigation", { name: "Primary navigation" }),
@@ -156,10 +170,10 @@ test("administrator can inspect the Phase 5 inventory ledger workspace", async (
   ).toBeVisible();
 });
 
-test("administrator can create a Phase 3 material requirement draft", async ({
+test("Project Manager can create a Phase 3 material requirement draft", async ({
   page,
 }, testInfo) => {
-  await signInAsBootstrapAdministrator(page);
+  await signInAsProjectManager(page);
   await page.goto("/requirements");
   await expect(
     page
@@ -189,7 +203,9 @@ test("administrator can create a Phase 3 material requirement draft", async ({
   await expect(
     page.getByRole("heading", { name: "Approval workflow" }),
   ).toBeVisible();
-  await expect(page.getByText(/No workflow action is available/)).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Submit for approval" }),
+  ).toBeVisible();
 });
 
 test("administrator can provision an employee with forced temporary-password replacement", async ({

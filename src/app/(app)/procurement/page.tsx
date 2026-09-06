@@ -44,7 +44,10 @@ export default async function ProcurementPage() {
     );
   }
   const workspace = await getProcurementWorkspace(principal);
-  const canCreate = hasPermission(principal, "purchase.create");
+  const canCreate =
+    hasPermission(principal, "purchase.create") &&
+    principal.roleCodes.includes("PURCHASE_MANAGER") &&
+    !principal.roleCodes.includes("SYSTEM_ADMINISTRATOR");
   const supplierInvitationCount = workspace.rfqs.reduce(
     (total, rfq) => total + rfq.invitedSuppliers.length,
     0,

@@ -4,13 +4,21 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import {
+  canAccessNavigationItem,
   administrationNavigation,
   primaryNavigation,
 } from "@/components/layout/navigation";
 import { cn } from "@/lib/cn";
+import type { AuthenticatedPrincipal } from "@/types/application";
 
-export function Sidebar({ canAdminister }: { canAdminister: boolean }) {
+export function Sidebar({ principal }: { principal: AuthenticatedPrincipal }) {
   const pathname = usePathname();
+  const items = primaryNavigation.filter((item) =>
+    canAccessNavigationItem(item, principal.permissions),
+  );
+  const canAdminister =
+    principal.permissions.includes("user.manage") ||
+    principal.permissions.includes("role.manage");
   return (
     <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col bg-slate-950 text-slate-300 md:flex">
       <div className="flex h-[76px] items-center gap-3 border-b border-white/10 px-5">
@@ -30,7 +38,7 @@ export function Sidebar({ canAdminister }: { canAdminister: boolean }) {
         aria-label="Primary navigation"
         className="flex-1 space-y-1 px-3 py-5"
       >
-        {primaryNavigation.map((item) => {
+        {items.map((item) => {
           const active =
             pathname === item.href || pathname.startsWith(`${item.href}/`);
           const Icon = item.icon;
