@@ -87,7 +87,7 @@ async function validateReceivingLocation(
     );
   }
 
-  if (roles.isSiteSupervisor) {
+  if (!roles.isStoreKeeper && roles.isSiteSupervisor) {
     if (location.type !== "SITE_STORE" || !sameSite || !principal.employeeId) {
       throw new AppError(
         "FORBIDDEN",
@@ -168,6 +168,11 @@ export const InventoryCompletionService = {
     requirePurchaseManager(principal);
 
     return db.$transaction(async (transaction) => {
+      await transaction.$queryRaw`
+        SELECT "id" FROM "PurchaseOrder"
+        WHERE "id" = ${purchaseOrderId}::uuid
+        FOR UPDATE
+      `;
       const purchaseOrder = await transaction.purchaseOrder.findUnique({
         where: { id: purchaseOrderId },
         select: { id: true, status: true },
@@ -203,7 +208,7 @@ export const InventoryCompletionService = {
             'RETURN_PENDING'::"GoodsReceiptExceptionStatus"
           )
       `;
-      if (Number(unresolved[0]?.count ?? 0n) > 0) {
+      if (Number(unresolved[0]?.count ?? BigInt(0)) > 0) {
         throw new AppError(
           "CONFLICT",
           "Resolve or return all damaged/rejected material before closing the purchase order.",
@@ -250,6 +255,11 @@ export const InventoryCompletionService = {
     requireReceivingRole(principal);
 
     return db.$transaction(async (transaction) => {
+      await transaction.$queryRaw`
+        SELECT "id" FROM "GoodsReceipt"
+        WHERE "id" = ${goodsReceiptId}::uuid
+        FOR UPDATE
+      `;
       const receipt = await transaction.goodsReceipt.findUnique({
         where: { id: goodsReceiptId },
         include: {
@@ -313,6 +323,11 @@ export const InventoryCompletionService = {
     requireReceivingRole(principal);
 
     return db.$transaction(async (transaction) => {
+      await transaction.$queryRaw`
+        SELECT "id" FROM "GoodsReceipt"
+        WHERE "id" = ${input.goodsReceiptId}::uuid
+        FOR UPDATE
+      `;
       const receipt = await transaction.goodsReceipt.findUnique({
         where: { id: input.goodsReceiptId },
         include: {

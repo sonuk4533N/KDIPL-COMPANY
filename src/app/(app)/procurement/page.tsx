@@ -12,18 +12,24 @@ import { Alert } from "@/components/ui/alert";
 import { ButtonLink } from "@/components/ui/button-link";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { ApplicationState } from "@/components/ui/states";
-import { StatusBadge } from "@/components/ui/status-badge";
+import { StatusBadge, type StandardStatus } from "@/components/ui/status-badge";
 import { PurchaseOrderControls } from "@/features/inventory/purchase-order-controls";
 import { RfqDraftForm } from "@/features/procurement/rfq-form";
 import { getProcurementWorkspace } from "@/features/procurement/rfq-queries";
 import { getCurrentPrincipal } from "@/server/auth/current-user";
 import { hasPermission } from "@/server/authorization/authorization";
 
-function poStatusLabel(status: unknown) {
-  return String(status)
-    .toLowerCase()
-    .replaceAll("_", " ")
-    .replace(/^./, (value) => value.toUpperCase());
+function poStatusLabel(status: unknown): StandardStatus {
+  const labels: Record<string, StandardStatus> = {
+    DRAFT: "Draft",
+    ISSUED: "Issued",
+    ACCEPTED: "Accepted",
+    PARTIALLY_RECEIVED: "Partial",
+    RECEIVED: "Completed",
+    CLOSED: "Closed",
+    CANCELLED: "Cancelled",
+  };
+  return labels[String(status)] ?? "Draft";
 }
 
 export default async function ProcurementPage() {

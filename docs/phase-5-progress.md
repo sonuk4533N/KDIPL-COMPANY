@@ -1,43 +1,48 @@
 # Phase 5 — Goods Receiving & Inventory Ledger
 
-Phase 5 now implements the confirmed purchase-order receiving path and ledger-backed inventory workspace on the `phase-5-inventory-foundation` branch.
+Phase 5 is complete on the `phase-5-inventory-foundation` branch. It implements the confirmed purchase-order receiving path and an append-only, ledger-backed inventory workspace.
 
 ## Delivered
 
-- Inventory locations for central, project, and site stores.
-- Purchase-order lifecycle foundation: `DRAFT → ISSUED → ACCEPTED → PARTIALLY_RECEIVED → RECEIVED → CLOSED`, with controlled cancellation before posted receipts.
-- Purchase Manager-only PO issue, supplier-acceptance recording, and cancellation commands.
-- Procurement UI controls for PO issue and supplier-acceptance recording.
-- GRN draft creation against supplier-accepted purchase orders only.
-- Store Keeper receiving plus controlled Site Supervisor direct-site receiving restricted to the assigned site store.
-- GRN fields for delivery note, date, transporter, vehicle, received time, and remarks.
-- Separate accepted, damaged, and rejected quantities.
-- Partial receipt handling with accepted quantity capped by the PO quantity.
-- Replacement allowance for previously damaged/rejected quantities without treating replacements as usable over-receipt.
-- Atomic GRN posting that creates one immutable `RECEIPT` stock transaction per accepted line only.
-- Duplicate-post protection and database posting guards.
-- PO state advancement to `PARTIALLY_RECEIVED` or `RECEIVED` after GRN posting.
-- Ledger-derived `InventoryStockBalance` view; there is no mutable stock balance source of truth.
-- Inventory workspace with receivable POs, GRN creation/posting, GRN register, and current stock view.
-- Unit tests updated for supplier-acceptance gating, replacement rules, partial receipts, and PO receipt-state transitions.
+- Scoped central, project, and site inventory locations.
+- Purchase-order lifecycle: `DRAFT → ISSUED → ACCEPTED → PARTIALLY_RECEIVED → RECEIVED → CLOSED`, with controlled cancellation before any posted receipt.
+- Purchase Manager-only PO issue, supplier-acceptance recording, cancellation, and fully-received close commands.
+- GRN draft creation, editing, cancellation, and atomic posting against supplier-accepted POs.
+- Delivery note/date, transporter, vehicle, received time, and remarks evidence.
+- Separate accepted, damaged, and rejected quantities; only accepted quantity enters usable stock.
+- Partial receipts and replacement receipts, with cumulative accepted quantity capped by the ordered quantity under a PO row lock.
+- Automatic damaged/rejected exception records with controlled replacement, return, and resolution states plus evidence references/notes.
+- One `RECEIPT` stock transaction per accepted GRN line and ledger-derived `InventoryStockBalance` quantities.
+- An inventory UI containing receivable POs, GRN controls/register, exception handling, current balances, and the recent stock ledger.
+- Store Keeper organization-wide inventory operation and Site Supervisor direct-site operation/visibility limited to active Site Supervisor assignments.
+- System Administrator read visibility for support, without business receiving or PO lifecycle authority.
+- Audit records for PO transitions, GRN create/edit/cancel/post, exception resolution, and PO close.
+- PostgreSQL guards for location scope, PO/GRN state evidence, PO close, cumulative receipt quantity, GRN source integrity, immutable posted/cancelled GRNs, and immutable stock transactions.
 
-## Confirmed business defaults applied
+## Confirmed business defaults
 
-- Receiving requires supplier acceptance; `ISSUED` alone is not enough.
-- Negative stock remains prohibited by design; Phase 6 must preserve this.
-- Direct-to-site delivery is allowed only through a controlled site-store GRN and authorized Site Supervisor assignment.
-- Accepted quantity enters usable stock; damaged/rejected quantity does not.
-- Excess accepted quantity above the PO is prohibited.
-- Posted operational records are corrected through reversal/return workflows rather than silent edits.
+- Receiving requires recorded supplier acceptance; `ISSUED` alone is not receivable.
+- Accepted quantity enters usable stock; damaged and rejected quantity does not.
+- Damaged/rejected quantities remain replaceable and do not consume accepted PO quantity.
+- Posted/cancelled operational records are not edited or deleted. Corrections append a controlled reversal/return record.
+- Stock balance has no mutable source of truth and is always derived from the stock transaction ledger.
+- Direct-to-site receipt requires a site-store GRN and an active Site Supervisor assignment.
+- Negative stock remains prohibited by design; later issue/transfer work must preserve this invariant.
 
-## Remaining Phase 5 work before merge/completion
+## Verification coverage
 
-1. Synchronize the Prisma schema `PurchaseOrderStatus` enum and new PO lifecycle fields with the migration so generated client types exactly match the database.
-2. Add explicit PO close command/UI after full receipt.
-3. Add GRN draft editing/cancellation before posting.
-4. Add damaged/rejected return/replacement register and document/photo evidence workflow.
-5. Add PostgreSQL integration tests for concurrent duplicate posting and cumulative partial receipts.
-6. Run `format:check`, lint, typecheck, unit tests, integration tests, production build, and E2E; fix all failures before merge.
+- Unit coverage checks receipt arithmetic, supplier-acceptance gates, partial/replacement rules, and PO receipt-state transitions.
+- PostgreSQL integration coverage checks location constraints, ledger-derived balances and reversals, immutable ledger mutations, installed guard triggers, the complete receiving lifecycle, concurrent final receipt posting, exception resolution, close, audit evidence, and Site Supervisor data scope.
+- Browser coverage checks authenticated application workspaces at desktop and mobile breakpoints, including the Phase 5 inventory workspace.
+
+## Final quality gate — 2026-09-06
+
+- `format:check`, lint, and TypeScript typecheck: passed.
+- Unit tests: 10 files, 49 tests passed.
+- PostgreSQL integration tests: 7 files, 21 tests passed against a fresh database built from all 13 migrations.
+- Next.js production build: passed; all 20 page-data generation tasks completed.
+- Playwright E2E: 16 tests passed across desktop Chromium and mobile Chromium.
+- `prisma migrate status`: database schema is up to date.
 
 ## Deferred to Phase 6
 
@@ -45,7 +50,7 @@ Phase 5 now implements the confirmed purchase-order receiving path and ledger-ba
 - Stock transfer with in-transit state and destination receipt.
 - Stock adjustments and approval.
 - Physical counts and variance approval.
-- Material consumption, return of unused material, wastage, scrap, and project-close stock disposition.
+- Material consumption, unused-material return, wastage, scrap, and project-close stock disposition.
 
 ## Production note
 

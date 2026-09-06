@@ -40,6 +40,16 @@ Disabling a user or employee, changing role permissions, assigning roles, or res
 - Approval atomically creates one `DRAFT` purchase order. Cancellation is allowed from `DRAFT` or `ISSUED` and requires a reason.
 - External supplier delivery, quotation revision, PO issue/amendment, delegation, thresholds, and emergency purchasing remain disabled.
 
+## Phase 5 purchase receiving and inventory
+
+- A Purchase Manager issues a draft PO and records supplier acceptance before receiving is enabled.
+- A Store Keeper can receive across active central, project, and site stores that match the PO. A Site Supervisor can receive and view inventory only at a site store covered by an active Site Supervisor assignment.
+- GRNs remain editable/cancellable in `DRAFT`. Posting is atomic and terminal: accepted quantities append receipt ledger entries; damaged/rejected quantities create exception records and never enter usable stock.
+- Posted accepted quantity advances the PO to `PARTIALLY_RECEIVED` or `RECEIVED`. Concurrent posting is serialized on the PO and cannot exceed any ordered line quantity.
+- Damaged/rejected exceptions move through replacement, return, or resolution states and require evidence or resolution notes for terminal outcomes.
+- Only a fully received PO with no draft GRNs or unresolved exceptions can be closed.
+- Posted/cancelled GRNs and stock transactions are immutable in PostgreSQL. Corrections require later controlled reversal/return workflows, never a silent edit.
+
 ## Phase 2 lifecycles
 
 - Project: `PLANNING → ACTIVE → ON_HOLD → ACTIVE`, with controlled completion or cancellation.

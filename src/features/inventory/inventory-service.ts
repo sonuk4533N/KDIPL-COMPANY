@@ -129,7 +129,7 @@ async function validateReceivingLocation(
     );
   }
 
-  if (roles.isSiteSupervisor) {
+  if (!roles.isStoreKeeper && roles.isSiteSupervisor) {
     if (location.type !== "SITE_STORE" || !sameSite || !principal.employeeId) {
       throw new AppError(
         "FORBIDDEN",
@@ -276,6 +276,11 @@ export const InventoryService = {
     requirePermission(principal, "purchase.create");
     requirePurchaseManager(principal);
     return db.$transaction(async (transaction) => {
+      await transaction.$queryRaw`
+        SELECT "id" FROM "PurchaseOrder"
+        WHERE "id" = ${input.purchaseOrderId}::uuid
+        FOR UPDATE
+      `;
       const postedReceipts = await transaction.goodsReceipt.count({
         where: { purchaseOrderId: input.purchaseOrderId, status: "POSTED" },
       });
@@ -324,6 +329,11 @@ export const InventoryService = {
           "Editing existing GRN drafts will be enabled in the next UI increment; create a new draft for now.",
         );
       }
+      await transaction.$queryRaw`
+        SELECT "id" FROM "PurchaseOrder"
+        WHERE "id" = ${input.purchaseOrderId}::uuid
+        FOR UPDATE
+      `;
       const { purchaseOrder } = await requireReceivablePurchaseOrder(
         transaction,
         input.purchaseOrderId,
@@ -443,6 +453,18 @@ export const InventoryService = {
     requirePermission(principal, "inventory.receive");
     requireReceivingRole(principal);
     return db.$transaction(async (transaction) => {
+      await transaction.$queryRaw`
+        SELECT po."id"
+        FROM "PurchaseOrder" po
+        JOIN "GoodsReceipt" gr ON gr."purchaseOrderId" = po."id"
+        WHERE gr."id" = ${goodsReceiptId}::uuid
+        FOR UPDATE OF po
+      `;
+      await transaction.$queryRaw`
+        SELECT "id" FROM "GoodsReceipt"
+        WHERE "id" = ${goodsReceiptId}::uuid
+        FOR UPDATE
+      `;
       const receipt = await transaction.goodsReceipt.findUnique({
         where: { id: goodsReceiptId },
         include: {

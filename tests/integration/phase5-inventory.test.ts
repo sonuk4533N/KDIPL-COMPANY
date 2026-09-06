@@ -162,10 +162,6 @@ describe.skipIf(!enabled)("Phase 5 inventory foundation", () => {
         },
       }),
     ]);
-    created.categoryIds.push(category.id);
-    created.unitIds.push(unit.id);
-    created.userIds.push(user.id);
-
     const material = await testDb!.material.create({
       data: {
         materialCode: `P5M-${tag}`,
@@ -174,8 +170,6 @@ describe.skipIf(!enabled)("Phase 5 inventory foundation", () => {
         defaultUnitId: unit.id,
       },
     });
-    created.materialIds.push(material.id);
-
     const location = await testDb!.inventoryLocation.create({
       data: {
         locationCode: `P5-LEDGER-${tag}`,
@@ -183,8 +177,6 @@ describe.skipIf(!enabled)("Phase 5 inventory foundation", () => {
         type: "CENTRAL_STORE",
       },
     });
-    created.locationIds.push(location.id);
-
     const opening = await testDb!.stockTransaction.create({
       data: {
         transactionNumber: `STK-${tag}-01`,
@@ -207,8 +199,6 @@ describe.skipIf(!enabled)("Phase 5 inventory foundation", () => {
         createdById: user.id,
       },
     });
-    created.stockTransactionIds.push(opening.id, issue.id);
-
     const beforeReversal = await testDb!.$queryRaw<
       { quantityOnHand: string }[]
     >`
@@ -220,7 +210,7 @@ describe.skipIf(!enabled)("Phase 5 inventory foundation", () => {
     `;
     expect(beforeReversal).toEqual([{ quantityOnHand: "7.000" }]);
 
-    const reversal = await testDb!.stockTransaction.create({
+    await testDb!.stockTransaction.create({
       data: {
         transactionNumber: `STK-${tag}-03`,
         type: "REVERSAL",
@@ -233,8 +223,6 @@ describe.skipIf(!enabled)("Phase 5 inventory foundation", () => {
         createdById: user.id,
       },
     });
-    created.stockTransactionIds.push(reversal.id);
-
     const afterReversal = await testDb!.$queryRaw<{ quantityOnHand: string }[]>`
       SELECT "quantityOnHand"::text AS "quantityOnHand"
       FROM "InventoryStockBalance"
@@ -243,5 +231,15 @@ describe.skipIf(!enabled)("Phase 5 inventory foundation", () => {
         AND "unitId" = ${unit.id}::uuid
     `;
     expect(afterReversal).toEqual([{ quantityOnHand: "10.000" }]);
+
+    await expect(
+      testDb!.stockTransaction.update({
+        where: { id: opening.id },
+        data: { quantity: "11.000" },
+      }),
+    ).rejects.toThrow(/immutable/i);
+    await expect(
+      testDb!.stockTransaction.delete({ where: { id: issue.id } }),
+    ).rejects.toThrow(/immutable/i);
   });
 });

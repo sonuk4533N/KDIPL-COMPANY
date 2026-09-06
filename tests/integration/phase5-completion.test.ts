@@ -59,20 +59,45 @@ describe.skipIf(!enabled)("Phase 5 completion database controls", () => {
         AND tg.tgname IN (
           'GoodsReceipt_post_guard',
           'GoodsReceipt_exception_register',
-          'PurchaseOrder_close_guard'
+          'GoodsReceipt_immutable_guard',
+          'GoodsReceiptLine_draft_guard',
+          'PurchaseOrder_close_guard',
+          'PurchaseOrder_transition_guard',
+          'StockTransaction_immutable_guard',
+          'StockTransaction_receipt_source_guard'
         )
       ORDER BY tg.tgname
     `;
 
     expect(controls).toEqual([
       {
+        relationName: "GoodsReceiptLine",
+        triggerName: "GoodsReceiptLine_draft_guard",
+      },
+      {
         relationName: "GoodsReceipt",
         triggerName: "GoodsReceipt_exception_register",
+      },
+      {
+        relationName: "GoodsReceipt",
+        triggerName: "GoodsReceipt_immutable_guard",
       },
       { relationName: "GoodsReceipt", triggerName: "GoodsReceipt_post_guard" },
       {
         relationName: "PurchaseOrder",
         triggerName: "PurchaseOrder_close_guard",
+      },
+      {
+        relationName: "PurchaseOrder",
+        triggerName: "PurchaseOrder_transition_guard",
+      },
+      {
+        relationName: "StockTransaction",
+        triggerName: "StockTransaction_immutable_guard",
+      },
+      {
+        relationName: "StockTransaction",
+        triggerName: "StockTransaction_receipt_source_guard",
       },
     ]);
   });

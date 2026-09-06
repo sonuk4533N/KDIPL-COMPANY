@@ -11,6 +11,7 @@ import {
 import { InventoryCompletionService } from "@/features/inventory/inventory-completion-service";
 import { getCurrentPrincipal } from "@/server/auth/current-user";
 import { validateMutationOrigin } from "@/server/auth/request-security";
+import { requirePermission } from "@/server/authorization/authorization";
 import { toCommandError } from "@/server/errors/app-error";
 import type { CommandResult } from "@/types/application";
 
@@ -35,6 +36,7 @@ export async function closePurchaseOrderAction(
   try {
     await validateMutationOrigin();
     const principal = await getCurrentPrincipal();
+    requirePermission(principal, "purchase.create");
     const parsed = closePurchaseOrderSchema.safeParse({
       purchaseOrderId: optionalValue(formData.get("purchaseOrderId")),
     });
@@ -62,6 +64,7 @@ export async function cancelGoodsReceiptAction(
   try {
     await validateMutationOrigin();
     const principal = await getCurrentPrincipal();
+    requirePermission(principal, "inventory.receive");
     const parsed = cancelGoodsReceiptSchema.safeParse({
       goodsReceiptId: optionalValue(formData.get("goodsReceiptId")),
       reason: optionalValue(formData.get("reason")),
@@ -98,6 +101,7 @@ export async function updateGoodsReceiptDraftAction(
   try {
     await validateMutationOrigin();
     const principal = await getCurrentPrincipal();
+    requirePermission(principal, "inventory.receive");
     const lineIds = formData.getAll("goodsReceiptLineId");
     const accepted = formData.getAll("acceptedQuantity");
     const damaged = formData.getAll("damagedQuantity");
@@ -156,6 +160,7 @@ export async function updateGoodsReceiptExceptionAction(
   try {
     await validateMutationOrigin();
     const principal = await getCurrentPrincipal();
+    requirePermission(principal, "inventory.receive");
     const parsed = updateGoodsReceiptExceptionSchema.safeParse({
       exceptionId: optionalValue(formData.get("exceptionId")),
       status: optionalValue(formData.get("status")),

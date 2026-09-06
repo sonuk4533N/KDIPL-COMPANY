@@ -9,7 +9,7 @@ import {
 import { PageHeader } from "@/components/shared/page-header";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { ApplicationState } from "@/components/ui/states";
-import { StatusBadge } from "@/components/ui/status-badge";
+import { StatusBadge, type StandardStatus } from "@/components/ui/status-badge";
 import { GoodsReceiptForm } from "@/features/inventory/goods-receipt-form";
 import { GrnDraftControls } from "@/features/inventory/grn-draft-controls";
 import { GrnExceptionControls } from "@/features/inventory/grn-exception-controls";
@@ -17,6 +17,17 @@ import { GrnPostButton } from "@/features/inventory/grn-post-button";
 import { getInventoryWorkspace } from "@/features/inventory/inventory-queries";
 import { getCurrentPrincipal } from "@/server/auth/current-user";
 import { hasPermission } from "@/server/authorization/authorization";
+
+function exceptionStatusLabel(status: string): StandardStatus {
+  const labels: Record<string, StandardStatus> = {
+    OPEN: "Open",
+    REPLACEMENT_EXPECTED: "Replacement expected",
+    RETURN_PENDING: "Return pending",
+    RETURNED: "Returned",
+    RESOLVED: "Resolved",
+  };
+  return labels[status] ?? "Open";
+}
 
 export default async function InventoryPage() {
   const principal = await getCurrentPrincipal();
@@ -31,7 +42,11 @@ export default async function InventoryPage() {
   }
 
   const workspace = await getInventoryWorkspace(principal);
-  const canReceive = hasPermission(principal, "inventory.receive");
+  const canReceive =
+    hasPermission(principal, "inventory.receive") &&
+    !principal.roleCodes.includes("SYSTEM_ADMINISTRATOR") &&
+    (principal.roleCodes.includes("STORE_KEEPER") ||
+      principal.roleCodes.includes("SITE_SUPERVISOR"));
   const postedCount = workspace.goodsReceipts.filter(
     ({ status }) => status === "POSTED",
   ).length;
@@ -198,6 +213,70 @@ export default async function InventoryPage() {
       <section className="space-y-4">
         <div>
           <h2 className="font-display text-lg font-bold text-slate-950">
+            Stock transaction ledger
+          </h2>
+          <p className="mt-1 text-sm text-slate-500">
+            Append-only receipt entries; corrections require a linked reversal.
+          </p>
+        </div>
+        {workspace.stockTransactions.length ? (
+          <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+            <table className="min-w-full text-sm">
+              <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+                <tr>
+                  <th className="px-4 py-3">Transaction</th>
+                  <th className="px-4 py-3">Location</th>
+                  <th className="px-4 py-3">Material</th>
+                  <th className="px-4 py-3">Quantity</th>
+                  <th className="px-4 py-3">Recorded by</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {workspace.stockTransactions.map((transaction) => (
+                  <tr key={transaction.id}>
+                    <td className="px-4 py-3">
+                      <p className="font-semibold text-slate-950">
+                        {transaction.transactionNumber}
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        {transaction.type}
+                      </p>
+                    </td>
+                    <td className="px-4 py-3">
+                      {transaction.location.name}
+                      <p className="text-xs text-slate-500">
+                        {transaction.location.locationCode}
+                      </p>
+                    </td>
+                    <td className="px-4 py-3">
+                      {transaction.material.name}
+                      <p className="text-xs text-slate-500">
+                        {transaction.material.materialCode}
+                      </p>
+                    </td>
+                    <td className="px-4 py-3 font-semibold text-slate-950">
+                      {transaction.quantity} {transaction.unit.symbol}
+                    </td>
+                    <td className="px-4 py-3 text-slate-600">
+                      {transaction.createdBy}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <ApplicationState
+            kind="empty"
+            title="No ledger entries yet"
+            description="Posted accepted quantities will appear as immutable receipt transactions."
+          />
+        )}
+      </section>
+
+      <section className="space-y-4">
+        <div>
+          <h2 className="font-display text-lg font-bold text-slate-950">
             Damaged and rejected material
           </h2>
           <p className="mt-1 text-sm text-slate-500">
@@ -220,7 +299,7 @@ export default async function InventoryPage() {
                       </h3>
                     </div>
                     <StatusBadge
-                      status={exception.status.replaceAll("_", " ")}
+                      status={exceptionStatusLabel(exception.status)}
                     />
                   </div>
                   <div className="mt-3 space-y-1 text-sm text-slate-600">

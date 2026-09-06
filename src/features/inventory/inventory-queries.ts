@@ -1,5 +1,7 @@
 import "server-only";
 
+import { Prisma } from "@/generated/prisma/client";
+
 import { db } from "@/db/prisma";
 import { requirePermission } from "@/server/authorization/authorization";
 import type { AuthenticatedPrincipal } from "@/types/application";
@@ -9,71 +11,129 @@ const receivableStatuses = new Set(["ACCEPTED", "PARTIALLY_RECEIVED"]);
 export async function getInventoryWorkspace(principal: AuthenticatedPrincipal) {
   requirePermission(principal, "inventory.view");
 
-  const [locations, purchaseOrders, goodsReceipts, stockBalances, exceptions] =
-    await Promise.all([
-      db.inventoryLocation.findMany({
-        where: { isActive: true },
-        orderBy: [{ type: "asc" }, { name: "asc" }],
-        include: {
-          project: { select: { projectCode: true, name: true } },
-          site: { select: { siteCode: true, name: true } },
-        },
-      }),
-      db.purchaseOrder.findMany({
-        orderBy: { updatedAt: "desc" },
-        include: {
-          supplier: { select: { legalName: true, tradeName: true } },
-          rfq: {
-            select: {
-              requirement: {
-                select: {
-                  project: { select: { projectCode: true, name: true } },
-                  site: { select: { siteCode: true, name: true } },
-                },
+  const hasOrganizationScope =
+    principal.roleCodes.includes("SYSTEM_ADMINISTRATOR") ||
+    principal.roleCodes.includes("STORE_KEEPER");
+  const assignedSiteScope =
+    !hasOrganizationScope &&
+    principal.roleCodes.includes("SITE_SUPERVISOR") &&
+    principal.employeeId
+      ? {
+          site: {
+            assignments: {
+              some: {
+                employeeId: principal.employeeId,
+                role: "SITE_SUPERVISOR" as const,
+                isActive: true,
               },
             },
           },
-          lines: {
-            orderBy: { position: "asc" },
-            include: {
-              requirementLine: {
-                select: {
-                  material: { select: { materialCode: true, name: true } },
-                },
+        }
+      : null;
+  const locationScope: Prisma.InventoryLocationWhereInput = hasOrganizationScope
+    ? {}
+    : assignedSiteScope
+      ? { type: "SITE_STORE", ...assignedSiteScope }
+      : { id: { equals: "00000000-0000-0000-0000-000000000000" } };
+  const purchaseOrderScope: Prisma.PurchaseOrderWhereInput =
+    hasOrganizationScope
+      ? {}
+      : assignedSiteScope
+        ? {
+            rfq: {
+              requirement: { site: assignedSiteScope.site },
+            },
+          }
+        : { id: { equals: "00000000-0000-0000-0000-000000000000" } };
+
+  const locations = await db.inventoryLocation.findMany({
+    where: { isActive: true, AND: [locationScope] },
+    orderBy: [{ type: "asc" }, { name: "asc" }],
+    include: {
+      project: { select: { projectCode: true, name: true } },
+      site: { select: { siteCode: true, name: true } },
+    },
+  });
+  const locationIds = locations.map(({ id }) => id);
+  const scopedLocationIds = locationIds.length
+    ? locationIds
+    : ["00000000-0000-0000-0000-000000000000"];
+
+  const [
+    purchaseOrders,
+    goodsReceipts,
+    stockTransactions,
+    stockBalances,
+    exceptions,
+  ] = await Promise.all([
+    db.purchaseOrder.findMany({
+      where: purchaseOrderScope,
+      orderBy: { updatedAt: "desc" },
+      include: {
+        supplier: { select: { legalName: true, tradeName: true } },
+        rfq: {
+          select: {
+            requirement: {
+              select: {
+                project: { select: { projectCode: true, name: true } },
+                site: { select: { siteCode: true, name: true } },
               },
-              unit: { select: { symbol: true } },
             },
           },
         },
-      }),
-      db.goodsReceipt.findMany({
-        orderBy: { createdAt: "desc" },
-        take: 50,
-        include: {
-          purchaseOrder: { select: { poNumber: true } },
-          location: { select: { locationCode: true, name: true } },
-          createdBy: { select: { displayName: true } },
-          postedBy: { select: { displayName: true } },
-          lines: {
-            include: {
-              material: { select: { materialCode: true, name: true } },
-              unit: { select: { symbol: true } },
+        lines: {
+          orderBy: { position: "asc" },
+          include: {
+            requirementLine: {
+              select: {
+                material: { select: { materialCode: true, name: true } },
+              },
             },
+            unit: { select: { symbol: true } },
           },
         },
-      }),
-      db.$queryRaw<
-        Array<{
-          locationId: string;
-          locationCode: string;
-          locationName: string;
-          materialId: string;
-          materialCode: string;
-          materialName: string;
-          unitSymbol: string;
-          quantityOnHand: string;
-        }>
-      >`
+      },
+    }),
+    db.goodsReceipt.findMany({
+      where: { locationId: { in: locationIds } },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+      include: {
+        purchaseOrder: { select: { poNumber: true } },
+        location: { select: { locationCode: true, name: true } },
+        createdBy: { select: { displayName: true } },
+        postedBy: { select: { displayName: true } },
+        lines: {
+          include: {
+            material: { select: { materialCode: true, name: true } },
+            unit: { select: { symbol: true } },
+          },
+        },
+      },
+    }),
+    db.stockTransaction.findMany({
+      where: { locationId: { in: locationIds } },
+      orderBy: { createdAt: "desc" },
+      take: 100,
+      include: {
+        location: { select: { locationCode: true, name: true } },
+        material: { select: { materialCode: true, name: true } },
+        unit: { select: { symbol: true } },
+        createdBy: { select: { displayName: true } },
+      },
+    }),
+    db.$queryRaw<
+      Array<{
+        locationId: string;
+        locationCode: string;
+        locationName: string;
+        materialId: string;
+        materialCode: string;
+        materialName: string;
+        unitSymbol: string;
+        quantityOnHand: string;
+      }>
+    >`
         SELECT
           b."locationId",
           l."locationCode",
@@ -88,27 +148,28 @@ export async function getInventoryWorkspace(principal: AuthenticatedPrincipal) {
         JOIN "Material" m ON m."id" = b."materialId"
         JOIN "UnitOfMeasure" u ON u."id" = b."unitId"
         WHERE b."quantityOnHand" <> 0
+          AND b."locationId" IN (${Prisma.join(scopedLocationIds)})
         ORDER BY l."name", m."name"
       `,
-      db.$queryRaw<
-        Array<{
-          id: string;
-          type: string;
-          status: string;
-          quantity: string;
-          reason: string | null;
-          evidenceReference: string | null;
-          resolutionNotes: string | null;
-          grnNumber: string;
-          poNumber: string;
-          materialCode: string;
-          materialName: string;
-          unitSymbol: string;
-          locationCode: string;
-          locationName: string;
-          createdAt: Date;
-        }>
-      >`
+    db.$queryRaw<
+      Array<{
+        id: string;
+        type: string;
+        status: string;
+        quantity: string;
+        reason: string | null;
+        evidenceReference: string | null;
+        resolutionNotes: string | null;
+        grnNumber: string;
+        poNumber: string;
+        materialCode: string;
+        materialName: string;
+        unitSymbol: string;
+        locationCode: string;
+        locationName: string;
+        createdAt: Date;
+      }>
+    >`
         SELECT
           e."id",
           e."type"::text AS "type",
@@ -132,10 +193,11 @@ export async function getInventoryWorkspace(principal: AuthenticatedPrincipal) {
         JOIN "Material" m ON m."id" = line."materialId"
         JOIN "UnitOfMeasure" u ON u."id" = line."unitId"
         JOIN "InventoryLocation" loc ON loc."id" = g."locationId"
+        WHERE g."locationId" IN (${Prisma.join(scopedLocationIds)})
         ORDER BY e."createdAt" DESC
         LIMIT 100
       `,
-    ]);
+  ]);
 
   const receivablePurchaseOrders = purchaseOrders
     .filter((po) => receivableStatuses.has(String(po.status)))
@@ -201,6 +263,17 @@ export async function getInventoryWorkspace(principal: AuthenticatedPrincipal) {
         }),
         { accepted: 0, damaged: 0, rejected: 0 },
       ),
+    })),
+    stockTransactions: stockTransactions.map((transaction) => ({
+      id: transaction.id,
+      transactionNumber: transaction.transactionNumber,
+      type: String(transaction.type),
+      quantity: transaction.quantity.toString(),
+      location: transaction.location,
+      material: transaction.material,
+      unit: transaction.unit,
+      createdBy: transaction.createdBy.displayName,
+      createdAt: transaction.createdAt.toISOString(),
     })),
     stockBalances,
     exceptions: exceptions.map((exception) => ({

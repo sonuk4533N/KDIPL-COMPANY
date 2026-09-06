@@ -126,6 +126,19 @@ enum GoodsReceiptStatus {
   CANCELLED
 }
 
+enum GoodsReceiptExceptionType {
+  DAMAGED
+  REJECTED
+}
+
+enum GoodsReceiptExceptionStatus {
+  OPEN
+  REPLACEMENT_EXPECTED
+  RETURN_PENDING
+  RETURNED
+  RESOLVED
+}
+
 enum StockTransactionType {
   OPENING
   RECEIPT
@@ -897,11 +910,29 @@ model GoodsReceiptLine {
   material            Material           @relation(fields: [materialId], references: [id], onDelete: Restrict)
   unit                UnitOfMeasure      @relation(fields: [unitId], references: [id], onDelete: Restrict)
   stockTransactions   StockTransaction[]
+  exceptions          GoodsReceiptException[]
   createdAt           DateTime           @default(now())
 
   @@unique([goodsReceiptId, purchaseOrderLineId])
   @@index([goodsReceiptId])
   @@index([materialId])
+}
+
+model GoodsReceiptException {
+  id                   String                      @id @default(uuid()) @db.Uuid
+  goodsReceiptLineId   String                      @db.Uuid
+  type                 GoodsReceiptExceptionType
+  quantity             Decimal                     @db.Decimal(18, 3)
+  status               GoodsReceiptExceptionStatus @default(OPEN)
+  reason               String?                     @db.VarChar(1000)
+  evidenceReference    String?                     @db.VarChar(500)
+  resolutionNotes      String?                     @db.VarChar(1000)
+  goodsReceiptLine     GoodsReceiptLine            @relation(fields: [goodsReceiptLineId], references: [id], onDelete: Restrict)
+  createdAt            DateTime                    @default(now())
+  updatedAt            DateTime                    @updatedAt
+
+  @@unique([goodsReceiptLineId, type])
+  @@index([status, createdAt])
 }
 
 model StockTransaction {

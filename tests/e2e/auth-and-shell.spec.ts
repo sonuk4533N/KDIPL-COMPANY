@@ -123,12 +123,36 @@ test("administrator can open the Phase 4 commercial sourcing workspace", async (
   await expect(
     page.getByRole("heading", { name: "Procurement sourcing", exact: true }),
   ).toBeVisible();
-  await expect(page.getByText("Controlled commercial workflow")).toBeVisible();
   await expect(
-    page.getByText(/Purchase Managers issue and recommend/),
+    page.getByText("Controlled commercial and receiving boundary"),
   ).toBeVisible();
   await expect(
-    page.getByRole("main").getByText("Draft purchase orders", { exact: true }),
+    page.getByText(/Purchase Managers source and issue POs/),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Purchase order register" }),
+  ).toBeVisible();
+});
+
+test("administrator can inspect the Phase 5 inventory ledger workspace", async ({
+  page,
+}) => {
+  await signInAsBootstrapAdministrator(page);
+  await page.goto("/inventory");
+  await expect(
+    page.getByRole("heading", { name: "Inventory and receiving", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Goods receipt register" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Damaged and rejected material" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Stock transaction ledger" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Current stock" }),
   ).toBeVisible();
 });
 
