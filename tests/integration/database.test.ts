@@ -25,19 +25,42 @@ const testDb = enabled
 
 describe.skipIf(!enabled)("PostgreSQL foundation", () => {
   beforeEach(async () => {
+    const testUsers = {
+      OR: [
+        {
+          email: {
+            in: [
+              "test@kdipl.test",
+              "phase1@kdipl.test",
+              "credential@kdipl.test",
+            ],
+          },
+        },
+        { email: { startsWith: "session-", endsWith: "@kdipl.test" } },
+      ],
+    };
     await testDb!.$transaction([
-      testDb!.auditLog.deleteMany(),
-      testDb!.session.deleteMany(),
-      testDb!.userRole.deleteMany(),
-      testDb!.rolePermission.deleteMany(),
-      testDb!.user.deleteMany(),
-      testDb!.permission.deleteMany(),
-      testDb!.role.deleteMany(),
-      testDb!.employee.deleteMany(),
-      testDb!.position.deleteMany(),
-      testDb!.department.deleteMany(),
-      testDb!.businessSequence.deleteMany(),
-      testDb!.rateLimitBucket.deleteMany(),
+      testDb!.auditLog.deleteMany({
+        where: { entityType: { in: ["Test", "UserCredential"] } },
+      }),
+      testDb!.session.deleteMany({ where: { user: testUsers } }),
+      testDb!.userRole.deleteMany({
+        where: {
+          OR: [{ user: testUsers }, { role: { code: { startsWith: "P1_" } } }],
+        },
+      }),
+      testDb!.rolePermission.deleteMany({
+        where: { role: { code: { startsWith: "P1_" } } },
+      }),
+      testDb!.user.deleteMany({ where: testUsers }),
+      testDb!.role.deleteMany({ where: { code: { startsWith: "P1_" } } }),
+      testDb!.employee.deleteMany({
+        where: { employeeCode: { in: ["EMP-TEST", "P1-001"] } },
+      }),
+      testDb!.position.deleteMany({ where: { code: "PHASE1_MANAGER" } }),
+      testDb!.department.deleteMany({
+        where: { code: { in: ["TEST", "PHASE1"] } },
+      }),
     ]);
   });
   afterAll(async () => testDb?.$disconnect());
@@ -73,13 +96,14 @@ describe.skipIf(!enabled)("PostgreSQL foundation", () => {
   });
 
   it("writes audit data in the caller transaction and rolls it back on failure", async () => {
+    const entityId = randomUUID();
     await expect(
       testDb!.$transaction(async (transaction) => {
         await AuditService.record(
           {
             action: AuditAction.CREATE,
             entityType: "Test",
-            entityId: randomUUID(),
+            entityId,
             after: { password: "secret" },
           },
           transaction,
@@ -87,7 +111,7 @@ describe.skipIf(!enabled)("PostgreSQL foundation", () => {
         throw new Error("rollback");
       }),
     ).rejects.toThrow("rollback");
-    expect(await testDb!.auditLog.count()).toBe(0);
+    expect(await testDb!.auditLog.count({ where: { entityId } })).toBe(0);
   });
 
   it("persists sanitized audit evidence", async () => {

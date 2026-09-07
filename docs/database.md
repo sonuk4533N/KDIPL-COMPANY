@@ -18,6 +18,8 @@
 - `RequestForQuotation`, `RequestForQuotationSupplier`, and `RequestForQuotationWorkflowEvent` provide the Phase 4 sourcing state machine and immutable transition history.
 - `SupplierQuotation`, `SupplierQuotationLine`, and `SupplierQuotationDocument` retain documented commercial offers and server-calculated INR totals.
 - `PurchaseOrder` and `PurchaseOrderLine` retain the draft PO created from an independently approved quotation.
+- `InventoryLocation`, `GoodsReceipt`, and `GoodsReceiptLine` provide the Phase 5 receiving foundation with project/site scope and separate accepted, damaged, and rejected quantities.
+- `StockTransaction` is the immutable inventory ledger. `InventoryStockBalance` derives quantity on hand from transaction direction and reversals.
 
 Phase 1 adds credential lifecycle fields to `User`: `mustChangePassword`,
 `passwordChangedAt`, and `lastLoginAt`. Temporary administrator-issued
@@ -44,10 +46,16 @@ existing identity records.
 
 `20260825210000_phase4_commercial_workflow` adds RFQ issue/recommendation/decision states, accountable workflow actors and events, documented supplier quotations and lines, and draft purchase orders. PostgreSQL checks enforce valid transition evidence, mandatory reasons, commercial dates, INR arithmetic, and restrictive source-chain relationships.
 
+`20260903170000_phase5_inventory_foundation` adds scoped inventory locations, draft/post/cancel GRN structures, the immutable stock ledger, and the ledger-derived stock-balance view. Posting is deliberately not enabled while purchase orders are draft-only.
+
+`20260903183000_phase5_inventory_scope_integrity` strengthens site-store scope with a composite site/project foreign key so a location cannot pair a site with the wrong project.
+
+`20260904230000_phase5_po_receiving_workflow` adds PO issue, supplier acceptance, partial/full receipt, close/cancel states and evidence, plus GRN posting and cumulative accepted-quantity guards. `20260904231000_phase5_site_receiving_permissions` grants assigned Site Supervisors the inventory permissions required for controlled direct-site receipts. `20260905010000_phase5_completion` adds damaged/rejected exception tracking and the PO close guard. `20260905020000_phase5_integrity_hardening` makes stock transactions append-only, makes posted/cancelled GRNs and their lines immutable, validates receipt ledger sources, and serializes cumulative receipt validation on the PO row.
+
 ## Transaction numbering
 
 `TransactionNumberService` performs one atomic PostgreSQL upsert/increment with `RETURNING`. It produces values such as `MR-2026-0001` and is safe under concurrency. Calendar year is the Phase 0 default; KDIPL must decide whether numbering resets by Indian financial year.
 
-## Future inventory
+## Inventory ledger
 
-Inventory balance will be derived from an immutable stock-transaction ledger. A mutable `currentStock` field must never become the independent authority. The ledger schema is deliberately deferred.
+Inventory balance is derived from the immutable stock-transaction ledger. A mutable `currentStock` field must never become an independent authority. GRN posting atomically appends ledger entries only after supplier acceptance, scope validation, and cumulative accepted-quantity validation. Database triggers reject stock transaction updates/deletes and direct mutation of posted/cancelled GRNs.

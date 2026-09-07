@@ -22,7 +22,11 @@ export default async function RequirementsPage() {
     );
   }
   const workspace = await getRequirementWorkspace(principal);
-  const canCreate = hasPermission(principal, "material_requirement.create");
+  const canCreate =
+    hasPermission(principal, "material_requirement.create") &&
+    !principal.roleCodes.includes("SYSTEM_ADMINISTRATOR") &&
+    (principal.roleCodes.includes("PROJECT_MANAGER") ||
+      principal.roleCodes.includes("SITE_SUPERVISOR"));
   const lineCount = workspace.requirements.reduce(
     (total, requirement) => total + requirement.lines.length,
     0,

@@ -33,6 +33,8 @@ const businessRoleGrants = {
     "site.view",
     "material_requirement.view",
     "material_requirement.create",
+    "inventory.view",
+    "inventory.receive",
   ],
   PROJECT_MANAGER: [
     "app.access",
@@ -61,6 +63,7 @@ const businessRoleGrants = {
     "purchase.view",
     "purchase.create",
   ],
+  STORE_KEEPER: ["app.access", "inventory.view", "inventory.receive"],
 } as const;
 
 const departments = [
@@ -91,10 +94,34 @@ const positions = [
 
 const phase2Employees = [
   {
+    employeeCode: "DEMO-PD-001",
+    fullName: "Priya Malhotra",
+    designation: "Project Director",
+    email: "project.director@kdipl.test",
+    departmentCode: "PROJECTS",
+    positionCode: "PROJECT_DIRECTOR",
+  },
+  {
+    employeeCode: "DEMO-PUR-001",
+    fullName: "Nikhil Arora",
+    designation: "Purchase Manager",
+    email: "purchase.manager@kdipl.test",
+    departmentCode: "PROCUREMENT",
+    positionCode: "PURCHASE_MANAGER",
+  },
+  {
+    employeeCode: "DEMO-SK-001",
+    fullName: "Vikram Rao",
+    designation: "Store Keeper",
+    email: "store.keeper@kdipl.test",
+    departmentCode: "STORES",
+    positionCode: "STORE_KEEPER",
+  },
+  {
     employeeCode: "DEMO-PM-001",
     fullName: "Aarav Bhatia",
     designation: "Project Manager",
-    email: "aarav.bhatia@example.com",
+    email: "project.manager@kdipl.test",
     departmentCode: "PROJECTS",
     positionCode: "PROJECT_MANAGER",
   },
@@ -110,7 +137,7 @@ const phase2Employees = [
     employeeCode: "DEMO-SS-001",
     fullName: "Rohan Sethi",
     designation: "Site Supervisor",
-    email: "rohan.sethi@example.com",
+    email: "site.supervisor@kdipl.test",
     departmentCode: "SITE_OPERATIONS",
     positionCode: "SITE_SUPERVISOR",
   },
@@ -121,6 +148,34 @@ const phase2Employees = [
     email: "kavya.nair@example.com",
     departmentCode: "SITE_OPERATIONS",
     positionCode: "SITE_SUPERVISOR",
+  },
+] as const;
+
+const demoBusinessUsers = [
+  {
+    employeeCode: "DEMO-PD-001",
+    roleCode: "PROJECT_DIRECTOR",
+    email: "project.director@kdipl.test",
+  },
+  {
+    employeeCode: "DEMO-PM-001",
+    roleCode: "PROJECT_MANAGER",
+    email: "project.manager@kdipl.test",
+  },
+  {
+    employeeCode: "DEMO-PUR-001",
+    roleCode: "PURCHASE_MANAGER",
+    email: "purchase.manager@kdipl.test",
+  },
+  {
+    employeeCode: "DEMO-SS-001",
+    roleCode: "SITE_SUPERVISOR",
+    email: "site.supervisor@kdipl.test",
+  },
+  {
+    employeeCode: "DEMO-SK-001",
+    roleCode: "STORE_KEEPER",
+    email: "store.keeper@kdipl.test",
   },
 ] as const;
 
@@ -717,6 +772,75 @@ async function seedPhase3Draft(createdById: string) {
   console.info("Seeded Phase 3 draft material requirement.");
 }
 
+async function seedDemoBusinessUsers(password: string) {
+  if (password.length < 12) {
+    throw new Error("DEMO_BUSINESS_PASSWORD must be at least 12 characters.");
+  }
+  const passwordHash = await argon2.hash(password, {
+    type: argon2.argon2id,
+    memoryCost: 19_456,
+    timeCost: 2,
+    parallelism: 1,
+  });
+  const passwordChangedAt = new Date();
+
+  for (const demo of demoBusinessUsers) {
+    const [employee, role] = await Promise.all([
+      prisma.employee.findUniqueOrThrow({
+        where: { employeeCode: demo.employeeCode },
+        select: { id: true, fullName: true },
+      }),
+      prisma.role.findUniqueOrThrow({
+        where: { code: demo.roleCode },
+        select: { id: true },
+      }),
+    ]);
+    const existing = await prisma.user.findFirst({
+      where: {
+        OR: [{ emailNormalized: demo.email }, { employeeId: employee.id }],
+      },
+      select: { id: true },
+    });
+    const user = existing
+      ? await prisma.user.update({
+          where: { id: existing.id },
+          data: {
+            employeeId: employee.id,
+            email: demo.email,
+            emailNormalized: demo.email,
+            displayName: employee.fullName,
+            passwordHash,
+            status: "ACTIVE",
+            mustChangePassword: false,
+            passwordChangedAt,
+            authVersion: { increment: 1 },
+          },
+        })
+      : await prisma.user.create({
+          data: {
+            employeeId: employee.id,
+            email: demo.email,
+            emailNormalized: demo.email,
+            displayName: employee.fullName,
+            passwordHash,
+            mustChangePassword: false,
+            passwordChangedAt,
+          },
+        });
+    await prisma.$transaction(async (transaction) => {
+      await transaction.userRole.deleteMany({
+        where: { userId: user.id, roleId: { not: role.id } },
+      });
+      await transaction.userRole.upsert({
+        where: { userId_roleId: { userId: user.id, roleId: role.id } },
+        update: {},
+        create: { userId: user.id, roleId: role.id },
+      });
+    });
+  }
+  console.info("Seeded five opt-in business-role demo login accounts.");
+}
+
 async function main() {
   for (const [code, name] of departments) {
     await prisma.department.upsert({
@@ -801,6 +925,15 @@ async function main() {
   }
 
   await seedPhase2();
+
+  const demoBusinessPassword = process.env.DEMO_BUSINESS_PASSWORD;
+  if (demoBusinessPassword) {
+    await seedDemoBusinessUsers(demoBusinessPassword);
+  } else {
+    console.info(
+      "Skipped business-role demo logins; DEMO_BUSINESS_PASSWORD is not configured.",
+    );
+  }
 
   const email = process.env.BOOTSTRAP_ADMIN_EMAIL?.trim().toLowerCase();
   const password = process.env.BOOTSTRAP_ADMIN_PASSWORD;

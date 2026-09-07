@@ -47,6 +47,7 @@ jobs:
         run: |
           echo "AUTH_SECRET=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
           echo "BOOTSTRAP_ADMIN_PASSWORD=$(openssl rand -base64 24 | tr -d '\n')" >> "$GITHUB_ENV"
+          echo "DEMO_BUSINESS_PASSWORD=$(openssl rand -base64 24 | tr -d '\n')" >> "$GITHUB_ENV"
       - run: npm ci
       - run: npm run db:generate
       - run: npm run db:migrate:deploy
