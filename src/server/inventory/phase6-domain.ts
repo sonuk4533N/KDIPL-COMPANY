@@ -1,30 +1,14 @@
 export type MaterialIssueStatus =
-  | "DRAFT"
-  | "POSTED"
-  | "ACKNOWLEDGED"
-  | "CANCELLED";
+  "DRAFT" | "POSTED" | "ACKNOWLEDGED" | "CANCELLED";
 
 export type StockTransferStatus =
-  | "DRAFT"
-  | "DISPATCHED"
-  | "RECEIVED"
-  | "CANCELLED";
+  "DRAFT" | "DISPATCHED" | "RECEIVED" | "CANCELLED";
 
 export type StockAdjustmentStatus =
-  | "DRAFT"
-  | "SUBMITTED"
-  | "APPROVED"
-  | "REJECTED"
-  | "POSTED"
-  | "CANCELLED";
+  "DRAFT" | "SUBMITTED" | "APPROVED" | "REJECTED" | "POSTED" | "CANCELLED";
 
 export type StockCountStatus =
-  | "DRAFT"
-  | "SUBMITTED"
-  | "APPROVED"
-  | "REJECTED"
-  | "POSTED"
-  | "CANCELLED";
+  "DRAFT" | "SUBMITTED" | "APPROVED" | "REJECTED" | "POSTED" | "CANCELLED";
 
 function assertFiniteNonNegative(value: number, field: string) {
   if (!Number.isFinite(value) || value < 0) {
