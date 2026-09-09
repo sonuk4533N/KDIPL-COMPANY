@@ -51,6 +51,12 @@ export async function getInventoryWorkspace(principal: AuthenticatedPrincipal) {
       : assignedSiteScope
         ? { site: assignedSiteScope.site }
         : { id: { equals: "00000000-0000-0000-0000-000000000000" } };
+  const stockTransferScope: Prisma.StockTransferWhereInput =
+    hasOrganizationScope
+      ? {}
+      : assignedSiteScope
+        ? { destinationLocation: { site: assignedSiteScope.site } }
+        : { id: { equals: "00000000-0000-0000-0000-000000000000" } };
   const destinationSiteScope: Prisma.SiteWhereInput = hasOrganizationScope
     ? {}
     : assignedSiteScope
@@ -77,6 +83,7 @@ export async function getInventoryWorkspace(principal: AuthenticatedPrincipal) {
     stockBalances,
     exceptions,
     materialIssues,
+    stockTransfers,
     issueDestinations,
   ] = await Promise.all([
     db.purchaseOrder.findMany({
@@ -232,6 +239,34 @@ export async function getInventoryWorkspace(principal: AuthenticatedPrincipal) {
         },
       },
     }),
+    db.stockTransfer.findMany({
+      where: stockTransferScope,
+      orderBy: { createdAt: "desc" },
+      take: 50,
+      include: {
+        sourceLocation: {
+          select: { locationCode: true, name: true, type: true },
+        },
+        destinationLocation: {
+          select: {
+            locationCode: true,
+            name: true,
+            type: true,
+            siteId: true,
+          },
+        },
+        createdBy: { select: { displayName: true } },
+        dispatchedBy: { select: { displayName: true } },
+        receivedBy: { select: { displayName: true } },
+        lines: {
+          orderBy: { position: "asc" },
+          include: {
+            material: { select: { materialCode: true, name: true } },
+            unit: { select: { symbol: true } },
+          },
+        },
+      },
+    }),
     db.site.findMany({
       where: {
         status: "ACTIVE",
@@ -341,6 +376,27 @@ export async function getInventoryWorkspace(principal: AuthenticatedPrincipal) {
       acknowledgedAt: issue.acknowledgedAt?.toISOString() ?? null,
       createdAt: issue.createdAt.toISOString(),
       lines: issue.lines.map((line) => ({
+        id: line.id,
+        quantity: line.quantity.toString(),
+        material: line.material,
+        unit: line.unit,
+      })),
+    })),
+    stockTransfers: stockTransfers.map((transfer) => ({
+      id: transfer.id,
+      transferNumber: transfer.transferNumber,
+      status: String(transfer.status),
+      purpose: String(transfer.purpose),
+      notes: transfer.notes,
+      sourceLocation: transfer.sourceLocation,
+      destinationLocation: transfer.destinationLocation,
+      createdBy: transfer.createdBy.displayName,
+      dispatchedBy: transfer.dispatchedBy?.displayName ?? null,
+      receivedBy: transfer.receivedBy?.displayName ?? null,
+      dispatchedAt: transfer.dispatchedAt?.toISOString() ?? null,
+      receivedAt: transfer.receivedAt?.toISOString() ?? null,
+      createdAt: transfer.createdAt.toISOString(),
+      lines: transfer.lines.map((line) => ({
         id: line.id,
         quantity: line.quantity.toString(),
         material: line.material,
