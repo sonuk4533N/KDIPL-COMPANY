@@ -35,6 +35,8 @@ const businessRoleGrants = {
     "material_requirement.create",
     "inventory.view",
     "inventory.receive",
+    "inventory.issue",
+    "inventory.transfer",
   ],
   PROJECT_MANAGER: [
     "app.access",
@@ -63,7 +65,13 @@ const businessRoleGrants = {
     "purchase.view",
     "purchase.create",
   ],
-  STORE_KEEPER: ["app.access", "inventory.view", "inventory.receive"],
+  STORE_KEEPER: [
+    "app.access",
+    "inventory.view",
+    "inventory.receive",
+    "inventory.issue",
+    "inventory.transfer",
+  ],
 } as const;
 
 const departments = [

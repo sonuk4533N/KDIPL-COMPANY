@@ -15,6 +15,10 @@ import { GrnDraftControls } from "@/features/inventory/grn-draft-controls";
 import { GrnExceptionControls } from "@/features/inventory/grn-exception-controls";
 import { GrnPostButton } from "@/features/inventory/grn-post-button";
 import { getInventoryWorkspace } from "@/features/inventory/inventory-queries";
+import { MaterialIssueControls } from "@/features/inventory/material-issue-controls";
+import { MaterialIssueForm } from "@/features/inventory/material-issue-form";
+import { StockTransferControls } from "@/features/inventory/stock-transfer-controls";
+import { StockTransferForm } from "@/features/inventory/stock-transfer-form";
 import { getCurrentPrincipal } from "@/server/auth/current-user";
 import { hasPermission } from "@/server/authorization/authorization";
 
@@ -27,6 +31,26 @@ function exceptionStatusLabel(status: string): StandardStatus {
     RESOLVED: "Resolved",
   };
   return labels[status] ?? "Open";
+}
+
+function materialIssueStatusLabel(status: string): StandardStatus {
+  const labels: Record<string, StandardStatus> = {
+    DRAFT: "Draft",
+    POSTED: "Posted",
+    ACKNOWLEDGED: "Acknowledged",
+    CANCELLED: "Cancelled",
+  };
+  return labels[status] ?? "Draft";
+}
+
+function stockTransferStatusLabel(status: string): StandardStatus {
+  const labels: Record<string, StandardStatus> = {
+    DRAFT: "Draft",
+    DISPATCHED: "Dispatched",
+    RECEIVED: "Received",
+    CANCELLED: "Cancelled",
+  };
+  return labels[status] ?? "Draft";
 }
 
 export default async function InventoryPage() {
@@ -47,6 +71,23 @@ export default async function InventoryPage() {
     !principal.roleCodes.includes("SYSTEM_ADMINISTRATOR") &&
     (principal.roleCodes.includes("STORE_KEEPER") ||
       principal.roleCodes.includes("SITE_SUPERVISOR"));
+  const canManageIssues =
+    hasPermission(principal, "inventory.issue") &&
+    principal.roleCodes.includes("STORE_KEEPER") &&
+    !principal.roleCodes.includes("SYSTEM_ADMINISTRATOR");
+  const canAcknowledgeIssues =
+    hasPermission(principal, "inventory.issue") &&
+    principal.roleCodes.includes("SITE_SUPERVISOR") &&
+    !principal.roleCodes.includes("SYSTEM_ADMINISTRATOR");
+  const canManageTransfers =
+    hasPermission(principal, "inventory.transfer") &&
+    principal.roleCodes.includes("STORE_KEEPER") &&
+    !principal.roleCodes.includes("SYSTEM_ADMINISTRATOR");
+  const canReceiveTransfers =
+    hasPermission(principal, "inventory.transfer") &&
+    !principal.roleCodes.includes("SYSTEM_ADMINISTRATOR") &&
+    (principal.roleCodes.includes("STORE_KEEPER") ||
+      principal.roleCodes.includes("SITE_SUPERVISOR"));
   const postedCount = workspace.goodsReceipts.filter(
     ({ status }) => status === "POSTED",
   ).length;
@@ -60,9 +101,9 @@ export default async function InventoryPage() {
   return (
     <div className="space-y-7">
       <PageHeader
-        eyebrow="Phase 5 · goods receiving & stock ledger"
+        eyebrow="Phase 6 · receiving, issues & stock transfers"
         title="Inventory and receiving"
-        description="Receive supplier material against accepted purchase orders and derive stock only from posted ledger transactions."
+        description="Receive supplier material, issue or transfer available stock, and keep every location balance derived from immutable ledger transactions."
       />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
@@ -112,6 +153,215 @@ export default async function InventoryPage() {
           </CardContent>
         </Card>
       </div>
+
+      {canManageIssues &&
+      workspace.stockBalances.some(
+        ({ quantityOnHand }) => Number(quantityOnHand) > 0,
+      ) &&
+      workspace.issueDestinations.length ? (
+        <Card>
+          <CardHeader>
+            <h2 className="font-display text-lg font-bold text-slate-950">
+              Issue material to site
+            </h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Select currently available stock and an active destination site.
+              Stock leaves the source only after posting.
+            </p>
+          </CardHeader>
+          <CardContent>
+            <MaterialIssueForm
+              balances={workspace.stockBalances}
+              destinations={workspace.issueDestinations}
+            />
+          </CardContent>
+        </Card>
+      ) : canManageIssues ? (
+        <ApplicationState
+          kind="empty"
+          title="No stock available to issue"
+          description="Post accepted inventory into an active location and ensure an active destination site exists before creating an issue."
+        />
+      ) : null}
+
+      <section className="space-y-4">
+        <div>
+          <h2 className="font-display text-lg font-bold text-slate-950">
+            Material issue register
+          </h2>
+          <p className="mt-1 text-sm text-slate-500">
+            Drafts, posted stock-outs, and destination-site acknowledgments
+            within your assigned inventory scope
+          </p>
+        </div>
+        {workspace.materialIssues.length ? (
+          <div className="grid gap-4 lg:grid-cols-2">
+            {workspace.materialIssues.map((issue) => (
+              <Card key={issue.id} data-testid={`material-issue-${issue.id}`}>
+                <CardContent>
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-wider text-blue-700">
+                        {issue.issueNumber}
+                      </p>
+                      <h3 className="mt-1 font-display text-lg font-bold text-slate-950">
+                        {issue.site?.name ?? issue.project.name}
+                      </h3>
+                    </div>
+                    <StatusBadge
+                      status={materialIssueStatusLabel(issue.status)}
+                    />
+                  </div>
+                  <div className="mt-4 space-y-2 text-sm text-slate-600">
+                    <p>
+                      From {issue.sourceLocation.locationCode} ·{" "}
+                      {issue.sourceLocation.name}
+                    </p>
+                    <p>
+                      To {issue.project.projectCode}
+                      {issue.site ? ` · ${issue.site.siteCode}` : ""}
+                    </p>
+                    {issue.lines.map((line) => (
+                      <p key={line.id} className="font-semibold text-slate-900">
+                        {line.material.materialCode} · {line.material.name} ·{" "}
+                        {line.quantity} {line.unit.symbol}
+                      </p>
+                    ))}
+                    <p>{issue.purpose}</p>
+                    <p className="text-xs text-slate-500">
+                      Created by {issue.createdBy}
+                      {issue.postedBy ? ` · Posted by ${issue.postedBy}` : ""}
+                      {issue.acknowledgedBy
+                        ? ` · Acknowledged by ${issue.acknowledgedBy}`
+                        : ""}
+                    </p>
+                  </div>
+                  <MaterialIssueControls
+                    materialIssueId={issue.id}
+                    status={issue.status}
+                    canManage={canManageIssues}
+                    canAcknowledge={canAcknowledgeIssues}
+                  />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <ApplicationState
+            kind="empty"
+            title="No material issues yet"
+            description="Create a draft from available stock, post it, and let the assigned Site Supervisor acknowledge receipt."
+          />
+        )}
+      </section>
+
+      {canManageTransfers &&
+      workspace.stockBalances.some(
+        ({ quantityOnHand }) => Number(quantityOnHand) > 0,
+      ) &&
+      workspace.locations.length > 1 ? (
+        <Card>
+          <CardHeader>
+            <h2 className="font-display text-lg font-bold text-slate-950">
+              Transfer stock between locations
+            </h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Dispatch records stock out at the source. Stock stays in transit
+              until an authorized destination receiver accepts it.
+            </p>
+          </CardHeader>
+          <CardContent>
+            <StockTransferForm
+              balances={workspace.stockBalances}
+              locations={workspace.locations}
+            />
+          </CardContent>
+        </Card>
+      ) : canManageTransfers ? (
+        <ApplicationState
+          kind="empty"
+          title="No stock available to transfer"
+          description="At least two active inventory locations and a positive source balance are required."
+        />
+      ) : null}
+
+      <section className="space-y-4">
+        <div>
+          <h2 className="font-display text-lg font-bold text-slate-950">
+            Stock transfer register
+          </h2>
+          <p className="mt-1 text-sm text-slate-500">
+            Draft, in-transit, received, and cancelled transfers within your
+            inventory scope
+          </p>
+        </div>
+        {workspace.stockTransfers.length ? (
+          <div className="grid gap-4 lg:grid-cols-2">
+            {workspace.stockTransfers.map((transfer) => (
+              <Card
+                key={transfer.id}
+                data-testid={`stock-transfer-${transfer.id}`}
+              >
+                <CardContent>
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-wider text-blue-700">
+                        {transfer.transferNumber}
+                      </p>
+                      <h3 className="mt-1 font-display text-lg font-bold text-slate-950">
+                        {transfer.sourceLocation.locationCode} →{" "}
+                        {transfer.destinationLocation.locationCode}
+                      </h3>
+                    </div>
+                    <StatusBadge
+                      status={stockTransferStatusLabel(transfer.status)}
+                    />
+                  </div>
+                  <div className="mt-4 space-y-2 text-sm text-slate-600">
+                    <p>
+                      From {transfer.sourceLocation.name} · To{" "}
+                      {transfer.destinationLocation.name}
+                    </p>
+                    {transfer.lines.map((line) => (
+                      <p key={line.id} className="font-semibold text-slate-900">
+                        {line.material.materialCode} · {line.material.name} ·{" "}
+                        {line.quantity} {line.unit.symbol}
+                      </p>
+                    ))}
+                    <p>
+                      {transfer.purpose === "PROJECT_CLOSE"
+                        ? "Project-close disposition"
+                        : "Routine transfer"}
+                    </p>
+                    {transfer.notes ? <p>{transfer.notes}</p> : null}
+                    <p className="text-xs text-slate-500">
+                      Created by {transfer.createdBy}
+                      {transfer.dispatchedBy
+                        ? ` · Dispatched by ${transfer.dispatchedBy}`
+                        : ""}
+                      {transfer.receivedBy
+                        ? ` · Received by ${transfer.receivedBy}`
+                        : ""}
+                    </p>
+                  </div>
+                  <StockTransferControls
+                    stockTransferId={transfer.id}
+                    status={transfer.status}
+                    canManage={canManageTransfers}
+                    canReceive={canReceiveTransfers}
+                  />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <ApplicationState
+            kind="empty"
+            title="No stock transfers yet"
+            description="Create a draft, dispatch it from the source, and receive it at the destination."
+          />
+        )}
+      </section>
 
       {canReceive && workspace.purchaseOrders.length ? (
         <Card>
