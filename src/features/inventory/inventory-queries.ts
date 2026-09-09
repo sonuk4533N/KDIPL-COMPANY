@@ -45,6 +45,17 @@ export async function getInventoryWorkspace(principal: AuthenticatedPrincipal) {
             },
           }
         : { id: { equals: "00000000-0000-0000-0000-000000000000" } };
+  const materialIssueScope: Prisma.MaterialIssueWhereInput =
+    hasOrganizationScope
+      ? {}
+      : assignedSiteScope
+        ? { site: assignedSiteScope.site }
+        : { id: { equals: "00000000-0000-0000-0000-000000000000" } };
+  const destinationSiteScope: Prisma.SiteWhereInput = hasOrganizationScope
+    ? {}
+    : assignedSiteScope
+      ? assignedSiteScope.site
+      : { id: { equals: "00000000-0000-0000-0000-000000000000" } };
 
   const locations = await db.inventoryLocation.findMany({
     where: { isActive: true, AND: [locationScope] },
@@ -65,6 +76,8 @@ export async function getInventoryWorkspace(principal: AuthenticatedPrincipal) {
     stockTransactions,
     stockBalances,
     exceptions,
+    materialIssues,
+    issueDestinations,
   ] = await Promise.all([
     db.purchaseOrder.findMany({
       where: purchaseOrderScope,
@@ -128,6 +141,7 @@ export async function getInventoryWorkspace(principal: AuthenticatedPrincipal) {
         locationCode: string;
         locationName: string;
         materialId: string;
+        unitId: string;
         materialCode: string;
         materialName: string;
         unitSymbol: string;
@@ -139,6 +153,7 @@ export async function getInventoryWorkspace(principal: AuthenticatedPrincipal) {
           l."locationCode",
           l."name" AS "locationName",
           b."materialId",
+          b."unitId",
           m."materialCode",
           m."name" AS "materialName",
           u."symbol" AS "unitSymbol",
@@ -197,6 +212,40 @@ export async function getInventoryWorkspace(principal: AuthenticatedPrincipal) {
         ORDER BY e."createdAt" DESC
         LIMIT 100
       `,
+    db.materialIssue.findMany({
+      where: materialIssueScope,
+      orderBy: { createdAt: "desc" },
+      take: 50,
+      include: {
+        sourceLocation: { select: { locationCode: true, name: true } },
+        project: { select: { projectCode: true, name: true } },
+        site: { select: { siteCode: true, name: true } },
+        createdBy: { select: { displayName: true } },
+        postedBy: { select: { displayName: true } },
+        acknowledgedBy: { select: { displayName: true } },
+        lines: {
+          orderBy: { position: "asc" },
+          include: {
+            material: { select: { materialCode: true, name: true } },
+            unit: { select: { symbol: true } },
+          },
+        },
+      },
+    }),
+    db.site.findMany({
+      where: {
+        status: "ACTIVE",
+        project: { status: "ACTIVE" },
+        AND: [destinationSiteScope],
+      },
+      orderBy: [{ project: { name: "asc" } }, { name: "asc" }],
+      select: {
+        id: true,
+        siteCode: true,
+        name: true,
+        project: { select: { id: true, projectCode: true, name: true } },
+      },
+    }),
   ]);
 
   const receivablePurchaseOrders = purchaseOrders
@@ -276,6 +325,29 @@ export async function getInventoryWorkspace(principal: AuthenticatedPrincipal) {
       createdAt: transaction.createdAt.toISOString(),
     })),
     stockBalances,
+    materialIssues: materialIssues.map((issue) => ({
+      id: issue.id,
+      issueNumber: issue.issueNumber,
+      status: String(issue.status),
+      purpose: issue.purpose,
+      notes: issue.notes,
+      sourceLocation: issue.sourceLocation,
+      project: issue.project,
+      site: issue.site,
+      createdBy: issue.createdBy.displayName,
+      postedBy: issue.postedBy?.displayName ?? null,
+      acknowledgedBy: issue.acknowledgedBy?.displayName ?? null,
+      postedAt: issue.postedAt?.toISOString() ?? null,
+      acknowledgedAt: issue.acknowledgedAt?.toISOString() ?? null,
+      createdAt: issue.createdAt.toISOString(),
+      lines: issue.lines.map((line) => ({
+        id: line.id,
+        quantity: line.quantity.toString(),
+        material: line.material,
+        unit: line.unit,
+      })),
+    })),
+    issueDestinations,
     exceptions: exceptions.map((exception) => ({
       ...exception,
       createdAt: exception.createdAt.toISOString(),

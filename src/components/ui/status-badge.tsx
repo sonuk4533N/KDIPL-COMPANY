@@ -16,6 +16,10 @@ const statusConfig = {
   Issued: { icon: Send, styles: "bg-blue-50 text-blue-700" },
   Accepted: { icon: CheckCircle2, styles: "bg-emerald-50 text-emerald-800" },
   Posted: { icon: CheckCircle2, styles: "bg-emerald-50 text-emerald-800" },
+  Acknowledged: {
+    icon: CheckCircle2,
+    styles: "bg-emerald-50 text-emerald-800",
+  },
   Recommended: { icon: Clock3, styles: "bg-amber-50 text-amber-800" },
   Pending: { icon: Clock3, styles: "bg-amber-50 text-amber-800" },
   Approved: { icon: CheckCircle2, styles: "bg-emerald-50 text-emerald-800" },
