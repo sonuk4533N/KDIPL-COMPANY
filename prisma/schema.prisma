@@ -147,7 +147,56 @@ enum StockTransactionType {
   TRANSFER_OUT
   ADJUSTMENT_IN
   ADJUSTMENT_OUT
+  RETURN
   REVERSAL
+}
+
+enum MaterialIssueStatus {
+  DRAFT
+  POSTED
+  ACKNOWLEDGED
+  CANCELLED
+}
+
+enum StockTransferStatus {
+  DRAFT
+  DISPATCHED
+  RECEIVED
+  CANCELLED
+}
+
+enum StockTransferPurpose {
+  ROUTINE
+  PROJECT_CLOSE
+}
+
+enum StockAdjustmentDirection {
+  IN
+  OUT
+}
+
+enum StockAdjustmentStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+  POSTED
+  CANCELLED
+}
+
+enum StockCountStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+  POSTED
+  CANCELLED
+}
+
+enum MaterialReconciliationStatus {
+  DRAFT
+  POSTED
+  CANCELLED
 }
 
 model Department {
@@ -208,43 +257,64 @@ model Employee {
 }
 
 model User {
-  id                              String                             @id @default(uuid()) @db.Uuid
-  email                           String                             @db.VarChar(320)
-  emailNormalized                 String                             @unique @db.VarChar(320)
-  passwordHash                    String
-  displayName                     String                             @db.VarChar(160)
-  status                          UserStatus                         @default(ACTIVE)
-  authVersion                     Int                                @default(1)
-  mustChangePassword              Boolean                            @default(false)
-  passwordChangedAt               DateTime?
-  lastLoginAt                     DateTime?
-  employeeId                      String?                            @unique @db.Uuid
-  employee                        Employee?                          @relation(fields: [employeeId], references: [id], onDelete: SetNull)
-  roles                           UserRole[]
-  sessions                        Session[]
-  auditEvents                     AuditLog[]                         @relation("AuditActor")
-  uploadedFiles                   FileRecord[]
-  materialRequirementsCreated     MaterialRequirement[]              @relation("MaterialRequirementCreator")
-  materialRequirementsSubmitted   MaterialRequirement[]              @relation("MaterialRequirementSubmitter")
-  materialRequirementsDecided     MaterialRequirement[]              @relation("MaterialRequirementDecisionActor")
-  materialRequirementEvents       MaterialRequirementWorkflowEvent[]
-  requestsForQuotationCreated     RequestForQuotation[]              @relation("RequestForQuotationCreator")
-  requestsForQuotationIssued      RequestForQuotation[]              @relation("RequestForQuotationIssuer")
-  requestsForQuotationRecommended RequestForQuotation[]              @relation("RequestForQuotationRecommender")
-  requestsForQuotationDecided     RequestForQuotation[]              @relation("RequestForQuotationDecisionActor")
-  requestForQuotationEvents       RequestForQuotationWorkflowEvent[]
-  supplierQuotationsRecorded      SupplierQuotation[]                @relation("SupplierQuotationRecorder")
-  purchaseOrdersCreated           PurchaseOrder[]                    @relation("PurchaseOrderCreator")
-  purchaseOrdersIssued            PurchaseOrder[]                    @relation("PurchaseOrderIssuer")
-  purchaseOrderAcceptancesRecorded PurchaseOrder[]                   @relation("PurchaseOrderAcceptanceRecorder")
-  purchaseOrdersClosed            PurchaseOrder[]                    @relation("PurchaseOrderCloser")
-  purchaseOrdersCancelled         PurchaseOrder[]                    @relation("PurchaseOrderCanceller")
-  goodsReceiptsCreated            GoodsReceipt[]                     @relation("GoodsReceiptCreator")
-  goodsReceiptsPosted             GoodsReceipt[]                     @relation("GoodsReceiptPoster")
-  goodsReceiptsCancelled          GoodsReceipt[]                     @relation("GoodsReceiptCanceller")
-  stockTransactionsCreated        StockTransaction[]                 @relation("StockTransactionCreator")
-  createdAt                       DateTime                            @default(now())
-  updatedAt                       DateTime                            @updatedAt
+  id                               String                             @id @default(uuid()) @db.Uuid
+  email                            String                             @db.VarChar(320)
+  emailNormalized                  String                             @unique @db.VarChar(320)
+  passwordHash                     String
+  displayName                      String                             @db.VarChar(160)
+  status                           UserStatus                         @default(ACTIVE)
+  authVersion                      Int                                @default(1)
+  mustChangePassword               Boolean                            @default(false)
+  passwordChangedAt                DateTime?
+  lastLoginAt                      DateTime?
+  employeeId                       String?                            @unique @db.Uuid
+  employee                         Employee?                          @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+  roles                            UserRole[]
+  sessions                         Session[]
+  auditEvents                      AuditLog[]                         @relation("AuditActor")
+  uploadedFiles                    FileRecord[]
+  materialRequirementsCreated      MaterialRequirement[]              @relation("MaterialRequirementCreator")
+  materialRequirementsSubmitted    MaterialRequirement[]              @relation("MaterialRequirementSubmitter")
+  materialRequirementsDecided      MaterialRequirement[]              @relation("MaterialRequirementDecisionActor")
+  materialRequirementEvents        MaterialRequirementWorkflowEvent[]
+  requestsForQuotationCreated      RequestForQuotation[]              @relation("RequestForQuotationCreator")
+  requestsForQuotationIssued       RequestForQuotation[]              @relation("RequestForQuotationIssuer")
+  requestsForQuotationRecommended  RequestForQuotation[]              @relation("RequestForQuotationRecommender")
+  requestsForQuotationDecided      RequestForQuotation[]              @relation("RequestForQuotationDecisionActor")
+  requestForQuotationEvents        RequestForQuotationWorkflowEvent[]
+  supplierQuotationsRecorded       SupplierQuotation[]                @relation("SupplierQuotationRecorder")
+  purchaseOrdersCreated            PurchaseOrder[]                    @relation("PurchaseOrderCreator")
+  purchaseOrdersIssued             PurchaseOrder[]                    @relation("PurchaseOrderIssuer")
+  purchaseOrderAcceptancesRecorded PurchaseOrder[]                    @relation("PurchaseOrderAcceptanceRecorder")
+  purchaseOrdersClosed             PurchaseOrder[]                    @relation("PurchaseOrderCloser")
+  purchaseOrdersCancelled          PurchaseOrder[]                    @relation("PurchaseOrderCanceller")
+  goodsReceiptsCreated             GoodsReceipt[]                     @relation("GoodsReceiptCreator")
+  goodsReceiptsPosted              GoodsReceipt[]                     @relation("GoodsReceiptPoster")
+  goodsReceiptsCancelled           GoodsReceipt[]                     @relation("GoodsReceiptCanceller")
+  materialIssuesCreated            MaterialIssue[]                    @relation("MaterialIssueCreator")
+  materialIssuesPosted             MaterialIssue[]                    @relation("MaterialIssuePoster")
+  materialIssuesAcknowledged       MaterialIssue[]                    @relation("MaterialIssueAcknowledger")
+  materialIssuesCancelled          MaterialIssue[]                    @relation("MaterialIssueCanceller")
+  stockTransfersCreated            StockTransfer[]                    @relation("StockTransferCreator")
+  stockTransfersDispatched         StockTransfer[]                    @relation("StockTransferDispatcher")
+  stockTransfersReceived           StockTransfer[]                    @relation("StockTransferReceiver")
+  stockTransfersCancelled          StockTransfer[]                    @relation("StockTransferCanceller")
+  stockAdjustmentsCreated          StockAdjustment[]                  @relation("StockAdjustmentCreator")
+  stockAdjustmentsSubmitted        StockAdjustment[]                  @relation("StockAdjustmentSubmitter")
+  stockAdjustmentsDecided          StockAdjustment[]                  @relation("StockAdjustmentDecisionActor")
+  stockAdjustmentsPosted           StockAdjustment[]                  @relation("StockAdjustmentPoster")
+  stockAdjustmentsCancelled        StockAdjustment[]                  @relation("StockAdjustmentCanceller")
+  stockCountsCreated               StockCount[]                       @relation("StockCountCreator")
+  stockCountsSubmitted             StockCount[]                       @relation("StockCountSubmitter")
+  stockCountsDecided               StockCount[]                       @relation("StockCountDecisionActor")
+  stockCountsPosted                StockCount[]                       @relation("StockCountPoster")
+  stockCountsCancelled             StockCount[]                       @relation("StockCountCanceller")
+  materialReconciliationsCreated   MaterialReconciliation[]           @relation("MaterialReconciliationCreator")
+  materialReconciliationsPosted    MaterialReconciliation[]           @relation("MaterialReconciliationPoster")
+  materialReconciliationsCancelled MaterialReconciliation[]           @relation("MaterialReconciliationCanceller")
+  stockTransactionsCreated         StockTransaction[]                 @relation("StockTransactionCreator")
+  createdAt                        DateTime                           @default(now())
+  updatedAt                        DateTime                           @updatedAt
 
   @@index([status])
 }
@@ -400,6 +470,7 @@ model Project {
   assignments            ProjectAssignment[]
   materialRequirements   MaterialRequirement[]
   inventoryLocations     InventoryLocation[]
+  materialIssues         MaterialIssue[]
   createdAt              DateTime              @default(now())
   updatedAt              DateTime              @updatedAt
 
@@ -421,6 +492,7 @@ model Site {
   assignments          SiteAssignment[]
   materialRequirements MaterialRequirement[]
   inventoryLocations   InventoryLocation[]
+  materialIssues       MaterialIssue[]
   createdAt            DateTime              @default(now())
   updatedAt            DateTime              @updatedAt
 
@@ -495,6 +567,10 @@ model UnitOfMeasure {
   purchaseOrderLines PurchaseOrderLine[]
   goodsReceiptLines  GoodsReceiptLine[]
   stockTransactions  StockTransaction[]
+  materialIssueLines MaterialIssueLine[]
+  stockTransferLines StockTransferLine[]
+  stockAdjustments   StockAdjustment[]
+  stockCountLines    StockCountLine[]
   createdAt          DateTime                  @default(now())
   updatedAt          DateTime                  @updatedAt
 
@@ -502,22 +578,26 @@ model UnitOfMeasure {
 }
 
 model Material {
-  id                String                    @id @default(uuid()) @db.Uuid
-  materialCode      String                    @unique @db.VarChar(50)
-  name              String                    @db.VarChar(180)
-  description       String?
-  categoryId        String                    @db.Uuid
-  defaultUnitId     String                    @db.Uuid
-  minimumStockLevel Decimal                   @default(0) @db.Decimal(18, 3)
-  reorderLevel      Decimal                   @default(0) @db.Decimal(18, 3)
-  isActive          Boolean                   @default(true)
-  category          MaterialCategory          @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  defaultUnit       UnitOfMeasure             @relation(fields: [defaultUnitId], references: [id], onDelete: Restrict)
-  requirementLines  MaterialRequirementLine[]
-  goodsReceiptLines GoodsReceiptLine[]
-  stockTransactions StockTransaction[]
-  createdAt         DateTime                  @default(now())
-  updatedAt         DateTime                  @updatedAt
+  id                 String                    @id @default(uuid()) @db.Uuid
+  materialCode       String                    @unique @db.VarChar(50)
+  name               String                    @db.VarChar(180)
+  description        String?
+  categoryId         String                    @db.Uuid
+  defaultUnitId      String                    @db.Uuid
+  minimumStockLevel  Decimal                   @default(0) @db.Decimal(18, 3)
+  reorderLevel       Decimal                   @default(0) @db.Decimal(18, 3)
+  isActive           Boolean                   @default(true)
+  category           MaterialCategory          @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  defaultUnit        UnitOfMeasure             @relation(fields: [defaultUnitId], references: [id], onDelete: Restrict)
+  requirementLines   MaterialRequirementLine[]
+  goodsReceiptLines  GoodsReceiptLine[]
+  stockTransactions  StockTransaction[]
+  materialIssueLines MaterialIssueLine[]
+  stockTransferLines StockTransferLine[]
+  stockAdjustments   StockAdjustment[]
+  stockCountLines    StockCountLine[]
+  createdAt          DateTime                  @default(now())
+  updatedAt          DateTime                  @updatedAt
 
   @@unique([name, defaultUnitId])
   @@index([categoryId, isActive])
@@ -844,19 +924,25 @@ model PurchaseOrderLine {
 }
 
 model InventoryLocation {
-  id                String                @id @default(uuid()) @db.Uuid
-  locationCode      String                @unique @db.VarChar(50)
-  name              String                @db.VarChar(180)
+  id                String                   @id @default(uuid()) @db.Uuid
+  locationCode      String                   @unique @db.VarChar(50)
+  name              String                   @db.VarChar(180)
   type              InventoryLocationType
-  projectId         String?               @db.Uuid
-  siteId            String?               @db.Uuid
-  isActive          Boolean               @default(true)
-  project           Project?              @relation(fields: [projectId], references: [id], onDelete: Restrict)
-  site              Site?                 @relation(fields: [siteId, projectId], references: [id, projectId], onDelete: Restrict)
+  projectId         String?                  @db.Uuid
+  siteId            String?                  @db.Uuid
+  isActive          Boolean                  @default(true)
+  project           Project?                 @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  site              Site?                    @relation(fields: [siteId, projectId], references: [id, projectId], onDelete: Restrict)
   goodsReceipts     GoodsReceipt[]
   stockTransactions StockTransaction[]
-  createdAt         DateTime              @default(now())
-  updatedAt         DateTime              @updatedAt
+  materialIssues    MaterialIssue[]
+  outboundTransfers StockTransfer[]          @relation("StockTransferSource")
+  inboundTransfers  StockTransfer[]          @relation("StockTransferDestination")
+  stockAdjustments  StockAdjustment[]
+  stockCounts       StockCount[]
+  materialReturns   MaterialReconciliation[]
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
 
   @@index([projectId, isActive])
   @@index([siteId, isActive])
@@ -894,24 +980,24 @@ model GoodsReceipt {
 }
 
 model GoodsReceiptLine {
-  id                  String             @id @default(uuid()) @db.Uuid
-  goodsReceiptId      String             @db.Uuid
-  purchaseOrderLineId String             @db.Uuid
-  materialId          String             @db.Uuid
-  unitId              String             @db.Uuid
-  orderedQuantity     Decimal            @db.Decimal(18, 3)
-  receivedQuantity    Decimal            @db.Decimal(18, 3)
-  acceptedQuantity    Decimal            @db.Decimal(18, 3)
-  damagedQuantity     Decimal            @default(0) @db.Decimal(18, 3)
-  rejectedQuantity    Decimal            @default(0) @db.Decimal(18, 3)
-  notes               String?            @db.VarChar(500)
-  goodsReceipt        GoodsReceipt       @relation(fields: [goodsReceiptId], references: [id], onDelete: Restrict)
-  purchaseOrderLine   PurchaseOrderLine  @relation(fields: [purchaseOrderLineId], references: [id], onDelete: Restrict)
-  material            Material           @relation(fields: [materialId], references: [id], onDelete: Restrict)
-  unit                UnitOfMeasure      @relation(fields: [unitId], references: [id], onDelete: Restrict)
+  id                  String                  @id @default(uuid()) @db.Uuid
+  goodsReceiptId      String                  @db.Uuid
+  purchaseOrderLineId String                  @db.Uuid
+  materialId          String                  @db.Uuid
+  unitId              String                  @db.Uuid
+  orderedQuantity     Decimal                 @db.Decimal(18, 3)
+  receivedQuantity    Decimal                 @db.Decimal(18, 3)
+  acceptedQuantity    Decimal                 @db.Decimal(18, 3)
+  damagedQuantity     Decimal                 @default(0) @db.Decimal(18, 3)
+  rejectedQuantity    Decimal                 @default(0) @db.Decimal(18, 3)
+  notes               String?                 @db.VarChar(500)
+  goodsReceipt        GoodsReceipt            @relation(fields: [goodsReceiptId], references: [id], onDelete: Restrict)
+  purchaseOrderLine   PurchaseOrderLine       @relation(fields: [purchaseOrderLineId], references: [id], onDelete: Restrict)
+  material            Material                @relation(fields: [materialId], references: [id], onDelete: Restrict)
+  unit                UnitOfMeasure           @relation(fields: [unitId], references: [id], onDelete: Restrict)
   stockTransactions   StockTransaction[]
   exceptions          GoodsReceiptException[]
-  createdAt           DateTime           @default(now())
+  createdAt           DateTime                @default(now())
 
   @@unique([goodsReceiptId, purchaseOrderLineId])
   @@index([goodsReceiptId])
@@ -919,43 +1005,275 @@ model GoodsReceiptLine {
 }
 
 model GoodsReceiptException {
-  id                   String                      @id @default(uuid()) @db.Uuid
-  goodsReceiptLineId   String                      @db.Uuid
-  type                 GoodsReceiptExceptionType
-  quantity             Decimal                     @db.Decimal(18, 3)
-  status               GoodsReceiptExceptionStatus @default(OPEN)
-  reason               String?                     @db.VarChar(1000)
-  evidenceReference    String?                     @db.VarChar(500)
-  resolutionNotes      String?                     @db.VarChar(1000)
-  goodsReceiptLine     GoodsReceiptLine            @relation(fields: [goodsReceiptLineId], references: [id], onDelete: Restrict)
-  createdAt            DateTime                    @default(now())
-  updatedAt            DateTime                    @updatedAt
+  id                 String                      @id @default(uuid()) @db.Uuid
+  goodsReceiptLineId String                      @db.Uuid
+  type               GoodsReceiptExceptionType
+  quantity           Decimal                     @db.Decimal(18, 3)
+  status             GoodsReceiptExceptionStatus @default(OPEN)
+  reason             String?                     @db.VarChar(1000)
+  evidenceReference  String?                     @db.VarChar(500)
+  resolutionNotes    String?                     @db.VarChar(1000)
+  goodsReceiptLine   GoodsReceiptLine            @relation(fields: [goodsReceiptLineId], references: [id], onDelete: Restrict)
+  createdAt          DateTime                    @default(now())
+  updatedAt          DateTime                    @updatedAt
 
   @@unique([goodsReceiptLineId, type])
   @@index([status, createdAt])
 }
 
+model MaterialIssue {
+  id                 String              @id @default(uuid()) @db.Uuid
+  issueNumber        String              @unique @db.VarChar(30)
+  sourceLocationId   String              @db.Uuid
+  projectId          String              @db.Uuid
+  siteId             String?             @db.Uuid
+  status             MaterialIssueStatus @default(DRAFT)
+  purpose            String              @db.VarChar(500)
+  notes              String?
+  createdById        String              @db.Uuid
+  postedById         String?             @db.Uuid
+  postedAt           DateTime?
+  acknowledgedById   String?             @db.Uuid
+  acknowledgedAt     DateTime?
+  cancelledById      String?             @db.Uuid
+  cancelledAt        DateTime?
+  cancellationReason String?             @db.VarChar(1000)
+  sourceLocation     InventoryLocation   @relation(fields: [sourceLocationId], references: [id], onDelete: Restrict)
+  project            Project             @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  site               Site?               @relation(fields: [siteId, projectId], references: [id, projectId], onDelete: Restrict)
+  createdBy          User                @relation("MaterialIssueCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  postedBy           User?               @relation("MaterialIssuePoster", fields: [postedById], references: [id], onDelete: Restrict)
+  acknowledgedBy     User?               @relation("MaterialIssueAcknowledger", fields: [acknowledgedById], references: [id], onDelete: Restrict)
+  cancelledBy        User?               @relation("MaterialIssueCanceller", fields: [cancelledById], references: [id], onDelete: Restrict)
+  lines              MaterialIssueLine[]
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  @@index([sourceLocationId, status])
+  @@index([projectId, siteId, status])
+}
+
+model MaterialIssueLine {
+  id                String                   @id @default(uuid()) @db.Uuid
+  materialIssueId   String                   @db.Uuid
+  materialId        String                   @db.Uuid
+  unitId            String                   @db.Uuid
+  quantity          Decimal                  @db.Decimal(18, 3)
+  position          Int                      @default(0)
+  notes             String?                  @db.VarChar(500)
+  materialIssue     MaterialIssue            @relation(fields: [materialIssueId], references: [id], onDelete: Restrict)
+  material          Material                 @relation(fields: [materialId], references: [id], onDelete: Restrict)
+  unit              UnitOfMeasure            @relation(fields: [unitId], references: [id], onDelete: Restrict)
+  stockTransactions StockTransaction[]
+  reconciliations   MaterialReconciliation[]
+  createdAt         DateTime                 @default(now())
+
+  @@unique([materialIssueId, materialId, unitId])
+  @@index([materialIssueId, position])
+  @@index([materialId])
+}
+
+model StockTransfer {
+  id                    String               @id @default(uuid()) @db.Uuid
+  transferNumber        String               @unique @db.VarChar(30)
+  sourceLocationId      String               @db.Uuid
+  destinationLocationId String               @db.Uuid
+  status                StockTransferStatus  @default(DRAFT)
+  purpose               StockTransferPurpose @default(ROUTINE)
+  notes                 String?
+  createdById           String               @db.Uuid
+  dispatchedById        String?              @db.Uuid
+  dispatchedAt          DateTime?
+  receivedById          String?              @db.Uuid
+  receivedAt            DateTime?
+  cancelledById         String?              @db.Uuid
+  cancelledAt           DateTime?
+  cancellationReason    String?              @db.VarChar(1000)
+  sourceLocation        InventoryLocation    @relation("StockTransferSource", fields: [sourceLocationId], references: [id], onDelete: Restrict)
+  destinationLocation   InventoryLocation    @relation("StockTransferDestination", fields: [destinationLocationId], references: [id], onDelete: Restrict)
+  createdBy             User                 @relation("StockTransferCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  dispatchedBy          User?                @relation("StockTransferDispatcher", fields: [dispatchedById], references: [id], onDelete: Restrict)
+  receivedBy            User?                @relation("StockTransferReceiver", fields: [receivedById], references: [id], onDelete: Restrict)
+  cancelledBy           User?                @relation("StockTransferCanceller", fields: [cancelledById], references: [id], onDelete: Restrict)
+  lines                 StockTransferLine[]
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+
+  @@index([sourceLocationId, status])
+  @@index([destinationLocationId, status])
+}
+
+model StockTransferLine {
+  id                String             @id @default(uuid()) @db.Uuid
+  stockTransferId   String             @db.Uuid
+  materialId        String             @db.Uuid
+  unitId            String             @db.Uuid
+  quantity          Decimal            @db.Decimal(18, 3)
+  position          Int                @default(0)
+  notes             String?            @db.VarChar(500)
+  stockTransfer     StockTransfer      @relation(fields: [stockTransferId], references: [id], onDelete: Restrict)
+  material          Material           @relation(fields: [materialId], references: [id], onDelete: Restrict)
+  unit              UnitOfMeasure      @relation(fields: [unitId], references: [id], onDelete: Restrict)
+  stockTransactions StockTransaction[]
+  createdAt         DateTime           @default(now())
+
+  @@unique([stockTransferId, materialId, unitId])
+  @@index([stockTransferId, position])
+  @@index([materialId])
+}
+
+model StockAdjustment {
+  id                 String                   @id @default(uuid()) @db.Uuid
+  adjustmentNumber   String                   @unique @db.VarChar(30)
+  locationId         String                   @db.Uuid
+  materialId         String                   @db.Uuid
+  unitId             String                   @db.Uuid
+  direction          StockAdjustmentDirection
+  quantity           Decimal                  @db.Decimal(18, 3)
+  reason             String                   @db.VarChar(1000)
+  status             StockAdjustmentStatus    @default(DRAFT)
+  createdById        String                   @db.Uuid
+  submittedById      String?                  @db.Uuid
+  submittedAt        DateTime?
+  decidedById        String?                  @db.Uuid
+  decidedAt          DateTime?
+  decisionNotes      String?                  @db.VarChar(1000)
+  postedById         String?                  @db.Uuid
+  postedAt           DateTime?
+  cancelledById      String?                  @db.Uuid
+  cancelledAt        DateTime?
+  cancellationReason String?                  @db.VarChar(1000)
+  location           InventoryLocation        @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  material           Material                 @relation(fields: [materialId], references: [id], onDelete: Restrict)
+  unit               UnitOfMeasure            @relation(fields: [unitId], references: [id], onDelete: Restrict)
+  createdBy          User                     @relation("StockAdjustmentCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  submittedBy        User?                    @relation("StockAdjustmentSubmitter", fields: [submittedById], references: [id], onDelete: Restrict)
+  decidedBy          User?                    @relation("StockAdjustmentDecisionActor", fields: [decidedById], references: [id], onDelete: Restrict)
+  postedBy           User?                    @relation("StockAdjustmentPoster", fields: [postedById], references: [id], onDelete: Restrict)
+  cancelledBy        User?                    @relation("StockAdjustmentCanceller", fields: [cancelledById], references: [id], onDelete: Restrict)
+  stockTransaction   StockTransaction?
+  createdAt          DateTime                 @default(now())
+  updatedAt          DateTime                 @updatedAt
+
+  @@index([locationId, status])
+  @@index([materialId, status])
+}
+
+model StockCount {
+  id                 String            @id @default(uuid()) @db.Uuid
+  countNumber        String            @unique @db.VarChar(30)
+  locationId         String            @db.Uuid
+  status             StockCountStatus  @default(DRAFT)
+  countedAt          DateTime
+  notes              String?
+  createdById        String            @db.Uuid
+  submittedById      String?           @db.Uuid
+  submittedAt        DateTime?
+  decidedById        String?           @db.Uuid
+  decidedAt          DateTime?
+  decisionNotes      String?           @db.VarChar(1000)
+  postedById         String?           @db.Uuid
+  postedAt           DateTime?
+  cancelledById      String?           @db.Uuid
+  cancelledAt        DateTime?
+  cancellationReason String?           @db.VarChar(1000)
+  location           InventoryLocation @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  createdBy          User              @relation("StockCountCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  submittedBy        User?             @relation("StockCountSubmitter", fields: [submittedById], references: [id], onDelete: Restrict)
+  decidedBy          User?             @relation("StockCountDecisionActor", fields: [decidedById], references: [id], onDelete: Restrict)
+  postedBy           User?             @relation("StockCountPoster", fields: [postedById], references: [id], onDelete: Restrict)
+  cancelledBy        User?             @relation("StockCountCanceller", fields: [cancelledById], references: [id], onDelete: Restrict)
+  lines              StockCountLine[]
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  @@index([locationId, status, countedAt])
+}
+
+model StockCountLine {
+  id               String            @id @default(uuid()) @db.Uuid
+  stockCountId     String            @db.Uuid
+  materialId       String            @db.Uuid
+  unitId           String            @db.Uuid
+  bookQuantity     Decimal           @db.Decimal(18, 3)
+  countedQuantity  Decimal           @db.Decimal(18, 3)
+  varianceQuantity Decimal           @db.Decimal(18, 3)
+  position         Int               @default(0)
+  notes            String?           @db.VarChar(500)
+  stockCount       StockCount        @relation(fields: [stockCountId], references: [id], onDelete: Restrict)
+  material         Material          @relation(fields: [materialId], references: [id], onDelete: Restrict)
+  unit             UnitOfMeasure     @relation(fields: [unitId], references: [id], onDelete: Restrict)
+  stockTransaction StockTransaction?
+  createdAt        DateTime          @default(now())
+
+  @@unique([stockCountId, materialId, unitId])
+  @@index([stockCountId, position])
+  @@index([materialId])
+}
+
+model MaterialReconciliation {
+  id                   String                       @id @default(uuid()) @db.Uuid
+  reconciliationNumber String                       @unique @db.VarChar(30)
+  materialIssueLineId  String                       @db.Uuid
+  returnLocationId     String?                      @db.Uuid
+  status               MaterialReconciliationStatus @default(DRAFT)
+  consumedQuantity     Decimal                      @default(0) @db.Decimal(18, 3)
+  returnedQuantity     Decimal                      @default(0) @db.Decimal(18, 3)
+  wastageQuantity      Decimal                      @default(0) @db.Decimal(18, 3)
+  scrapQuantity        Decimal                      @default(0) @db.Decimal(18, 3)
+  notes                String?                      @db.VarChar(1000)
+  createdById          String                       @db.Uuid
+  postedById           String?                      @db.Uuid
+  postedAt             DateTime?
+  cancelledById        String?                      @db.Uuid
+  cancelledAt          DateTime?
+  cancellationReason   String?                      @db.VarChar(1000)
+  materialIssueLine    MaterialIssueLine            @relation(fields: [materialIssueLineId], references: [id], onDelete: Restrict)
+  returnLocation       InventoryLocation?           @relation(fields: [returnLocationId], references: [id], onDelete: Restrict)
+  createdBy            User                         @relation("MaterialReconciliationCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  postedBy             User?                        @relation("MaterialReconciliationPoster", fields: [postedById], references: [id], onDelete: Restrict)
+  cancelledBy          User?                        @relation("MaterialReconciliationCanceller", fields: [cancelledById], references: [id], onDelete: Restrict)
+  stockTransaction     StockTransaction?
+  createdAt            DateTime                     @default(now())
+  updatedAt            DateTime                     @updatedAt
+
+  @@index([materialIssueLineId, status])
+  @@index([returnLocationId, status])
+}
+
 model StockTransaction {
-  id                 String               @id @default(uuid()) @db.Uuid
-  transactionNumber  String               @unique @db.VarChar(30)
-  type               StockTransactionType
-  locationId         String               @db.Uuid
-  materialId         String               @db.Uuid
-  unitId             String               @db.Uuid
-  quantity           Decimal              @db.Decimal(18, 3)
-  goodsReceiptLineId String?              @db.Uuid
-  reversalOfId       String?              @db.Uuid
-  reason             String?              @db.VarChar(1000)
-  createdById        String               @db.Uuid
-  location           InventoryLocation    @relation(fields: [locationId], references: [id], onDelete: Restrict)
-  material           Material             @relation(fields: [materialId], references: [id], onDelete: Restrict)
-  unit               UnitOfMeasure        @relation(fields: [unitId], references: [id], onDelete: Restrict)
-  goodsReceiptLine   GoodsReceiptLine?    @relation(fields: [goodsReceiptLineId], references: [id], onDelete: Restrict)
-  reversalOf         StockTransaction?    @relation("StockTransactionReversal", fields: [reversalOfId], references: [id], onDelete: Restrict)
-  reversals          StockTransaction[]   @relation("StockTransactionReversal")
-  createdBy          User                 @relation("StockTransactionCreator", fields: [createdById], references: [id], onDelete: Restrict)
-  createdAt          DateTime             @default(now())
+  id                  String                  @id @default(uuid()) @db.Uuid
+  transactionNumber   String                  @unique @db.VarChar(30)
+  type                StockTransactionType
+  locationId          String                  @db.Uuid
+  materialId          String                  @db.Uuid
+  unitId              String                  @db.Uuid
+  quantity            Decimal                 @db.Decimal(18, 3)
+  goodsReceiptLineId  String?                 @db.Uuid
+  materialIssueLineId String?                 @db.Uuid
+  stockTransferLineId String?                 @db.Uuid
+  stockAdjustmentId   String?                 @unique @db.Uuid
+  stockCountLineId    String?                 @unique @db.Uuid
+  reconciliationId    String?                 @unique @db.Uuid
+  reversalOfId        String?                 @db.Uuid
+  reason              String?                 @db.VarChar(1000)
+  createdById         String                  @db.Uuid
+  location            InventoryLocation       @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  material            Material                @relation(fields: [materialId], references: [id], onDelete: Restrict)
+  unit                UnitOfMeasure           @relation(fields: [unitId], references: [id], onDelete: Restrict)
+  goodsReceiptLine    GoodsReceiptLine?       @relation(fields: [goodsReceiptLineId], references: [id], onDelete: Restrict)
+  materialIssueLine   MaterialIssueLine?      @relation(fields: [materialIssueLineId], references: [id], onDelete: Restrict)
+  stockTransferLine   StockTransferLine?      @relation(fields: [stockTransferLineId], references: [id], onDelete: Restrict)
+  stockAdjustment     StockAdjustment?        @relation(fields: [stockAdjustmentId], references: [id], onDelete: Restrict)
+  stockCountLine      StockCountLine?         @relation(fields: [stockCountLineId], references: [id], onDelete: Restrict)
+  reconciliation      MaterialReconciliation? @relation(fields: [reconciliationId], references: [id], onDelete: Restrict)
+  reversalOf          StockTransaction?       @relation("StockTransactionReversal", fields: [reversalOfId], references: [id], onDelete: Restrict)
+  reversals           StockTransaction[]      @relation("StockTransactionReversal")
+  createdBy           User                    @relation("StockTransactionCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt           DateTime                @default(now())
 
   @@index([locationId, materialId, createdAt])
   @@index([materialId, createdAt])
+  @@index([materialIssueLineId])
+  @@index([stockTransferLineId])
 }

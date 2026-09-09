@@ -146,7 +146,7 @@ describe.skipIf(!enabled)("Phase 5 inventory foundation", () => {
 
   it("derives stock balance from immutable ledger directions and reversals", async () => {
     const tag = randomUUID().slice(0, 8).toUpperCase();
-    const [category, unit, user] = await Promise.all([
+    const [category, unit, user, client] = await Promise.all([
       testDb!.materialCategory.create({
         data: { code: `P5CAT-${tag}`, name: `Phase 5 Category ${tag}` },
       }),
@@ -161,7 +161,22 @@ describe.skipIf(!enabled)("Phase 5 inventory foundation", () => {
           displayName: "Phase 5 Store Keeper",
         },
       }),
+      testDb!.client.create({
+        data: {
+          clientCode: `P5LC-${tag}`,
+          name: `Phase 5 Ledger Client ${tag}`,
+        },
+      }),
     ]);
+    const project = await testDb!.project.create({
+      data: {
+        projectCode: `P5LP-${tag}`,
+        name: `Phase 5 Ledger Project ${tag}`,
+        clientId: client.id,
+        location: "Gurugram",
+        status: "ACTIVE",
+      },
+    });
     const material = await testDb!.material.create({
       data: {
         materialCode: `P5M-${tag}`,
@@ -188,6 +203,31 @@ describe.skipIf(!enabled)("Phase 5 inventory foundation", () => {
         createdById: user.id,
       },
     });
+    const issueSource = await testDb!.materialIssue.create({
+      data: {
+        issueNumber: `MI-${tag}`,
+        sourceLocationId: location.id,
+        projectId: project.id,
+        purpose: "Phase 5 balance compatibility test",
+        createdById: user.id,
+        lines: {
+          create: {
+            materialId: material.id,
+            unitId: unit.id,
+            quantity: "3.000",
+          },
+        },
+      },
+      include: { lines: true },
+    });
+    await testDb!.materialIssue.update({
+      where: { id: issueSource.id },
+      data: {
+        status: "POSTED",
+        postedById: user.id,
+        postedAt: new Date(),
+      },
+    });
     const issue = await testDb!.stockTransaction.create({
       data: {
         transactionNumber: `STK-${tag}-02`,
@@ -196,6 +236,7 @@ describe.skipIf(!enabled)("Phase 5 inventory foundation", () => {
         materialId: material.id,
         unitId: unit.id,
         quantity: "3.000",
+        materialIssueLineId: issueSource.lines[0].id,
         createdById: user.id,
       },
     });
