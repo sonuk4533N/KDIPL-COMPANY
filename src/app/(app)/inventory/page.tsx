@@ -17,6 +17,8 @@ import { GrnPostButton } from "@/features/inventory/grn-post-button";
 import { getInventoryWorkspace } from "@/features/inventory/inventory-queries";
 import { MaterialIssueControls } from "@/features/inventory/material-issue-controls";
 import { MaterialIssueForm } from "@/features/inventory/material-issue-form";
+import { MaterialReconciliationControls } from "@/features/inventory/material-reconciliation-controls";
+import { MaterialReconciliationForm } from "@/features/inventory/material-reconciliation-form";
 import { StockTransferControls } from "@/features/inventory/stock-transfer-controls";
 import { StockTransferForm } from "@/features/inventory/stock-transfer-form";
 import { StockAdjustmentControls } from "@/features/inventory/stock-adjustment-controls";
@@ -71,6 +73,15 @@ function stockAdjustmentStatusLabel(status: string): StandardStatus {
 
 const stockCountStatusLabel = stockAdjustmentStatusLabel;
 
+function reconciliationStatusLabel(status: string): StandardStatus {
+  const labels: Record<string, StandardStatus> = {
+    DRAFT: "Draft",
+    POSTED: "Posted",
+    CANCELLED: "Cancelled",
+  };
+  return labels[status] ?? "Draft";
+}
+
 export default async function InventoryPage() {
   const principal = await getCurrentPrincipal();
   if (!principal || !hasPermission(principal, "inventory.view")) {
@@ -122,6 +133,11 @@ export default async function InventoryPage() {
     hasPermission(principal, "inventory.count") &&
     principal.roleCodes.includes("PROJECT_DIRECTOR") &&
     !principal.roleCodes.includes("SYSTEM_ADMINISTRATOR");
+  const canManageReconciliations =
+    hasPermission(principal, "inventory.reconcile") &&
+    !principal.roleCodes.includes("SYSTEM_ADMINISTRATOR") &&
+    (principal.roleCodes.includes("STORE_KEEPER") ||
+      principal.roleCodes.includes("SITE_SUPERVISOR"));
   const postedCount = workspace.goodsReceipts.filter(
     ({ status }) => status === "POSTED",
   ).length;
@@ -135,9 +151,9 @@ export default async function InventoryPage() {
   return (
     <div className="space-y-7">
       <PageHeader
-        eyebrow="Phase 6 · receiving, movements & controlled adjustments"
+        eyebrow="Phase 6 · complete inventory accountability"
         title="Inventory and receiving"
-        description="Receive, issue, transfer, and independently approve stock corrections while every location balance remains ledger-derived."
+        description="Receive, issue, transfer, count, and reconcile material through consumption, return, wastage, scrap, and project close while every location balance remains ledger-derived."
       />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
@@ -618,6 +634,126 @@ export default async function InventoryPage() {
               kind="empty"
               title="No physical counts yet"
               description="Store Keepers can record counts for independent approval and variance posting."
+            />
+          )}
+        </section>
+      )}
+
+      {canManageReconciliations && workspace.reconcilableIssueLines.length ? (
+        <Card>
+          <CardHeader>
+            <h2 className="font-display text-lg font-bold text-slate-950">
+              Reconcile issued material
+            </h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Classify acknowledged material as consumed, returned unused,
+              wastage, or scrap. Project-close disposition must account for the
+              complete remaining quantity.
+            </p>
+          </CardHeader>
+          <CardContent>
+            <MaterialReconciliationForm
+              issueLines={workspace.reconcilableIssueLines}
+              locations={workspace.locations}
+            />
+          </CardContent>
+        </Card>
+      ) : canManageReconciliations ? (
+        <ApplicationState
+          kind="empty"
+          title="No issued material awaiting reconciliation"
+          description="Acknowledge a material issue first. Fully reconciled and project-closed issue lines no longer appear here."
+        />
+      ) : null}
+
+      {(hasPermission(principal, "inventory.reconcile") ||
+        workspace.materialReconciliations.length > 0) && (
+        <section className="space-y-4">
+          <div>
+            <h2 className="font-display text-lg font-bold text-slate-950">
+              Issued-material reconciliation register
+            </h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Consumption, unused returns, wastage, scrap, and final
+              project-close accountability
+            </p>
+          </div>
+          {workspace.materialReconciliations.length ? (
+            <div className="grid gap-4 lg:grid-cols-2">
+              {workspace.materialReconciliations.map((reconciliation) => (
+                <Card
+                  key={reconciliation.id}
+                  data-testid={`material-reconciliation-${reconciliation.id}`}
+                >
+                  <CardContent>
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-xs font-bold uppercase tracking-wider text-blue-700">
+                          {reconciliation.reconciliationNumber}
+                        </p>
+                        <h3 className="mt-1 font-display text-lg font-bold text-slate-950">
+                          {reconciliation.issueNumber} ·{" "}
+                          {reconciliation.material.materialCode}
+                        </h3>
+                      </div>
+                      <StatusBadge
+                        status={reconciliationStatusLabel(
+                          reconciliation.status,
+                        )}
+                      />
+                    </div>
+                    <div className="mt-4 space-y-2 text-sm text-slate-600">
+                      <p>
+                        {reconciliation.project.projectCode}
+                        {reconciliation.site
+                          ? ` · ${reconciliation.site.siteCode}`
+                          : ""}{" "}
+                        · {reconciliation.material.name}
+                      </p>
+                      <p className="font-semibold text-slate-900">
+                        Consumed {reconciliation.consumedQuantity} · Returned{" "}
+                        {reconciliation.returnedQuantity} · Wastage{" "}
+                        {reconciliation.wastageQuantity} · Scrap{" "}
+                        {reconciliation.scrapQuantity}{" "}
+                        {reconciliation.unit.symbol}
+                      </p>
+                      <p>
+                        {reconciliation.purpose === "PROJECT_CLOSE"
+                          ? "Final project-close disposition"
+                          : "Routine / partial reconciliation"}
+                      </p>
+                      {reconciliation.returnLocation ? (
+                        <p>
+                          Returned to{" "}
+                          {reconciliation.returnLocation.locationCode} ·{" "}
+                          {reconciliation.returnLocation.name}
+                        </p>
+                      ) : null}
+                      <p>{reconciliation.notes}</p>
+                      <p className="text-xs text-slate-500">
+                        Created by {reconciliation.createdBy}
+                        {reconciliation.postedBy
+                          ? ` · Posted by ${reconciliation.postedBy}`
+                          : ""}
+                        {reconciliation.cancelledBy
+                          ? ` · Cancelled by ${reconciliation.cancelledBy}`
+                          : ""}
+                      </p>
+                    </div>
+                    <MaterialReconciliationControls
+                      materialReconciliationId={reconciliation.id}
+                      status={reconciliation.status}
+                      canManage={canManageReconciliations}
+                    />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <ApplicationState
+              kind="empty"
+              title="No material reconciliations yet"
+              description="Create a reconciliation after the destination Site Supervisor acknowledges issued material."
             />
           )}
         </section>

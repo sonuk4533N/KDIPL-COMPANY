@@ -26,6 +26,9 @@
 - System Administrators cannot create, decide, or post adjustments. Stock-out posting rechecks the current ledger balance and cannot create negative stock.
 - Store Keepers record physical counts against a server-captured book balance. A different Project Director decides them with notes, and posting creates only the exact approved variance direction and quantity.
 - If ledger stock changes after a physical-count snapshot, the approved count cannot be posted; it must be cancelled and performed again against a fresh book balance. Zero-variance counts post without a ledger entry.
+- Only acknowledged issued material can be reconciled. Posted consumption, unused return, wastage, and scrap quantities are cumulative and cannot exceed the original issue line.
+- Unused returns require an active return location and create one immutable `RETURN` ledger entry. Site Supervisors may return only into their actively assigned site store; Store Keepers retain organization-wide custody scope.
+- A project-close reconciliation must classify every remaining issued unit and is final: no later reconciliation can be posted against that issue line.
 
 ## KDIPL decisions still required
 
@@ -34,7 +37,7 @@
 - One-time vendors, supplier communication delivery, quotation revisions, and late-response exceptions
 - Draft purchase-order issue, amendments, cancellation, supplier acceptance, and downstream receipt rules
 - Cash custody/settlement and GST, Tally, payable, payment, and invoice-verification treatment
-- Transfer discrepancy handling, physical-count authority, and remaining project-closure rules
+- Transfer discrepancy handling and future exceptions to the established project-closure rules
 - Required document types, retention, download visibility, and signed-access duration
 - Calendar versus Indian-financial-year transaction numbering
 - Production hosting, object storage, secret management, backup/restore, monitoring, audit retention, and support SLA

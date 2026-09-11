@@ -37,6 +37,7 @@ const businessRoleGrants = {
     "inventory.receive",
     "inventory.issue",
     "inventory.transfer",
+    "inventory.reconcile",
   ],
   PROJECT_MANAGER: [
     "app.access",
@@ -57,6 +58,7 @@ const businessRoleGrants = {
     "inventory.view",
     "inventory.adjust",
     "inventory.count",
+    "inventory.reconcile",
   ],
   PURCHASE_MANAGER: [
     "app.access",
@@ -76,6 +78,7 @@ const businessRoleGrants = {
     "inventory.transfer",
     "inventory.adjust",
     "inventory.count",
+    "inventory.reconcile",
   ],
 } as const;
 

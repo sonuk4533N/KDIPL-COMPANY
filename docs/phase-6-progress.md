@@ -98,22 +98,33 @@ The migration was verified from the complete Git migration history against a fre
 - `/inventory` now includes count preparation, book-versus-physical variance visibility, submission, independent decision, cancellation, posting, and actor evidence.
 - Service integration and Playwright coverage verify exact variance posting, stale-snapshot rollback, role boundaries, audit history, and the Store Keeper → Project Director → Store Keeper journey.
 
-## Verification — 9 September 2026
+### Increment 7 — issued-material reconciliation and project close
+
+- Store Keepers and assigned Site Supervisors can classify acknowledged issued material as consumed, returned unused, wastage, or scrap through documented drafts and immutable posting.
+- Cumulative posted reconciliation is serialized on the issue line and cannot exceed its issued quantity, including concurrent or repeated partial reconciliations.
+- Unused returns require an active controlled location and append exactly one source-linked `RETURN` ledger entry; consumption, wastage, and scrap remain non-ledger accountability facts because issue posting already removed the material from stock.
+- Site Supervisors are restricted to issues for their active site assignments and may return material only to their assigned site store. Store Keepers retain organization-wide custody scope, Project Directors receive read-only oversight, and System Administrators remain operationally read-only.
+- `PROJECT_CLOSE` reconciliation must classify the entire remaining issue quantity and permanently prevents later reconciliations for that line. Existing project-close transfers support physical relocation before final disposition.
+- Drafts can be cancelled with evidence; posted reconciliations and their return transactions remain immutable and duplicate posting is rejected.
+- The `inventory.reconcile` permission, role grants, purpose enum, and finality safeguards are converged through migration and seed data.
+- `/inventory` now provides remaining-quantity selection, four-way classification, return destination, routine/project-close purpose, posting controls, status history, actor evidence, and oversight visibility.
+- Service integration and Playwright coverage verify cumulative bounds, active-assignment scope, return-ledger restoration, cancellation, final project-close closure, audit history, and the Site Supervisor → Store Keeper completion journey.
+
+## Verification — 12 September 2026
 
 - Format check: passed.
 - ESLint: passed with zero warnings.
 - TypeScript: passed with no emit.
-- Unit tests: 16 files, 69 tests passed.
-- PostgreSQL integration tests: 12 files, 32 tests passed on a freshly migrated and seeded database.
+- Unit tests: 17 files, 71 tests passed.
+- PostgreSQL integration tests: 13 files, 34 tests passed on a freshly migrated and seeded database.
 - Production build: passed with Next.js 16.3.1.
-- Playwright E2E: 26 tests passed across desktop and mobile Chromium, including complete issue, transfer, controlled-adjustment, and physical-count journeys.
+- Playwright E2E: 28 tests passed serially across desktop and mobile Chromium, including complete issue, transfer, controlled-adjustment, physical-count, reconciliation, and project-close journeys.
 
-## Next increment
+## Completion
 
-1. Build consumption, unused return, wastage, scrap, and project-close disposition.
-2. Run final Phase 6 scope verification and all quality gates before merge.
+Phase 6 is complete. All scoped stock movements, physical counts, consumption classifications, unused returns, wastage, scrap, and project-close disposition workflows are implemented and verified. Phase 7 has not started.
 
-Phase 6 is in progress. These increments do not mark the phase complete and do not begin Phase 7.
+Recommended next phase: Phase 7 accounts payable and financial controls, beginning with supplier invoices and PO/GRN/invoice three-way matching before payment approval, GST posting, and Tally integration.
 
 ## Out of scope
 

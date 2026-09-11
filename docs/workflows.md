@@ -60,6 +60,9 @@ Disabling a user or employee, changing role permissions, assigning roles, or res
 - Physical counts follow `DRAFT → SUBMITTED → APPROVED/REJECTED`, with `APPROVED → POSTED` or evidenced cancellation. A different Project Director decides the Store Keeper's submitted snapshot.
 - Count posting locks each balance key and rejects stale book snapshots. It creates one source-linked adjustment entry per non-zero variance; an exact count posts with no ledger movement.
 - Issue, transfer, adjustment, count, and ledger records become immutable after their controlled transitions; duplicate source postings are blocked in PostgreSQL.
+- Issued-material reconciliation moves `DRAFT → POSTED` or evidenced cancellation. Posting is allowed only after destination acknowledgment and classifies material as consumed, returned unused, wastage, or scrap.
+- Reconciliation posting serializes on the issue line and rechecks all prior posted quantities. Returned material creates one linked `RETURN` entry; the other classifications are accountability facts because the original issue already removed them from stock.
+- `PROJECT_CLOSE` reconciliation must consume the full remaining quantity across the four classifications and prevents any later reconciliation for that issue line. Project-close transfers remain available for physical stock relocation before final classification.
 
 ## Phase 2 lifecycles
 

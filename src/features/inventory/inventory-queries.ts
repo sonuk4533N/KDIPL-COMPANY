@@ -68,6 +68,13 @@ export async function getInventoryWorkspace(principal: AuthenticatedPrincipal) {
     hasOrganizationScope && canViewCounts
       ? {}
       : { id: { equals: "00000000-0000-0000-0000-000000000000" } };
+  const canViewReconciliations = principal.permissions.includes(
+    "inventory.reconcile",
+  );
+  const materialReconciliationScope: Prisma.MaterialReconciliationWhereInput =
+    canViewReconciliations
+      ? { materialIssueLine: { materialIssue: materialIssueScope } }
+      : { id: { equals: "00000000-0000-0000-0000-000000000000" } };
   const destinationSiteScope: Prisma.SiteWhereInput = hasOrganizationScope
     ? {}
     : assignedSiteScope
@@ -99,6 +106,8 @@ export async function getInventoryWorkspace(principal: AuthenticatedPrincipal) {
     adjustmentMaterials,
     stockCounts,
     countMaterials,
+    reconcilableIssueLines,
+    materialReconciliations,
     issueDestinations,
   ] = await Promise.all([
     db.purchaseOrder.findMany({
@@ -341,6 +350,61 @@ export async function getInventoryWorkspace(principal: AuthenticatedPrincipal) {
         defaultUnit: { select: { symbol: true } },
       },
     }),
+    db.materialIssueLine.findMany({
+      where: canViewReconciliations
+        ? {
+            materialIssue: {
+              is: { status: "ACKNOWLEDGED", AND: [materialIssueScope] },
+            },
+          }
+        : { id: { equals: "00000000-0000-0000-0000-000000000000" } },
+      orderBy: { createdAt: "desc" },
+      include: {
+        materialIssue: {
+          select: {
+            issueNumber: true,
+            project: { select: { projectCode: true, name: true } },
+            site: { select: { id: true, siteCode: true, name: true } },
+          },
+        },
+        material: { select: { materialCode: true, name: true } },
+        unit: { select: { symbol: true } },
+        reconciliations: {
+          where: { status: "POSTED" },
+          select: {
+            purpose: true,
+            consumedQuantity: true,
+            returnedQuantity: true,
+            wastageQuantity: true,
+            scrapQuantity: true,
+          },
+        },
+      },
+    }),
+    db.materialReconciliation.findMany({
+      where: materialReconciliationScope,
+      orderBy: { createdAt: "desc" },
+      take: 100,
+      include: {
+        materialIssueLine: {
+          include: {
+            materialIssue: {
+              select: {
+                issueNumber: true,
+                project: { select: { projectCode: true, name: true } },
+                site: { select: { siteCode: true, name: true } },
+              },
+            },
+            material: { select: { materialCode: true, name: true } },
+            unit: { select: { symbol: true } },
+          },
+        },
+        returnLocation: { select: { locationCode: true, name: true } },
+        createdBy: { select: { displayName: true } },
+        postedBy: { select: { displayName: true } },
+        cancelledBy: { select: { displayName: true } },
+      },
+    }),
     db.site.findMany({
       where: {
         status: "ACTIVE",
@@ -521,6 +585,59 @@ export async function getInventoryWorkspace(principal: AuthenticatedPrincipal) {
       })),
     })),
     countMaterials,
+    reconcilableIssueLines: reconcilableIssueLines
+      .map((line) => {
+        const reconciledQuantity = line.reconciliations.reduce(
+          (total, reconciliation) =>
+            total
+              .add(reconciliation.consumedQuantity)
+              .add(reconciliation.returnedQuantity)
+              .add(reconciliation.wastageQuantity)
+              .add(reconciliation.scrapQuantity),
+          new Prisma.Decimal(0),
+        );
+        return {
+          id: line.id,
+          issueNumber: line.materialIssue.issueNumber,
+          project: line.materialIssue.project,
+          site: line.materialIssue.site,
+          siteId: line.materialIssue.site?.id ?? null,
+          material: line.material,
+          unit: line.unit,
+          issuedQuantity: line.quantity.toString(),
+          reconciledQuantity: reconciledQuantity.toString(),
+          remainingQuantity: line.quantity.minus(reconciledQuantity).toString(),
+          isFinal: line.reconciliations.some(
+            ({ purpose }) => purpose === "PROJECT_CLOSE",
+          ),
+        };
+      })
+      .filter(
+        ({ remainingQuantity, isFinal }) =>
+          !isFinal && new Prisma.Decimal(remainingQuantity).gt(0),
+      ),
+    materialReconciliations: materialReconciliations.map((reconciliation) => ({
+      id: reconciliation.id,
+      reconciliationNumber: reconciliation.reconciliationNumber,
+      status: String(reconciliation.status),
+      purpose: String(reconciliation.purpose),
+      consumedQuantity: reconciliation.consumedQuantity.toString(),
+      returnedQuantity: reconciliation.returnedQuantity.toString(),
+      wastageQuantity: reconciliation.wastageQuantity.toString(),
+      scrapQuantity: reconciliation.scrapQuantity.toString(),
+      notes: reconciliation.notes,
+      issueNumber: reconciliation.materialIssueLine.materialIssue.issueNumber,
+      project: reconciliation.materialIssueLine.materialIssue.project,
+      site: reconciliation.materialIssueLine.materialIssue.site,
+      material: reconciliation.materialIssueLine.material,
+      unit: reconciliation.materialIssueLine.unit,
+      returnLocation: reconciliation.returnLocation,
+      createdBy: reconciliation.createdBy.displayName,
+      postedBy: reconciliation.postedBy?.displayName ?? null,
+      cancelledBy: reconciliation.cancelledBy?.displayName ?? null,
+      postedAt: reconciliation.postedAt?.toISOString() ?? null,
+      createdAt: reconciliation.createdAt.toISOString(),
+    })),
     issueDestinations,
     exceptions: exceptions.map((exception) => ({
       ...exception,

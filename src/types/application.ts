@@ -23,6 +23,7 @@ export const permissionCodes = [
   "inventory.transfer",
   "inventory.adjust",
   "inventory.count",
+  "inventory.reconcile",
   "invoice.view",
   "invoice.verify",
   "report.view",

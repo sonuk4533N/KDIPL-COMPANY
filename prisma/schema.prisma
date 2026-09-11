@@ -199,6 +199,11 @@ enum MaterialReconciliationStatus {
   CANCELLED
 }
 
+enum MaterialReconciliationPurpose {
+  ROUTINE
+  PROJECT_CLOSE
+}
+
 model Department {
   id          String     @id @default(uuid()) @db.Uuid
   code        String     @unique @db.VarChar(50)
@@ -1217,6 +1222,7 @@ model MaterialReconciliation {
   materialIssueLineId  String                       @db.Uuid
   returnLocationId     String?                      @db.Uuid
   status               MaterialReconciliationStatus @default(DRAFT)
+  purpose              MaterialReconciliationPurpose @default(ROUTINE)
   consumedQuantity     Decimal                      @default(0) @db.Decimal(18, 3)
   returnedQuantity     Decimal                      @default(0) @db.Decimal(18, 3)
   wastageQuantity      Decimal                      @default(0) @db.Decimal(18, 3)
