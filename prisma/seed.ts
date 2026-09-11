@@ -56,6 +56,7 @@ const businessRoleGrants = {
     "purchase.approve",
     "inventory.view",
     "inventory.adjust",
+    "inventory.count",
   ],
   PURCHASE_MANAGER: [
     "app.access",
@@ -74,6 +75,7 @@ const businessRoleGrants = {
     "inventory.issue",
     "inventory.transfer",
     "inventory.adjust",
+    "inventory.count",
   ],
 } as const;
 

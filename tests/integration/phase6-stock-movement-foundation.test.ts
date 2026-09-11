@@ -396,6 +396,14 @@ describe.skipIf(!enabled)("Phase 6 stock movement database foundation", () => {
 
   it("requires approval for adjustments and posts exact count variances", async () => {
     const fixture = await createFixture();
+    const reviewer = await testDb!.user.create({
+      data: {
+        email: `p6-reviewer-${fixture.tag.toLowerCase()}@kdipl.test`,
+        emailNormalized: `p6-reviewer-${fixture.tag.toLowerCase()}@kdipl.test`,
+        passwordHash: "integration-test",
+        displayName: "Phase 6 Independent Reviewer",
+      },
+    });
     await testDb!.stockTransaction.create({
       data: {
         transactionNumber: `P6-OPEN-${fixture.tag}`,
@@ -442,8 +450,9 @@ describe.skipIf(!enabled)("Phase 6 stock movement database foundation", () => {
       where: { id: adjustment.id },
       data: {
         status: "APPROVED",
-        decidedById: fixture.user.id,
+        decidedById: reviewer.id,
         decidedAt: new Date(),
+        decisionNotes: "Independent adjustment review completed",
       },
     });
     await testDb!.stockAdjustment.update({
@@ -497,8 +506,9 @@ describe.skipIf(!enabled)("Phase 6 stock movement database foundation", () => {
       where: { id: count.id },
       data: {
         status: "APPROVED",
-        decidedById: fixture.user.id,
+        decidedById: reviewer.id,
         decidedAt: new Date(),
+        decisionNotes: "Independent count review completed",
       },
     });
     await testDb!.stockCount.update({

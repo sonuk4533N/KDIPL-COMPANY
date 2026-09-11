@@ -63,6 +63,11 @@ export async function getInventoryWorkspace(principal: AuthenticatedPrincipal) {
     hasOrganizationScope && canViewAdjustments
       ? {}
       : { id: { equals: "00000000-0000-0000-0000-000000000000" } };
+  const canViewCounts = principal.permissions.includes("inventory.count");
+  const stockCountScope: Prisma.StockCountWhereInput =
+    hasOrganizationScope && canViewCounts
+      ? {}
+      : { id: { equals: "00000000-0000-0000-0000-000000000000" } };
   const destinationSiteScope: Prisma.SiteWhereInput = hasOrganizationScope
     ? {}
     : assignedSiteScope
@@ -92,6 +97,8 @@ export async function getInventoryWorkspace(principal: AuthenticatedPrincipal) {
     stockTransfers,
     stockAdjustments,
     adjustmentMaterials,
+    stockCounts,
+    countMaterials,
     issueDestinations,
   ] = await Promise.all([
     db.purchaseOrder.findMany({
@@ -302,6 +309,38 @@ export async function getInventoryWorkspace(principal: AuthenticatedPrincipal) {
         defaultUnit: { select: { symbol: true } },
       },
     }),
+    db.stockCount.findMany({
+      where: stockCountScope,
+      orderBy: { createdAt: "desc" },
+      take: 50,
+      include: {
+        location: { select: { locationCode: true, name: true } },
+        createdBy: { select: { displayName: true } },
+        submittedBy: { select: { displayName: true } },
+        decidedBy: { select: { displayName: true } },
+        postedBy: { select: { displayName: true } },
+        lines: {
+          orderBy: { position: "asc" },
+          include: {
+            material: { select: { materialCode: true, name: true } },
+            unit: { select: { symbol: true } },
+          },
+        },
+      },
+    }),
+    db.material.findMany({
+      where: canViewCounts
+        ? { isActive: true }
+        : { id: { equals: "00000000-0000-0000-0000-000000000000" } },
+      orderBy: { name: "asc" },
+      select: {
+        id: true,
+        materialCode: true,
+        name: true,
+        defaultUnitId: true,
+        defaultUnit: { select: { symbol: true } },
+      },
+    }),
     db.site.findMany({
       where: {
         status: "ACTIVE",
@@ -459,6 +498,29 @@ export async function getInventoryWorkspace(principal: AuthenticatedPrincipal) {
       createdAt: adjustment.createdAt.toISOString(),
     })),
     adjustmentMaterials,
+    stockCounts: stockCounts.map((count) => ({
+      id: count.id,
+      countNumber: count.countNumber,
+      status: String(count.status),
+      countedAt: count.countedAt.toISOString(),
+      notes: count.notes,
+      decisionNotes: count.decisionNotes,
+      location: count.location,
+      createdBy: count.createdBy.displayName,
+      submittedBy: count.submittedBy?.displayName ?? null,
+      decidedBy: count.decidedBy?.displayName ?? null,
+      postedBy: count.postedBy?.displayName ?? null,
+      lines: count.lines.map((line) => ({
+        id: line.id,
+        bookQuantity: line.bookQuantity.toString(),
+        countedQuantity: line.countedQuantity.toString(),
+        varianceQuantity: line.varianceQuantity.toString(),
+        notes: line.notes,
+        material: line.material,
+        unit: line.unit,
+      })),
+    })),
+    countMaterials,
     issueDestinations,
     exceptions: exceptions.map((exception) => ({
       ...exception,

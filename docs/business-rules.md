@@ -24,6 +24,8 @@
 - Approval creates one draft purchase order atomically. Rejection, send-back, and cancellation require reasons. Emergency purchasing and delegation are disabled.
 - Store Keepers prepare and submit documented stock adjustments. A different Project Director approves or rejects them with decision notes; only an approved adjustment can be posted to the immutable ledger by a Store Keeper.
 - System Administrators cannot create, decide, or post adjustments. Stock-out posting rechecks the current ledger balance and cannot create negative stock.
+- Store Keepers record physical counts against a server-captured book balance. A different Project Director decides them with notes, and posting creates only the exact approved variance direction and quantity.
+- If ledger stock changes after a physical-count snapshot, the approved count cannot be posted; it must be cancelled and performed again against a fresh book balance. Zero-variance counts post without a ledger entry.
 
 ## KDIPL decisions still required
 

@@ -6,7 +6,9 @@ export default defineConfig({
   testDir: "./tests/e2e",
   fullyParallel: false,
   timeout: 60_000,
-  workers: process.env.CI ? 4 : undefined,
+  // Workflow specs share seeded business accounts and one transactional database.
+  // Serial execution prevents authentication throttling and cross-spec UI races.
+  workers: 1,
   retries: process.env.CI ? 2 : 0,
   reporter: process.env.CI ? "github" : "list",
   use: {

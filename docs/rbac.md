@@ -4,7 +4,7 @@ Authorization combines a named permission with project/site assignment scope. UI
 
 ## Initial roles
 
-Managing Director, Project Director, Business Development Director, Project Manager, Purchase Manager, Accounts, Site Supervisor, Store Keeper, and System Administrator are seeded. The bootstrap System Administrator receives the catalog so Phase 1 administration is usable. Confirmed Phase 3 requirement grants are seeded for Site Supervisor, Project Manager, and Project Director. Phase 4 sourcing grants give the Purchase Manager `purchase.view` and `purchase.create`; Project Directors receive `purchase.view` and `purchase.approve` for independent decisions. Phase 5 grants Store Keepers `inventory.view` and `inventory.receive` with organization-wide store scope, and grants Site Supervisors the same permissions only for direct receipts and visibility at actively assigned site stores. Phase 6 adds issue and transfer duties for Store Keepers and assigned Site Supervisors, plus `inventory.adjust` for Store Keepers and Project Directors. System Administrators retain support visibility but are rejected by operational and approval commands.
+Managing Director, Project Director, Business Development Director, Project Manager, Purchase Manager, Accounts, Site Supervisor, Store Keeper, and System Administrator are seeded. The bootstrap System Administrator receives the catalog so Phase 1 administration is usable. Confirmed Phase 3 requirement grants are seeded for Site Supervisor, Project Manager, and Project Director. Phase 4 sourcing grants give the Purchase Manager `purchase.view` and `purchase.create`; Project Directors receive `purchase.view` and `purchase.approve` for independent decisions. Phase 5 grants Store Keepers `inventory.view` and `inventory.receive` with organization-wide store scope, and grants Site Supervisors the same permissions only for direct receipts and visibility at actively assigned site stores. Phase 6 adds issue and transfer duties for Store Keepers and assigned Site Supervisors, plus `inventory.adjust` and `inventory.count` for Store Keepers and Project Directors. System Administrators retain support visibility but are rejected by operational and approval commands.
 
 Phase 1 supports multiple roles per user. Role assignments and permission-grant
 changes are audited and invalidate affected sessions. KDIPL system role codes
@@ -33,16 +33,16 @@ requirement, commercial, PO, or receiving actions.
 
 Permissions use `resource.action`. Phase 2 adds project assignment, site view/create/update, catalog view/manage, and supplier view/manage to the existing project, transaction, reporting, audit, and administration catalog. Phase 3 uses `material_requirement.view`, `material_requirement.create`, and `material_requirement.approve`; permission alone never replaces live assignment, role, state, or separation-of-duties checks.
 
-| Role                          | Expected scope (not yet granted)                                     | Unresolved authority                          |
-| ----------------------------- | -------------------------------------------------------------------- | --------------------------------------------- |
-| Managing Director             | Organization-wide read, approvals, reports                           | Exact write and threshold permissions         |
-| Project Director              | Requirement, RFQ, and stock-adjustment decisions                     | Future thresholds and delegated authority     |
-| Business Development Director | Future business-development scope                                    | Module definition                             |
-| Project Manager               | Assigned projects/sites and requirement review                       | Future procurement authority                  |
-| Purchase Manager              | RFQ issue, quotation capture, and recommendation                     | Must not approve supplier recommendations     |
-| Accounts                      | Invoice verification and financial reporting                         | Payments and GST authority                    |
-| Site Supervisor               | Assigned sites, receipt, issue acknowledgment, and transfer receipt  | Transfer discrepancy authority                |
-| Store Keeper                  | Organization-wide receiving, issue, transfer, and adjustment posting | Physical-count authority                      |
-| System Administrator          | Technical administration                                             | Must not imply unrestricted business approval |
+| Role                          | Expected scope (not yet granted)                                    | Unresolved authority                          |
+| ----------------------------- | ------------------------------------------------------------------- | --------------------------------------------- |
+| Managing Director             | Organization-wide read, approvals, reports                          | Exact write and threshold permissions         |
+| Project Director              | Requirement, RFQ, adjustment, and physical-count decisions          | Future thresholds and delegated authority     |
+| Business Development Director | Future business-development scope                                   | Module definition                             |
+| Project Manager               | Assigned projects/sites and requirement review                      | Future procurement authority                  |
+| Purchase Manager              | RFQ issue, quotation capture, and recommendation                    | Must not approve supplier recommendations     |
+| Accounts                      | Invoice verification and financial reporting                        | Payments and GST authority                    |
+| Site Supervisor               | Assigned sites, receipt, issue acknowledgment, and transfer receipt | Transfer discrepancy authority                |
+| Store Keeper                  | Organization-wide receiving, stock movement, adjustment, and counts | Issued-material reconciliation                |
+| System Administrator          | Technical administration                                            | Must not imply unrestricted business approval |
 
-`canAccessProject` and `canAccessSite` deny by default and resolve active employee assignments from PostgreSQL. Project-level assignments expose the project's sites; site-only assignments expose the parent context and only assigned sites. Project Directors receive organization-wide requirement, RFQ, and adjustment visibility for confirmed approval duties. The System Administrator bypass remains limited to technical administration and is explicitly rejected for requirement, commercial, and stock-movement decisions. A creator or submitter cannot decide their own controlled adjustment.
+`canAccessProject` and `canAccessSite` deny by default and resolve active employee assignments from PostgreSQL. Project-level assignments expose the project's sites; site-only assignments expose the parent context and only assigned sites. Project Directors receive organization-wide requirement, RFQ, adjustment, and physical-count visibility for confirmed approval duties. The System Administrator bypass remains limited to technical administration and is explicitly rejected for requirement, commercial, and stock-movement decisions. A creator or submitter cannot decide their own controlled adjustment or physical count.

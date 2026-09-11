@@ -57,7 +57,9 @@ Disabling a user or employee, changing role permissions, assigning roles, or res
 - Controlled adjustments move `DRAFT → SUBMITTED → APPROVED/REJECTED`, with `APPROVED → POSTED` or evidenced cancellation. Rejected adjustments never change stock.
 - Store Keepers create, submit, cancel, and post adjustments. A different Project Director decides with mandatory notes; System Administrators cannot perform business commands.
 - Posting an approved adjustment creates exactly one linked `ADJUSTMENT_IN` or `ADJUSTMENT_OUT` ledger entry. Stock-out posting locks and rechecks the current balance to prevent negative stock.
-- Issue, transfer, adjustment, and ledger records become immutable after their controlled transitions; duplicate source postings are blocked in PostgreSQL.
+- Physical counts follow `DRAFT → SUBMITTED → APPROVED/REJECTED`, with `APPROVED → POSTED` or evidenced cancellation. A different Project Director decides the Store Keeper's submitted snapshot.
+- Count posting locks each balance key and rejects stale book snapshots. It creates one source-linked adjustment entry per non-zero variance; an exact count posts with no ledger movement.
+- Issue, transfer, adjustment, count, and ledger records become immutable after their controlled transitions; duplicate source postings are blocked in PostgreSQL.
 
 ## Phase 2 lifecycles
 

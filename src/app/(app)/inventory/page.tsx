@@ -21,6 +21,8 @@ import { StockTransferControls } from "@/features/inventory/stock-transfer-contr
 import { StockTransferForm } from "@/features/inventory/stock-transfer-form";
 import { StockAdjustmentControls } from "@/features/inventory/stock-adjustment-controls";
 import { StockAdjustmentForm } from "@/features/inventory/stock-adjustment-form";
+import { StockCountControls } from "@/features/inventory/stock-count-controls";
+import { StockCountForm } from "@/features/inventory/stock-count-form";
 import { getCurrentPrincipal } from "@/server/auth/current-user";
 import { hasPermission } from "@/server/authorization/authorization";
 
@@ -67,6 +69,8 @@ function stockAdjustmentStatusLabel(status: string): StandardStatus {
   return labels[status] ?? "Draft";
 }
 
+const stockCountStatusLabel = stockAdjustmentStatusLabel;
+
 export default async function InventoryPage() {
   const principal = await getCurrentPrincipal();
   if (!principal || !hasPermission(principal, "inventory.view")) {
@@ -108,6 +112,14 @@ export default async function InventoryPage() {
     !principal.roleCodes.includes("SYSTEM_ADMINISTRATOR");
   const canDecideAdjustments =
     hasPermission(principal, "inventory.adjust") &&
+    principal.roleCodes.includes("PROJECT_DIRECTOR") &&
+    !principal.roleCodes.includes("SYSTEM_ADMINISTRATOR");
+  const canManageCounts =
+    hasPermission(principal, "inventory.count") &&
+    principal.roleCodes.includes("STORE_KEEPER") &&
+    !principal.roleCodes.includes("SYSTEM_ADMINISTRATOR");
+  const canDecideCounts =
+    hasPermission(principal, "inventory.count") &&
     principal.roleCodes.includes("PROJECT_DIRECTOR") &&
     !principal.roleCodes.includes("SYSTEM_ADMINISTRATOR");
   const postedCount = workspace.goodsReceipts.filter(
@@ -492,6 +504,120 @@ export default async function InventoryPage() {
               kind="empty"
               title="No stock adjustments yet"
               description="Store Keepers can prepare documented adjustments for independent approval."
+            />
+          )}
+        </section>
+      )}
+
+      {canManageCounts &&
+      workspace.locations.length &&
+      workspace.countMaterials.length ? (
+        <Card>
+          <CardHeader>
+            <h2 className="font-display text-lg font-bold text-slate-950">
+              Record physical stock count
+            </h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Capture a point-in-time book balance and the physically observed
+              quantity for independent review. Only an approved variance changes
+              the ledger.
+            </p>
+          </CardHeader>
+          <CardContent>
+            <StockCountForm
+              locations={workspace.locations}
+              materials={workspace.countMaterials}
+              balances={workspace.stockBalances}
+            />
+          </CardContent>
+        </Card>
+      ) : canManageCounts ? (
+        <ApplicationState
+          kind="empty"
+          title="No count reference data"
+          description="An active inventory location and material are required before recording a physical count."
+        />
+      ) : null}
+
+      {(canManageCounts ||
+        canDecideCounts ||
+        workspace.stockCounts.length > 0) && (
+        <section className="space-y-4">
+          <div>
+            <h2 className="font-display text-lg font-bold text-slate-950">
+              Physical count register
+            </h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Book snapshots, observed quantities, independently approved
+              variances, and immutable ledger postings
+            </p>
+          </div>
+          {workspace.stockCounts.length ? (
+            <div className="grid gap-4 lg:grid-cols-2">
+              {workspace.stockCounts.map((count) => (
+                <Card key={count.id} data-testid={`stock-count-${count.id}`}>
+                  <CardContent>
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-xs font-bold uppercase tracking-wider text-blue-700">
+                          {count.countNumber}
+                        </p>
+                        <h3 className="mt-1 font-display text-lg font-bold text-slate-950">
+                          {count.location.locationCode} · {count.location.name}
+                        </h3>
+                      </div>
+                      <StatusBadge
+                        status={stockCountStatusLabel(count.status)}
+                      />
+                    </div>
+                    <div className="mt-4 space-y-2 text-sm text-slate-600">
+                      {count.lines.map((line) => (
+                        <div key={line.id}>
+                          <p className="font-semibold text-slate-900">
+                            {line.material.materialCode} · {line.material.name}
+                          </p>
+                          <p>
+                            Book {line.bookQuantity} · Counted{" "}
+                            {line.countedQuantity} · Variance{" "}
+                            {Number(line.varianceQuantity) > 0 ? "+" : ""}
+                            {line.varianceQuantity} {line.unit.symbol}
+                          </p>
+                        </div>
+                      ))}
+                      <p>
+                        Counted{" "}
+                        {new Date(count.countedAt).toLocaleString("en-IN")}
+                      </p>
+                      {count.notes ? <p>{count.notes}</p> : null}
+                      {count.decisionNotes ? (
+                        <p>Decision evidence: {count.decisionNotes}</p>
+                      ) : null}
+                      <p className="text-xs text-slate-500">
+                        Created by {count.createdBy}
+                        {count.submittedBy
+                          ? ` · Submitted by ${count.submittedBy}`
+                          : ""}
+                        {count.decidedBy
+                          ? ` · Decided by ${count.decidedBy}`
+                          : ""}
+                        {count.postedBy ? ` · Posted by ${count.postedBy}` : ""}
+                      </p>
+                    </div>
+                    <StockCountControls
+                      stockCountId={count.id}
+                      status={count.status}
+                      canManage={canManageCounts}
+                      canDecide={canDecideCounts}
+                    />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <ApplicationState
+              kind="empty"
+              title="No physical counts yet"
+              description="Store Keepers can record counts for independent approval and variance posting."
             />
           )}
         </section>
