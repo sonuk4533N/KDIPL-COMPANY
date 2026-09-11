@@ -7,7 +7,7 @@ const businessAccounts = [
     route: "/procurement",
     heading: "Procurement sourcing",
     allowedNavigation: "Procurement",
-    deniedNavigation: "Inventory",
+    deniedNavigation: "Accounts",
   },
   {
     role: "Project Manager",

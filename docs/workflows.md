@@ -50,6 +50,15 @@ Disabling a user or employee, changing role permissions, assigning roles, or res
 - Only a fully received PO with no draft GRNs or unresolved exceptions can be closed.
 - Posted/cancelled GRNs and stock transactions are immutable in PostgreSQL. Corrections require later controlled reversal/return workflows, never a silent edit.
 
+## Phase 6 stock movements and adjustments
+
+- Material issues move `DRAFT → POSTED → ACKNOWLEDGED`; posting creates the source `ISSUE` ledger entry, and only the actively assigned destination Site Supervisor acknowledges it.
+- Stock transfers move `DRAFT → DISPATCHED → RECEIVED`. Dispatch creates `TRANSFER_OUT`; receipt creates `TRANSFER_IN`, so stock remains unavailable while in transit.
+- Controlled adjustments move `DRAFT → SUBMITTED → APPROVED/REJECTED`, with `APPROVED → POSTED` or evidenced cancellation. Rejected adjustments never change stock.
+- Store Keepers create, submit, cancel, and post adjustments. A different Project Director decides with mandatory notes; System Administrators cannot perform business commands.
+- Posting an approved adjustment creates exactly one linked `ADJUSTMENT_IN` or `ADJUSTMENT_OUT` ledger entry. Stock-out posting locks and rechecks the current balance to prevent negative stock.
+- Issue, transfer, adjustment, and ledger records become immutable after their controlled transitions; duplicate source postings are blocked in PostgreSQL.
+
 ## Phase 2 lifecycles
 
 - Project: `PLANNING → ACTIVE → ON_HOLD → ACTIVE`, with controlled completion or cancellation.

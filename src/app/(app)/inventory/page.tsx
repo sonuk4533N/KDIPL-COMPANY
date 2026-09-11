@@ -19,6 +19,8 @@ import { MaterialIssueControls } from "@/features/inventory/material-issue-contr
 import { MaterialIssueForm } from "@/features/inventory/material-issue-form";
 import { StockTransferControls } from "@/features/inventory/stock-transfer-controls";
 import { StockTransferForm } from "@/features/inventory/stock-transfer-form";
+import { StockAdjustmentControls } from "@/features/inventory/stock-adjustment-controls";
+import { StockAdjustmentForm } from "@/features/inventory/stock-adjustment-form";
 import { getCurrentPrincipal } from "@/server/auth/current-user";
 import { hasPermission } from "@/server/authorization/authorization";
 
@@ -48,6 +50,18 @@ function stockTransferStatusLabel(status: string): StandardStatus {
     DRAFT: "Draft",
     DISPATCHED: "Dispatched",
     RECEIVED: "Received",
+    CANCELLED: "Cancelled",
+  };
+  return labels[status] ?? "Draft";
+}
+
+function stockAdjustmentStatusLabel(status: string): StandardStatus {
+  const labels: Record<string, StandardStatus> = {
+    DRAFT: "Draft",
+    SUBMITTED: "Submitted",
+    APPROVED: "Approved",
+    REJECTED: "Rejected",
+    POSTED: "Posted",
     CANCELLED: "Cancelled",
   };
   return labels[status] ?? "Draft";
@@ -88,6 +102,14 @@ export default async function InventoryPage() {
     !principal.roleCodes.includes("SYSTEM_ADMINISTRATOR") &&
     (principal.roleCodes.includes("STORE_KEEPER") ||
       principal.roleCodes.includes("SITE_SUPERVISOR"));
+  const canManageAdjustments =
+    hasPermission(principal, "inventory.adjust") &&
+    principal.roleCodes.includes("STORE_KEEPER") &&
+    !principal.roleCodes.includes("SYSTEM_ADMINISTRATOR");
+  const canDecideAdjustments =
+    hasPermission(principal, "inventory.adjust") &&
+    principal.roleCodes.includes("PROJECT_DIRECTOR") &&
+    !principal.roleCodes.includes("SYSTEM_ADMINISTRATOR");
   const postedCount = workspace.goodsReceipts.filter(
     ({ status }) => status === "POSTED",
   ).length;
@@ -101,9 +123,9 @@ export default async function InventoryPage() {
   return (
     <div className="space-y-7">
       <PageHeader
-        eyebrow="Phase 6 · receiving, issues & stock transfers"
+        eyebrow="Phase 6 · receiving, movements & controlled adjustments"
         title="Inventory and receiving"
-        description="Receive supplier material, issue or transfer available stock, and keep every location balance derived from immutable ledger transactions."
+        description="Receive, issue, transfer, and independently approve stock corrections while every location balance remains ledger-derived."
       />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
@@ -362,6 +384,118 @@ export default async function InventoryPage() {
           />
         )}
       </section>
+
+      {canManageAdjustments &&
+      workspace.locations.length &&
+      workspace.adjustmentMaterials.length ? (
+        <Card>
+          <CardHeader>
+            <h2 className="font-display text-lg font-bold text-slate-950">
+              Prepare controlled stock adjustment
+            </h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Record a documented correction for independent Project Director
+              review. Drafts and approvals do not change stock.
+            </p>
+          </CardHeader>
+          <CardContent>
+            <StockAdjustmentForm
+              locations={workspace.locations}
+              materials={workspace.adjustmentMaterials}
+              balances={workspace.stockBalances}
+            />
+          </CardContent>
+        </Card>
+      ) : canManageAdjustments ? (
+        <ApplicationState
+          kind="empty"
+          title="No adjustment reference data"
+          description="An active inventory location and material are required before preparing an adjustment."
+        />
+      ) : null}
+
+      {(canManageAdjustments ||
+        canDecideAdjustments ||
+        workspace.stockAdjustments.length > 0) && (
+        <section className="space-y-4">
+          <div>
+            <h2 className="font-display text-lg font-bold text-slate-950">
+              Stock adjustment register
+            </h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Documented corrections from draft through independent decision and
+              immutable ledger posting
+            </p>
+          </div>
+          {workspace.stockAdjustments.length ? (
+            <div className="grid gap-4 lg:grid-cols-2">
+              {workspace.stockAdjustments.map((adjustment) => (
+                <Card
+                  key={adjustment.id}
+                  data-testid={`stock-adjustment-${adjustment.id}`}
+                >
+                  <CardContent>
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-xs font-bold uppercase tracking-wider text-blue-700">
+                          {adjustment.adjustmentNumber}
+                        </p>
+                        <h3 className="mt-1 font-display text-lg font-bold text-slate-950">
+                          {adjustment.direction === "IN"
+                            ? "Increase"
+                            : "Decrease"}{" "}
+                          {adjustment.quantity} {adjustment.unit.symbol}
+                        </h3>
+                      </div>
+                      <StatusBadge
+                        status={stockAdjustmentStatusLabel(adjustment.status)}
+                      />
+                    </div>
+                    <div className="mt-4 space-y-2 text-sm text-slate-600">
+                      <p>
+                        {adjustment.location.locationCode} ·{" "}
+                        {adjustment.location.name}
+                      </p>
+                      <p className="font-semibold text-slate-900">
+                        {adjustment.material.materialCode} ·{" "}
+                        {adjustment.material.name}
+                      </p>
+                      <p>{adjustment.reason}</p>
+                      {adjustment.decisionNotes ? (
+                        <p>Decision evidence: {adjustment.decisionNotes}</p>
+                      ) : null}
+                      <p className="text-xs text-slate-500">
+                        Created by {adjustment.createdBy}
+                        {adjustment.submittedBy
+                          ? ` · Submitted by ${adjustment.submittedBy}`
+                          : ""}
+                        {adjustment.decidedBy
+                          ? ` · Decided by ${adjustment.decidedBy}`
+                          : ""}
+                        {adjustment.postedBy
+                          ? ` · Posted by ${adjustment.postedBy}`
+                          : ""}
+                      </p>
+                    </div>
+                    <StockAdjustmentControls
+                      stockAdjustmentId={adjustment.id}
+                      status={adjustment.status}
+                      canManage={canManageAdjustments}
+                      canDecide={canDecideAdjustments}
+                    />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <ApplicationState
+              kind="empty"
+              title="No stock adjustments yet"
+              description="Store Keepers can prepare documented adjustments for independent approval."
+            />
+          )}
+        </section>
+      )}
 
       {canReceive && workspace.purchaseOrders.length ? (
         <Card>

@@ -61,7 +61,8 @@ Database tests require `RUN_DATABASE_TESTS=1` and an isolated `TEST_DATABASE_URL
 - [Phase 3 progress record](docs/phase-3-progress.md)
 - [Phase 4 progress record](docs/phase-4-progress.md)
 - [Phase 5 progress record](docs/phase-5-progress.md)
+- [Phase 6 progress record](docs/phase-6-progress.md)
 
 ## Phase boundary
 
-Completed milestones are Phase 1 **Authentication, Employees, Users, Roles & Permissions**, Phase 2 **Clients, Projects, Sites, Assignments & Master Data**, Phase 3 **Material Requirements & Approval**, Phase 4 **RFQ Commercial Workflow through Draft PO Creation**, and Phase 5 **Goods Receiving & Inventory Ledger** through PO close, controlled exceptions, immutable ledger entries, and ledger-derived stock balances. Phase 6 issue, transfer, adjustment, count, consumption, and return commands have not started. External supplier communication, accounts, and reporting remain locked to future approved increments.
+Completed milestones are Phase 1 **Authentication, Employees, Users, Roles & Permissions**, Phase 2 **Clients, Projects, Sites, Assignments & Master Data**, Phase 3 **Material Requirements & Approval**, Phase 4 **RFQ Commercial Workflow through Draft PO Creation**, and Phase 5 **Goods Receiving & Inventory Ledger** through PO close, controlled exceptions, immutable ledger entries, and ledger-derived stock balances. Phase 6 is in progress: material issue, stock transfer, and independently approved stock-adjustment workflows are implemented; physical counts and issued-material reconciliation remain. External supplier communication, accounts, and reporting remain locked to future approved increments.

@@ -13,7 +13,8 @@ export async function getInventoryWorkspace(principal: AuthenticatedPrincipal) {
 
   const hasOrganizationScope =
     principal.roleCodes.includes("SYSTEM_ADMINISTRATOR") ||
-    principal.roleCodes.includes("STORE_KEEPER");
+    principal.roleCodes.includes("STORE_KEEPER") ||
+    principal.roleCodes.includes("PROJECT_DIRECTOR");
   const assignedSiteScope =
     !hasOrganizationScope &&
     principal.roleCodes.includes("SITE_SUPERVISOR") &&
@@ -57,6 +58,11 @@ export async function getInventoryWorkspace(principal: AuthenticatedPrincipal) {
       : assignedSiteScope
         ? { destinationLocation: { site: assignedSiteScope.site } }
         : { id: { equals: "00000000-0000-0000-0000-000000000000" } };
+  const canViewAdjustments = principal.permissions.includes("inventory.adjust");
+  const stockAdjustmentScope: Prisma.StockAdjustmentWhereInput =
+    hasOrganizationScope && canViewAdjustments
+      ? {}
+      : { id: { equals: "00000000-0000-0000-0000-000000000000" } };
   const destinationSiteScope: Prisma.SiteWhereInput = hasOrganizationScope
     ? {}
     : assignedSiteScope
@@ -84,6 +90,8 @@ export async function getInventoryWorkspace(principal: AuthenticatedPrincipal) {
     exceptions,
     materialIssues,
     stockTransfers,
+    stockAdjustments,
+    adjustmentMaterials,
     issueDestinations,
   ] = await Promise.all([
     db.purchaseOrder.findMany({
@@ -267,6 +275,33 @@ export async function getInventoryWorkspace(principal: AuthenticatedPrincipal) {
         },
       },
     }),
+    db.stockAdjustment.findMany({
+      where: stockAdjustmentScope,
+      orderBy: { createdAt: "desc" },
+      take: 50,
+      include: {
+        location: { select: { locationCode: true, name: true } },
+        material: { select: { materialCode: true, name: true } },
+        unit: { select: { symbol: true } },
+        createdBy: { select: { displayName: true } },
+        submittedBy: { select: { displayName: true } },
+        decidedBy: { select: { displayName: true } },
+        postedBy: { select: { displayName: true } },
+      },
+    }),
+    db.material.findMany({
+      where: canViewAdjustments
+        ? { isActive: true }
+        : { id: { equals: "00000000-0000-0000-0000-000000000000" } },
+      orderBy: { name: "asc" },
+      select: {
+        id: true,
+        materialCode: true,
+        name: true,
+        defaultUnitId: true,
+        defaultUnit: { select: { symbol: true } },
+      },
+    }),
     db.site.findMany({
       where: {
         status: "ACTIVE",
@@ -403,6 +438,27 @@ export async function getInventoryWorkspace(principal: AuthenticatedPrincipal) {
         unit: line.unit,
       })),
     })),
+    stockAdjustments: stockAdjustments.map((adjustment) => ({
+      id: adjustment.id,
+      adjustmentNumber: adjustment.adjustmentNumber,
+      status: String(adjustment.status),
+      direction: String(adjustment.direction),
+      quantity: adjustment.quantity.toString(),
+      reason: adjustment.reason,
+      decisionNotes: adjustment.decisionNotes,
+      location: adjustment.location,
+      material: adjustment.material,
+      unit: adjustment.unit,
+      createdBy: adjustment.createdBy.displayName,
+      submittedBy: adjustment.submittedBy?.displayName ?? null,
+      decidedBy: adjustment.decidedBy?.displayName ?? null,
+      postedBy: adjustment.postedBy?.displayName ?? null,
+      submittedAt: adjustment.submittedAt?.toISOString() ?? null,
+      decidedAt: adjustment.decidedAt?.toISOString() ?? null,
+      postedAt: adjustment.postedAt?.toISOString() ?? null,
+      createdAt: adjustment.createdAt.toISOString(),
+    })),
+    adjustmentMaterials,
     issueDestinations,
     exceptions: exceptions.map((exception) => ({
       ...exception,

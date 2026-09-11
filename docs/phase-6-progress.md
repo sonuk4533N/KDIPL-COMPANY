@@ -74,24 +74,35 @@ The migration was verified from the complete Git migration history against a fre
 - `/inventory` now includes transfer creation, dispatch, in-transit visibility, destination receipt, cancellation, and project-close purpose evidence.
 - Service integration and Playwright coverage verify ledger balances, in-transit behavior, duplicate protection, permission boundaries, destination data scope, and the complete Store Keeper → Site Supervisor journey.
 
+### Increment 5 — controlled stock adjustment workflow
+
+- Store Keepers can prepare documented stock-in or stock-out adjustment drafts, submit them for review, cancel drafts, and post only approved adjustments.
+- A different Project Director independently approves or rejects every submitted adjustment with mandatory decision notes; creators and submitters cannot self-approve.
+- System Administrators remain read-only even if technical permissions are present.
+- Posting locks the adjustment and, for stock-out, the affected balance key before rechecking availability and appending one source-linked ledger entry atomically.
+- Insufficient stock leaves an approved stock-out adjustment unposted with no partial ledger change; duplicate posting is rejected.
+- Rejected adjustments never affect stock. Approved adjustments can be cancelled with evidence before posting, while posted records remain immutable.
+- Store Keeper and Project Director grants are converged through migration and seed data, with organization-wide adjustment review visibility for Project Directors.
+- `/inventory` now includes adjustment preparation, submission, independent decision, cancellation, posting, status history, actor evidence, and decision notes.
+- Service integration and Playwright coverage verify both adjustment directions, separation of duties, rollback behavior, role boundaries, audit history, and the full Store Keeper → Project Director → Store Keeper journey.
+
 ## Verification — 9 September 2026
 
 - Format check: passed.
 - ESLint: passed with zero warnings.
 - TypeScript: passed with no emit.
-- Unit tests: 14 files, 63 tests passed.
-- PostgreSQL integration tests: 10 files, 28 tests passed on a freshly migrated and seeded database.
+- Unit tests: 15 files, 66 tests passed.
+- PostgreSQL integration tests: 11 files, 30 tests passed on a freshly migrated and seeded database.
 - Production build: passed with Next.js 16.3.1.
-- Playwright E2E: 22 tests passed across desktop and mobile Chromium, including complete material-issue and stock-transfer journeys.
+- Playwright E2E: 24 tests passed across desktop and mobile Chromium, including complete issue, transfer, and controlled-adjustment journeys.
 
 ## Next increment
 
-1. Build controlled adjustment approval and posting.
-2. Build physical-count approval and variance posting.
-3. Build consumption, unused return, wastage, scrap, and project-close disposition.
-4. Run final Phase 6 scope verification and all quality gates before merge.
+1. Build physical-count approval and variance posting.
+2. Build consumption, unused return, wastage, scrap, and project-close disposition.
+3. Run final Phase 6 scope verification and all quality gates before merge.
 
-Phase 6 is in progress. This database increment does not mark the phase complete and does not begin Phase 7.
+Phase 6 is in progress. These increments do not mark the phase complete and do not begin Phase 7.
 
 ## Out of scope
 

@@ -22,6 +22,8 @@
 - Quotation line totals, subtotal, GST, freight, and landed total are calculated with server-side decimal arithmetic in INR.
 - A different Project Director approves, rejects, or sends back the recommendation. Creators/recommenders cannot self-approve, and System Administrators cannot perform business approval.
 - Approval creates one draft purchase order atomically. Rejection, send-back, and cancellation require reasons. Emergency purchasing and delegation are disabled.
+- Store Keepers prepare and submit documented stock adjustments. A different Project Director approves or rejects them with decision notes; only an approved adjustment can be posted to the immutable ledger by a Store Keeper.
+- System Administrators cannot create, decide, or post adjustments. Stock-out posting rechecks the current ledger balance and cannot create negative stock.
 
 ## KDIPL decisions still required
 
@@ -30,7 +32,7 @@
 - One-time vendors, supplier communication delivery, quotation revisions, and late-response exceptions
 - Draft purchase-order issue, amendments, cancellation, supplier acceptance, and downstream receipt rules
 - Cash custody/settlement and GST, Tally, payable, payment, and invoice-verification treatment
-- Negative-stock policy, adjustment authority, transfer receipt/discrepancy handling, physical count, and project closure
+- Transfer discrepancy handling, physical-count authority, and remaining project-closure rules
 - Required document types, retention, download visibility, and signed-access duration
 - Calendar versus Indian-financial-year transaction numbering
 - Production hosting, object storage, secret management, backup/restore, monitoring, audit retention, and support SLA
