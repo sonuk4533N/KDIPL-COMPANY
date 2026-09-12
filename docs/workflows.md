@@ -42,9 +42,9 @@ Disabling a user or employee, changing role permissions, assigning roles, or res
 
 ## Phase 5 purchase receiving and inventory
 
-- A Purchase Manager issues a draft PO and records supplier acceptance before receiving is enabled.
-- A Store Keeper can receive across active central, project, and site stores that match the PO. A Site Supervisor can receive and view inventory only at a site store covered by an active Site Supervisor assignment.
-- GRNs remain editable/cancellable in `DRAFT`. Posting is atomic and terminal: accepted quantities append receipt ledger entries; damaged/rejected quantities create exception records and never enter usable stock.
+- A Purchase Manager issues a draft PO. Supplier acknowledgment is tracked but receiving is enabled at `ISSUED`.
+- A Purchase Manager creates and edits the GRN draft. A Store Keeper verifies physical receipt; a different Project Manager approves and atomically posts stock.
+- GRNs follow `DRAFT → PHYSICALLY_VERIFIED → PENDING_PM_APPROVAL → POSTED`. Accepted quantities append receipt ledger entries; damaged/rejected quantities create exception records and never enter usable stock.
 - Posted accepted quantity advances the PO to `PARTIALLY_RECEIVED` or `RECEIVED`. Concurrent posting is serialized on the PO and cannot exceed any ordered line quantity.
 - Damaged/rejected exceptions move through replacement, return, or resolution states and require evidence or resolution notes for terminal outcomes.
 - Only a fully received PO with no draft GRNs or unresolved exceptions can be closed.
