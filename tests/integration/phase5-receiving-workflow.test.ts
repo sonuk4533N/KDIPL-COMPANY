@@ -43,9 +43,40 @@ describe.skipIf(!enabled)("Phase 5 receiving workflow", () => {
       roleCodes: ["PURCHASE_MANAGER"],
       permissions: ["purchase.create"],
     } satisfies AuthenticatedPrincipal;
+    const [verifierUser, approverUser] = await Promise.all([
+      testDb!.user.create({
+        data: {
+          email: `p5-verifier-${tag}@kdipl.test`,
+          emailNormalized: `p5-verifier-${tag}@kdipl.test`,
+          passwordHash: "integration-test",
+          displayName: `P5 Store Keeper ${tag}`,
+        },
+      }),
+      testDb!.user.create({
+        data: {
+          email: `p5-approver-${tag}@kdipl.test`,
+          emailNormalized: `p5-approver-${tag}@kdipl.test`,
+          passwordHash: "integration-test",
+          displayName: `P5 Project Manager ${tag}`,
+        },
+      }),
+    ]);
     const storeKeeper = {
-      ...purchaseManager,
+      userId: verifierUser.id,
+      displayName: verifierUser.displayName,
+      email: verifierUser.email,
+      employeeId: verifierUser.employeeId,
+      mustChangePassword: false,
       roleCodes: ["STORE_KEEPER"],
+      permissions: ["inventory.view", "inventory.receive"],
+    } satisfies AuthenticatedPrincipal;
+    const projectManager = {
+      userId: approverUser.id,
+      displayName: approverUser.displayName,
+      email: approverUser.email,
+      employeeId: approverUser.employeeId,
+      mustChangePassword: false,
+      roleCodes: ["PROJECT_MANAGER"],
       permissions: ["inventory.view", "inventory.receive"],
     } satisfies AuthenticatedPrincipal;
 
@@ -147,7 +178,7 @@ describe.skipIf(!enabled)("Phase 5 receiving workflow", () => {
       supplierAcceptanceReference: `ACK-${tag}`,
     });
 
-    const first = await InventoryService.createGoodsReceiptDraft(storeKeeper, {
+    const first = await InventoryService.createGoodsReceiptDraft(purchaseManager, {
       purchaseOrderId: purchaseOrder.id,
       locationId: location.id,
       supplierDeliveryNote: `DN-${tag}-1`,
@@ -162,7 +193,8 @@ describe.skipIf(!enabled)("Phase 5 receiving workflow", () => {
         },
       ],
     });
-    await InventoryService.postGoodsReceipt(storeKeeper, first.id);
+    await InventoryService.verifyGoodsReceipt(storeKeeper, first.id);
+    await InventoryService.postGoodsReceipt(projectManager, first.id);
 
     expect(
       await testDb!.purchaseOrder.findUniqueOrThrow({
@@ -194,7 +226,7 @@ describe.skipIf(!enabled)("Phase 5 receiving workflow", () => {
       );
     }
 
-    const finalA = await InventoryService.createGoodsReceiptDraft(storeKeeper, {
+    const finalA = await InventoryService.createGoodsReceiptDraft(purchaseManager, {
       purchaseOrderId: purchaseOrder.id,
       locationId: location.id,
       receivedAt: "2026-09-04T09:00:00.000Z",
@@ -223,7 +255,7 @@ describe.skipIf(!enabled)("Phase 5 receiving workflow", () => {
         },
       ],
     });
-    const finalB = await InventoryService.createGoodsReceiptDraft(storeKeeper, {
+    const finalB = await InventoryService.createGoodsReceiptDraft(purchaseManager, {
       purchaseOrderId: purchaseOrder.id,
       locationId: location.id,
       receivedAt: "2026-09-04T10:00:00.000Z",
@@ -237,9 +269,13 @@ describe.skipIf(!enabled)("Phase 5 receiving workflow", () => {
       ],
     });
 
+    await Promise.all([
+      InventoryService.verifyGoodsReceipt(storeKeeper, finalA.id),
+      InventoryService.verifyGoodsReceipt(storeKeeper, finalB.id),
+    ]);
     const concurrentPosts = await Promise.allSettled([
-      InventoryService.postGoodsReceipt(storeKeeper, finalA.id),
-      InventoryService.postGoodsReceipt(storeKeeper, finalB.id),
+      InventoryService.postGoodsReceipt(projectManager, finalA.id),
+      InventoryService.postGoodsReceipt(projectManager, finalB.id),
     ]);
     expect(
       concurrentPosts.filter(({ status }) => status === "fulfilled"),
