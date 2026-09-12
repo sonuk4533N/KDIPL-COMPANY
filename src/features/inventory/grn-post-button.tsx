@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { CheckCircle2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/form-controls";
 import { FormFeedback } from "@/components/ui/form-feedback";
 import {
   postGoodsReceiptAction,
@@ -36,6 +37,13 @@ export function GrnPostButton({
   return (
     <form action={action} className="space-y-2">
       <input type="hidden" name="goodsReceiptId" value={goodsReceiptId} />
+      {mode === "approve" ? (
+        <Input
+          name="excessApprovalReason"
+          maxLength={1000}
+          placeholder="Reason required only when accepted quantity exceeds PO"
+        />
+      ) : null}
       <Button type="submit" disabled={pending}>
         <CheckCircle2 className="size-4" />
         {label}
