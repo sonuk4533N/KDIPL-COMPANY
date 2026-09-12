@@ -1,0 +1,34 @@
+# KDIPL Approval Matrix
+
+This matrix records confirmed approval ownership. Server-side authorization, state checks, separation of duties, reason requirements, and immutable audit events are mandatory.
+
+| Transaction | Initiator / creator | Verification | Approval / decision | Confirmed rule |
+|---|---|---|---|---|
+| Material Requirement | Site Supervisor or Project Manager under existing assignment rules | Existing Phase 3 reviewer | Existing Phase 3 approver | Creator/self-approval remains prohibited |
+| RFQ | Purchase Manager | — | Existing recommendation approval | No fixed minimum quotation count |
+| Supplier selection | Purchase Manager | Comparison retained | Project Director for existing recommendation workflow | Purchase Manager may choose any supplier |
+| One-time supplier | Purchase Manager | Supplier identity documents | Project Director | GST/unregistered status required |
+| Supplier blacklist/reactivation | Purchase Manager | — | Managing Director | Reason and audit required |
+| PO issue | Purchase Manager | Approved sourcing decision | No additional approval | Issue changes DRAFT to ISSUED |
+| PO amendment | Purchase Manager | Versioned diff | Repeat applicable approval | Previous versions immutable |
+| PO cancellation/short-close | Purchase Manager | Receipt state checked | Purchase Manager | Reason required |
+| Draft GRN | Purchase Manager | Store Keeper physical verification | Project Manager | Stock posts only after PM approval |
+| Excess receipt | Purchase Manager draft | Store Keeper | Project Manager | No fixed ceiling; reason mandatory |
+| Site receipt acknowledgment | Site Supervisor | GPS/evidence | — | Mandatory |
+| Material issue | Site Supervisor request | Store Keeper | No second approval | Excess issue requires PM approval |
+| Inter-store transfer | Store Keeper/requesting workflow | Source/destination verification | Project Director | Destination receipt posts movement |
+| Transfer variance | Destination receiver | Accounts/stock evidence | Managing Director | Audited adjustment |
+| Site return | Site Supervisor | Store Keeper | — | Receipt evidence retained |
+| Stock adjustment | Store Keeper/requesting workflow | Evidence | Managing Director | No direct balance edits |
+| Physical count | Store Keeper | Accounts | Managing Director for variance adjustment | Required at project closure |
+| Opening stock | Store Keeper | — | Project Manager | Manual entry before activation |
+| Unit conversion | Store Keeper | — | Project Manager | New/changed conversion only |
+| Cash/direct purchase | Purchase Manager | Supporting evidence | Managing Director | Every cash purchase |
+| Emergency purchase | Purchase Manager | Retrospective review | Appropriate retrospective approver within 24 hours | Reason mandatory |
+| Supplier invoice | Accounts | Strict three-way match | Managing Director | Every mismatch manually reviewed |
+| Supplier advance | Accounts under PO terms | — | Managing Director | PO terms required |
+| Supplier payment | Accounts | Approved invoice/balance | Managing Director | Partial payment supported |
+| Budget/revision | Project Director | Work-package values | Managing Director | Overrun warns but does not block |
+| Scrap disposal/sale | Store/Project workflow | Evidence and quantity | Managing Director | Every disposal/sale |
+| Data import | System/import operator | Validation preview | Managing Director | Activation only after approval |
+| Production release | Department leads | UAT sign-off | Managing Director | All-project launch |
