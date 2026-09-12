@@ -140,6 +140,7 @@ export const InventoryCompletionService = {
   async closePurchaseOrder(
     principal: AuthenticatedPrincipal,
     purchaseOrderId: string,
+    shortCloseReason?: string,
   ) {
     requirePermission(principal, "purchase.create");
     requirePurchaseManager(principal);
@@ -156,15 +157,32 @@ export const InventoryCompletionService = {
       });
       if (!purchaseOrder)
         throw new AppError("NOT_FOUND", "Purchase order not found.");
-      if (purchaseOrder.status !== "RECEIVED") {
+      if (
+        purchaseOrder.status !== "RECEIVED" &&
+        purchaseOrder.status !== "PARTIALLY_RECEIVED"
+      ) {
         throw new AppError(
           "INVALID_STATUS_TRANSITION",
-          "Only a fully received purchase order can be closed.",
+          "Only a received or partially received purchase order can be closed.",
+        );
+      }
+      if (
+        purchaseOrder.status === "PARTIALLY_RECEIVED" &&
+        (!shortCloseReason || shortCloseReason.trim().length < 3)
+      ) {
+        throw new AppError(
+          "VALIDATION_ERROR",
+          "A reason is required to short-close a partially received purchase order.",
         );
       }
 
       const draftReceipts = await transaction.goodsReceipt.count({
-        where: { purchaseOrderId, status: "DRAFT" },
+        where: {
+          purchaseOrderId,
+          status: {
+            in: ["DRAFT", "PHYSICALLY_VERIFIED", "PENDING_PM_APPROVAL"],
+          },
+        },
       });
       if (draftReceipts) {
         throw new AppError(
@@ -194,11 +212,15 @@ export const InventoryCompletionService = {
 
       const now = new Date();
       const changed = await transaction.purchaseOrder.updateMany({
-        where: { id: purchaseOrderId, status: "RECEIVED" },
+        where: { id: purchaseOrderId, status: purchaseOrder.status },
         data: {
           status: "CLOSED",
           closedById: principal.userId,
           closedAt: now,
+          shortCloseReason:
+            purchaseOrder.status === "PARTIALLY_RECEIVED"
+              ? shortCloseReason
+              : null,
         },
       });
       if (changed.count !== 1) {
@@ -214,8 +236,19 @@ export const InventoryCompletionService = {
           action: AuditAction.UPDATE,
           entityType: "PurchaseOrder",
           entityId: purchaseOrderId,
-          before: { status: "RECEIVED" },
-          after: { status: "CLOSED", closedAt: now },
+          reason:
+            purchaseOrder.status === "PARTIALLY_RECEIVED"
+              ? shortCloseReason
+              : undefined,
+          before: { status: purchaseOrder.status },
+          after: {
+            status: "CLOSED",
+            closedAt: now,
+            shortCloseReason:
+              purchaseOrder.status === "PARTIALLY_RECEIVED"
+                ? shortCloseReason
+                : null,
+          },
         },
         transaction,
       );
