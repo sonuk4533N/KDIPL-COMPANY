@@ -9,6 +9,7 @@ import {
 import { GrnEvidenceService } from "@/features/inventory/grn-evidence-service";
 import { getCurrentPrincipal } from "@/server/auth/current-user";
 import { validateMutationOrigin } from "@/server/auth/request-security";
+import { requirePermission } from "@/server/authorization/authorization";
 import { toCommandError } from "@/server/errors/app-error";
 import type { CommandResult } from "@/types/application";
 
@@ -27,6 +28,7 @@ export async function attachGrnEvidenceAction(
   try {
     await validateMutationOrigin();
     const principal = await getCurrentPrincipal();
+    requirePermission(principal, "purchase.create");
     const parsed = grnEvidenceSchema.safeParse({
       goodsReceiptId: formData.get("goodsReceiptId"),
       documentType: formData.get("documentType"),
@@ -59,6 +61,7 @@ export async function acknowledgeSiteReceiptAction(
   try {
     await validateMutationOrigin();
     const principal = await getCurrentPrincipal();
+    requirePermission(principal, "inventory.receive");
     const parsed = siteAcknowledgmentSchema.safeParse({
       goodsReceiptId: formData.get("goodsReceiptId"),
     });
