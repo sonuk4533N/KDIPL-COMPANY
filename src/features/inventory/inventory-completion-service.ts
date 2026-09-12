@@ -352,6 +352,7 @@ export const InventoryCompletionService = {
         );
       }
       if (
+        receipt.purchaseOrder.status !== "ISSUED" &&
         receipt.purchaseOrder.status !== "ACCEPTED" &&
         receipt.purchaseOrder.status !== "PARTIALLY_RECEIVED"
       ) {
