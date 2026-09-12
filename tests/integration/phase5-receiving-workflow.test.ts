@@ -227,8 +227,9 @@ describe.skipIf(!enabled)("Phase 5 receiving workflow", () => {
       InventoryCompletionService.closePurchaseOrder(
         purchaseManager,
         purchaseOrder.id,
+        "Supplier will not deliver the remaining quantity",
       ),
-    ).rejects.toMatchObject({ code: "INVALID_STATUS_TRANSITION" });
+    ).rejects.toMatchObject({ code: "CONFLICT" });
     for (const exception of exceptions) {
       await InventoryCompletionService.updateGoodsReceiptException(
         storeKeeper,
