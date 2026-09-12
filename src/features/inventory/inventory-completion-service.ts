@@ -387,6 +387,7 @@ export const InventoryCompletionService = {
           acceptedQuantity: line.acceptedQuantity,
           damagedQuantity: line.damagedQuantity,
           rejectedQuantity: line.rejectedQuantity,
+          allowExcess: true,
         });
         return { existing, line, result };
       });
