@@ -43,6 +43,20 @@ describe.skipIf(!enabled)("Phase 5 receiving workflow", () => {
       roleCodes: ["PURCHASE_MANAGER"],
       permissions: ["purchase.create"],
     } satisfies AuthenticatedPrincipal;
+    const approverEmployee = await testDb!.employee.create({
+      data: {
+        employeeCode: `P5-PM-${tag}`,
+        fullName: `P5 Project Manager ${tag}`,
+      },
+    });
+    await testDb!.projectAssignment.create({
+      data: {
+        projectId: project.id,
+        employeeId: approverEmployee.id,
+        role: "PROJECT_MANAGER",
+        isPrimary: true,
+      },
+    });
     const [verifierUser, approverUser] = await Promise.all([
       testDb!.user.create({
         data: {
@@ -58,6 +72,7 @@ describe.skipIf(!enabled)("Phase 5 receiving workflow", () => {
           emailNormalized: `p5-approver-${tag}@kdipl.test`,
           passwordHash: "integration-test",
           displayName: `P5 Project Manager ${tag}`,
+          employeeId: approverEmployee.id,
         },
       }),
     ]);
