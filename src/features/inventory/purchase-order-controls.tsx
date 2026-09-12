@@ -139,8 +139,33 @@ export function PurchaseOrderControls({
 
   if (status === "PARTIALLY_RECEIVED") {
     return (
-      <div className="mt-4 border-t border-slate-100 pt-4 text-sm text-amber-700">
-        Partially received. Remaining quantity stays open for additional GRNs.
+      <div className="mt-4 space-y-3 border-t border-slate-100 pt-4">
+        <p className="text-sm text-amber-700">
+          Remaining quantity stays open for additional GRNs. The Purchase
+          Manager may short-close it with an audited reason.
+        </p>
+        <form action={closeAction} className="space-y-3">
+          <input type="hidden" name="purchaseOrderId" value={purchaseOrderId} />
+          <Field
+            label="Short-close reason"
+            htmlFor={`po-short-close-${purchaseOrderId}`}
+          >
+            <Input
+              id={`po-short-close-${purchaseOrderId}`}
+              name="shortCloseReason"
+              minLength={3}
+              maxLength={1000}
+              required
+            />
+          </Field>
+          <Button type="submit" variant="secondary" disabled={closePending}>
+            {closePending ? "Short-closing..." : "Short-close purchase order"}
+          </Button>
+          <FormFeedback
+            state={closeState}
+            success="Purchase order short-closed."
+          />
+        </form>
       </div>
     );
   }
