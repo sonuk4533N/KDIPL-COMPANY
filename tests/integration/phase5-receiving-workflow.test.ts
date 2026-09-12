@@ -54,7 +54,7 @@ describe.skipIf(!enabled)("Phase 5 receiving workflow", () => {
         projectId: project.id,
         employeeId: approverEmployee.id,
         role: "PROJECT_MANAGER",
-        isPrimary: true,
+        isPrimary: false,
       },
     });
     const [verifierUser, approverUser] = await Promise.all([
