@@ -584,6 +584,27 @@ export const InventoryService = {
         siteId: receipt.purchaseOrder.rfq.requirement.siteId,
       });
 
+      const assignmentTime = new Date();
+      const projectAssignment = principal.employeeId
+        ? await transaction.projectAssignment.findFirst({
+            where: {
+              employeeId: principal.employeeId,
+              projectId: receipt.purchaseOrder.rfq.requirement.projectId,
+              role: "PROJECT_MANAGER",
+              isActive: true,
+              startsAt: { lte: assignmentTime },
+              OR: [{ endsAt: null }, { endsAt: { gte: assignmentTime } }],
+            },
+            select: { id: true },
+          })
+        : null;
+      if (!projectAssignment) {
+        throw new AppError(
+          "FORBIDDEN",
+          "Only the Project Manager actively assigned to this project can approve the GRN.",
+        );
+      }
+
       const previous = await previousReceiptTotals(
         transaction,
         receipt.purchaseOrder.lines.map(({ id }) => id),
