@@ -9,6 +9,7 @@ import {
 import { PurchaseOrderAmendmentService } from "@/features/inventory/purchase-order-amendment-service";
 import { getCurrentPrincipal } from "@/server/auth/current-user";
 import { validateMutationOrigin } from "@/server/auth/request-security";
+import { requirePermission } from "@/server/authorization/authorization";
 import { toCommandError } from "@/server/errors/app-error";
 import type { CommandResult } from "@/types/application";
 
@@ -33,6 +34,7 @@ export async function createPurchaseOrderAmendmentAction(
   try {
     await validateMutationOrigin();
     const principal = await getCurrentPrincipal();
+    requirePermission(principal, "purchase.create");
     const lineIds = formData.getAll("purchaseOrderLineId");
     const quantities = formData.getAll("quantity");
     const prices = formData.getAll("unitPrice");
@@ -79,6 +81,7 @@ export async function decidePurchaseOrderAmendmentAction(
   try {
     await validateMutationOrigin();
     const principal = await getCurrentPrincipal();
+    requirePermission(principal, "purchase.approve");
     const parsed = decidePurchaseOrderAmendmentSchema.safeParse({
       amendmentId: optionalValue(formData.get("amendmentId")),
       decision: optionalValue(formData.get("decision")),
