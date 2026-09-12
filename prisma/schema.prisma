@@ -118,6 +118,9 @@ enum InventoryLocationType {
   CENTRAL_STORE
   PROJECT_STORE
   SITE_STORE
+  TEMPORARY_STORE
+  TRANSIT
+  DAMAGED_REJECTED
 }
 
 enum GoodsReceiptStatus {
