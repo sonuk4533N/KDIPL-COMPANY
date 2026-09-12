@@ -363,6 +363,7 @@ export const InventoryService = {
           acceptedQuantity: line.acceptedQuantity,
           damagedQuantity: line.damagedQuantity,
           rejectedQuantity: line.rejectedQuantity,
+          allowExcess: true,
         });
         return { poLine, input: line, result };
       });
@@ -515,6 +516,7 @@ export const InventoryService = {
   async postGoodsReceipt(
     principal: AuthenticatedPrincipal,
     goodsReceiptId: string,
+    excessApprovalReason?: string,
   ) {
     requirePermission(principal, "inventory.receive");
     requireProjectManager(principal);
@@ -608,6 +610,7 @@ export const InventoryService = {
           acceptedQuantity: currentAccepted,
           damagedQuantity: currentDamaged,
           rejectedQuantity: currentRejected,
+          allowExcess: Boolean(excessApprovalReason),
         });
         cumulativeAccepted.set(poLine.id, prior.accepted + currentAccepted);
       }
@@ -619,6 +622,7 @@ export const InventoryService = {
           status: "POSTED",
           approvedById: principal.userId,
           approvedAt: now,
+          excessApprovalReason,
           postedById: principal.userId,
           postedAt: now,
         },
@@ -676,6 +680,7 @@ export const InventoryService = {
           after: {
             status: "POSTED",
             approvedAt: now,
+            excessApprovalReason: excessApprovalReason ?? null,
             postedAt: now,
             acceptedStockLines: receipt.lines.filter((line) =>
               line.acceptedQuantity.gt(0),
