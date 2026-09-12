@@ -610,6 +610,15 @@ export const InventoryService = {
           "Only a Store Keeper-verified GRN can be approved and posted.",
         );
       if (
+        receipt.directSiteDelivery &&
+        (!receipt.siteAcknowledgedById || !receipt.siteAcknowledgedAt)
+      ) {
+        throw new AppError(
+          "VALIDATION_ERROR",
+          "The assigned Site Supervisor must acknowledge a direct-site GRN before approval.",
+        );
+      }
+      if (
         receipt.createdById === principal.userId ||
         receipt.verifiedById === principal.userId
       ) {
