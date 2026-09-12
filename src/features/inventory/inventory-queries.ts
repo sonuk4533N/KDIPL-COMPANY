@@ -71,6 +71,7 @@ export async function getInventoryWorkspace(principal: AuthenticatedPrincipal) {
     stockTransactions,
     stockBalances,
     exceptions,
+    negativeStockExceptions,
   ] = await Promise.all([
     db.purchaseOrder.findMany({
       where: purchaseOrderScope,
@@ -106,7 +107,17 @@ export async function getInventoryWorkspace(principal: AuthenticatedPrincipal) {
       take: 50,
       include: {
         purchaseOrder: { select: { poNumber: true } },
-        location: { select: { locationCode: true, name: true } },
+        location: {
+          select: { locationCode: true, name: true, type: true, siteId: true },
+        },
+        documents: {
+          orderBy: { createdAt: "asc" },
+          include: {
+            fileRecord: {
+              select: { filename: true, scanStatus: true },
+            },
+          },
+        },
         createdBy: { select: { displayName: true } },
         postedBy: { select: { displayName: true } },
         lines: {
@@ -203,6 +214,17 @@ export async function getInventoryWorkspace(principal: AuthenticatedPrincipal) {
         ORDER BY e."createdAt" DESC
         LIMIT 100
       `,
+    db.temporaryNegativeStockException.findMany({
+      where: { locationId: { in: locationIds } },
+      orderBy: { detectedAt: "desc" },
+      take: 100,
+      include: {
+        location: { select: { locationCode: true, name: true } },
+        material: { select: { materialCode: true, name: true } },
+        unit: { select: { symbol: true } },
+        createdBy: { select: { displayName: true } },
+      },
+    }),
   ]);
 
   const receivablePurchaseOrders = purchaseOrders
@@ -246,6 +268,18 @@ export async function getInventoryWorkspace(principal: AuthenticatedPrincipal) {
       vehicleNumber: receipt.vehicleNumber,
       transporter: receipt.transporter,
       notes: receipt.notes,
+      directSiteDelivery: receipt.directSiteDelivery,
+      gpsLatitude: receipt.gpsLatitude?.toString() ?? null,
+      gpsLongitude: receipt.gpsLongitude?.toString() ?? null,
+      gpsCapturedAt: receipt.gpsCapturedAt?.toISOString() ?? null,
+      receiverName: receipt.receiverName,
+      siteAcknowledgedAt: receipt.siteAcknowledgedAt?.toISOString() ?? null,
+      documents: receipt.documents.map((document) => ({
+        id: document.id,
+        type: document.type,
+        filename: document.fileRecord.filename,
+        scanStatus: document.fileRecord.scanStatus,
+      })),
       createdBy: receipt.createdBy.displayName,
       postedBy: receipt.postedBy?.displayName ?? null,
       receivedAt: receipt.receivedAt?.toISOString() ?? null,
@@ -285,6 +319,22 @@ export async function getInventoryWorkspace(principal: AuthenticatedPrincipal) {
     exceptions: exceptions.map((exception) => ({
       ...exception,
       createdAt: exception.createdAt.toISOString(),
+    })),
+    negativeStockExceptions: negativeStockExceptions.map((exception) => ({
+      id: exception.id,
+      status: exception.status,
+      deficitQuantity: exception.deficitQuantity.toString(),
+      reason: exception.reason,
+      detectedAt: exception.detectedAt.toISOString(),
+      resolutionDueAt: exception.resolutionDueAt.toISOString(),
+      resolvedAt: exception.resolvedAt?.toISOString() ?? null,
+      overdue:
+        exception.status === "OPEN" &&
+        exception.resolutionDueAt.getTime() < Date.now(),
+      location: exception.location,
+      material: exception.material,
+      unit: exception.unit,
+      createdBy: exception.createdBy.displayName,
     })),
   };
 }
