@@ -6,7 +6,11 @@ import { db } from "@/db/prisma";
 import { requirePermission } from "@/server/authorization/authorization";
 import type { AuthenticatedPrincipal } from "@/types/application";
 
-const receivableStatuses = new Set(["ACCEPTED", "PARTIALLY_RECEIVED"]);
+const receivableStatuses = new Set([
+  "ISSUED",
+  "ACCEPTED",
+  "PARTIALLY_RECEIVED",
+]);
 
 export async function getInventoryWorkspace(principal: AuthenticatedPrincipal) {
   requirePermission(principal, "inventory.view");
