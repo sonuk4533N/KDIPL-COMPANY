@@ -178,21 +178,24 @@ describe.skipIf(!enabled)("Phase 5 receiving workflow", () => {
       supplierAcceptanceReference: `ACK-${tag}`,
     });
 
-    const first = await InventoryService.createGoodsReceiptDraft(purchaseManager, {
-      purchaseOrderId: purchaseOrder.id,
-      locationId: location.id,
-      supplierDeliveryNote: `DN-${tag}-1`,
-      receivedAt: "2026-09-03T09:00:00.000Z",
-      lines: [
-        {
-          purchaseOrderLineId: purchaseOrder.lines[0].id,
-          acceptedQuantity: 6,
-          damagedQuantity: 1,
-          rejectedQuantity: 1,
-          notes: "Two non-conforming units",
-        },
-      ],
-    });
+    const first = await InventoryService.createGoodsReceiptDraft(
+      purchaseManager,
+      {
+        purchaseOrderId: purchaseOrder.id,
+        locationId: location.id,
+        supplierDeliveryNote: `DN-${tag}-1`,
+        receivedAt: "2026-09-03T09:00:00.000Z",
+        lines: [
+          {
+            purchaseOrderLineId: purchaseOrder.lines[0].id,
+            acceptedQuantity: 6,
+            damagedQuantity: 1,
+            rejectedQuantity: 1,
+            notes: "Two non-conforming units",
+          },
+        ],
+      },
+    );
     await InventoryService.verifyGoodsReceipt(storeKeeper, first.id);
     await InventoryService.postGoodsReceipt(projectManager, first.id);
 
@@ -226,19 +229,22 @@ describe.skipIf(!enabled)("Phase 5 receiving workflow", () => {
       );
     }
 
-    const finalA = await InventoryService.createGoodsReceiptDraft(purchaseManager, {
-      purchaseOrderId: purchaseOrder.id,
-      locationId: location.id,
-      receivedAt: "2026-09-04T09:00:00.000Z",
-      lines: [
-        {
-          purchaseOrderLineId: purchaseOrder.lines[0].id,
-          acceptedQuantity: 3,
-          damagedQuantity: 0,
-          rejectedQuantity: 0,
-        },
-      ],
-    });
+    const finalA = await InventoryService.createGoodsReceiptDraft(
+      purchaseManager,
+      {
+        purchaseOrderId: purchaseOrder.id,
+        locationId: location.id,
+        receivedAt: "2026-09-04T09:00:00.000Z",
+        lines: [
+          {
+            purchaseOrderLineId: purchaseOrder.lines[0].id,
+            acceptedQuantity: 3,
+            damagedQuantity: 0,
+            rejectedQuantity: 0,
+          },
+        ],
+      },
+    );
     const finalALine = await testDb!.goodsReceiptLine.findFirstOrThrow({
       where: { goodsReceiptId: finalA.id },
     });
@@ -255,19 +261,22 @@ describe.skipIf(!enabled)("Phase 5 receiving workflow", () => {
         },
       ],
     });
-    const finalB = await InventoryService.createGoodsReceiptDraft(purchaseManager, {
-      purchaseOrderId: purchaseOrder.id,
-      locationId: location.id,
-      receivedAt: "2026-09-04T10:00:00.000Z",
-      lines: [
-        {
-          purchaseOrderLineId: purchaseOrder.lines[0].id,
-          acceptedQuantity: 4,
-          damagedQuantity: 0,
-          rejectedQuantity: 0,
-        },
-      ],
-    });
+    const finalB = await InventoryService.createGoodsReceiptDraft(
+      purchaseManager,
+      {
+        purchaseOrderId: purchaseOrder.id,
+        locationId: location.id,
+        receivedAt: "2026-09-04T10:00:00.000Z",
+        lines: [
+          {
+            purchaseOrderLineId: purchaseOrder.lines[0].id,
+            acceptedQuantity: 4,
+            damagedQuantity: 0,
+            rejectedQuantity: 0,
+          },
+        ],
+      },
+    );
 
     await Promise.all([
       InventoryService.verifyGoodsReceipt(storeKeeper, finalA.id),
