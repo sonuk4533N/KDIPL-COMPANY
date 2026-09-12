@@ -21,7 +21,7 @@ function requirePurchaseManager(principal: AuthenticatedPrincipal) {
   ) {
     throw new AppError(
       "FORBIDDEN",
-      "Only the Purchase Manager can close a fully received purchase order.",
+      "Only the Purchase Manager can manage GRN drafts or close a purchase order.",
     );
   }
 }
@@ -63,7 +63,6 @@ async function validateReceivingLocation(
   principal: AuthenticatedPrincipal,
   values: { locationId: string; projectId: string; siteId: string },
 ) {
-  const roles = requireReceivingRole(principal);
   const location = await transaction.inventoryLocation.findFirst({
     where: { id: values.locationId, isActive: true },
   });
@@ -79,7 +78,8 @@ async function validateReceivingLocation(
   const allowedForPo =
     location.type === "CENTRAL_STORE" ||
     (location.type === "PROJECT_STORE" && sameProject) ||
-    (location.type === "SITE_STORE" && sameProject && sameSite);
+    (location.type === "SITE_STORE" && sameProject && sameSite) ||
+    (location.type === "TEMPORARY_STORE" && sameProject);
   if (!allowedForPo) {
     throw new AppError(
       "FORBIDDEN",
@@ -87,29 +87,6 @@ async function validateReceivingLocation(
     );
   }
 
-  if (!roles.isStoreKeeper && roles.isSiteSupervisor) {
-    if (location.type !== "SITE_STORE" || !sameSite || !principal.employeeId) {
-      throw new AppError(
-        "FORBIDDEN",
-        "Site Supervisors may manage only direct deliveries into their assigned site store.",
-      );
-    }
-    const assignment = await transaction.siteAssignment.findFirst({
-      where: {
-        siteId: values.siteId,
-        employeeId: principal.employeeId,
-        role: "SITE_SUPERVISOR",
-        isActive: true,
-      },
-      select: { id: true },
-    });
-    if (!assignment) {
-      throw new AppError(
-        "FORBIDDEN",
-        "An active Site Supervisor assignment is required.",
-      );
-    }
-  }
   return location;
 }
 
@@ -251,8 +228,8 @@ export const InventoryCompletionService = {
     goodsReceiptId: string,
     reason: string,
   ) {
-    requirePermission(principal, "inventory.receive");
-    requireReceivingRole(principal);
+    requirePermission(principal, "purchase.create");
+    requirePurchaseManager(principal);
 
     return db.$transaction(async (transaction) => {
       await transaction.$queryRaw`
@@ -319,8 +296,8 @@ export const InventoryCompletionService = {
     principal: AuthenticatedPrincipal,
     input: UpdateGoodsReceiptDraftInput,
   ) {
-    requirePermission(principal, "inventory.receive");
-    requireReceivingRole(principal);
+    requirePermission(principal, "purchase.create");
+    requirePurchaseManager(principal);
 
     return db.$transaction(async (transaction) => {
       await transaction.$queryRaw`
