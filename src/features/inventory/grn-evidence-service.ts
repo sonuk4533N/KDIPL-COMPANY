@@ -162,7 +162,8 @@ export const GrnEvidenceService = {
   ) {
     requirePermission(principal, "inventory.receive");
     requireSiteSupervisor(principal);
-    if (!principal.employeeId) throw new AppError("FORBIDDEN");
+    const employeeId = principal.employeeId;
+    if (!employeeId) throw new AppError("FORBIDDEN");
 
     return db.$transaction(async (transaction) => {
       await transaction.$queryRaw`
@@ -207,7 +208,7 @@ export const GrnEvidenceService = {
       const assignment = await transaction.siteAssignment.findFirst({
         where: {
           siteId,
-          employeeId: principal.employeeId,
+          employeeId,
           role: "SITE_SUPERVISOR",
           isActive: true,
           startsAt: { lte: now },
