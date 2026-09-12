@@ -197,6 +197,12 @@ export const GrnEvidenceService = {
         );
       }
       const siteId = receipt.purchaseOrder.rfq.requirement.siteId;
+      if (!siteId) {
+        throw new AppError(
+          "VALIDATION_ERROR",
+          "Direct-site receipt requires a project site.",
+        );
+      }
       const now = new Date();
       const assignment = await transaction.siteAssignment.findFirst({
         where: {
