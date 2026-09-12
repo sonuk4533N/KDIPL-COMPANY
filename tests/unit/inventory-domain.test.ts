@@ -42,6 +42,25 @@ describe("Phase 5 inventory domain", () => {
     ).toThrow("Accepted quantity exceeds the purchase-order quantity.");
   });
 
+  it("allows an explicitly approved excess without a hard percentage ceiling", () => {
+    expect(
+      calculateReceiptQuantities({
+        orderedQuantity: 100,
+        previouslyAcceptedQuantity: 90,
+        previouslyDamagedQuantity: 0,
+        previouslyRejectedQuantity: 0,
+        acceptedQuantity: 25,
+        damagedQuantity: 0,
+        rejectedQuantity: 0,
+        allowExcess: true,
+      }),
+    ).toMatchObject({
+      cumulativeAcceptedQuantity: 115,
+      remainingAcceptableQuantity: 0,
+    });
+    expect(purchaseOrderStatusAfterReceipt(100, 115)).toBe("RECEIVED");
+  });
+
   it("allows replacement delivery only for previously damaged or rejected quantity", () => {
     expect(
       calculateReceiptQuantities({
