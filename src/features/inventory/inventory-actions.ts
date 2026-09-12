@@ -231,6 +231,7 @@ export async function postGoodsReceiptAction(
     const result = await InventoryService.postGoodsReceipt(
       principal,
       parsed.data.goodsReceiptId,
+      optionalValue(formData.get("excessApprovalReason")),
     );
     revalidateInventory();
     return { ok: true, data: { id: result.id } };
