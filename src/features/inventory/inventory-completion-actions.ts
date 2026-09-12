@@ -39,6 +39,7 @@ export async function closePurchaseOrderAction(
     requirePermission(principal, "purchase.create");
     const parsed = closePurchaseOrderSchema.safeParse({
       purchaseOrderId: optionalValue(formData.get("purchaseOrderId")),
+      shortCloseReason: optionalValue(formData.get("shortCloseReason")),
     });
     if (!parsed.success) {
       return {
@@ -49,6 +50,7 @@ export async function closePurchaseOrderAction(
     const result = await InventoryCompletionService.closePurchaseOrder(
       principal,
       parsed.data.purchaseOrderId,
+      parsed.data.shortCloseReason,
     );
     revalidateInventory();
     return { ok: true, data: result };
