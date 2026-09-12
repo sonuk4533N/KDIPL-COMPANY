@@ -298,12 +298,10 @@ function mapRfq(
           })),
           amendments: rfq.purchaseOrder.amendments.map((amendment) => ({
             ...amendment,
-            proposedExpectedDeliveryDate:
-              amendment.proposedExpectedDeliveryDate
-                .toISOString()
-                .slice(0, 10),
-            proposedFreightAmount:
-              amendment.proposedFreightAmount.toFixed(2),
+            proposedExpectedDeliveryDate: amendment.proposedExpectedDeliveryDate
+              .toISOString()
+              .slice(0, 10),
+            proposedFreightAmount: amendment.proposedFreightAmount.toFixed(2),
             createdAt: amendment.createdAt.toISOString(),
             decidedAt: amendment.decidedAt?.toISOString() ?? null,
           })),

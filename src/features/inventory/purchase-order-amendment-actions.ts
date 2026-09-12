@@ -12,9 +12,9 @@ import { validateMutationOrigin } from "@/server/auth/request-security";
 import { toCommandError } from "@/server/errors/app-error";
 import type { CommandResult } from "@/types/application";
 
-export type PurchaseOrderAmendmentActionState =
-  | CommandResult<{ id: string }>
-  | null;
+export type PurchaseOrderAmendmentActionState = CommandResult<{
+  id: string;
+}> | null;
 
 function optionalValue(value: FormDataEntryValue | null) {
   return typeof value === "string" && value.trim() ? value.trim() : undefined;
@@ -39,9 +39,7 @@ export async function createPurchaseOrderAmendmentAction(
     const parsed = createPurchaseOrderAmendmentSchema.safeParse({
       purchaseOrderId: optionalValue(formData.get("purchaseOrderId")),
       reason: optionalValue(formData.get("reason")),
-      expectedDeliveryDate: optionalValue(
-        formData.get("expectedDeliveryDate"),
-      ),
+      expectedDeliveryDate: optionalValue(formData.get("expectedDeliveryDate")),
       paymentTerms: optionalValue(formData.get("paymentTerms")),
       freightAmount: optionalValue(formData.get("freightAmount")),
       lines: lineIds.map((purchaseOrderLineId, index) => ({
