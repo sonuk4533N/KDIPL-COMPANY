@@ -13,6 +13,7 @@ import { ButtonLink } from "@/components/ui/button-link";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { ApplicationState } from "@/components/ui/states";
 import { StatusBadge, type StandardStatus } from "@/components/ui/status-badge";
+import { PurchaseOrderAmendmentControls } from "@/features/inventory/purchase-order-amendment-controls";
 import { PurchaseOrderControls } from "@/features/inventory/purchase-order-controls";
 import { RfqDraftForm } from "@/features/procurement/rfq-form";
 import { getProcurementWorkspace } from "@/features/procurement/rfq-queries";
@@ -47,6 +48,10 @@ export default async function ProcurementPage() {
   const canCreate =
     hasPermission(principal, "purchase.create") &&
     principal.roleCodes.includes("PURCHASE_MANAGER") &&
+    !principal.roleCodes.includes("SYSTEM_ADMINISTRATOR");
+  const canApproveAmendment =
+    hasPermission(principal, "purchase.approve") &&
+    principal.roleCodes.includes("PROJECT_DIRECTOR") &&
     !principal.roleCodes.includes("SYSTEM_ADMINISTRATOR");
   const supplierInvitationCount = workspace.rfqs.reduce(
     (total, rfq) => total + rfq.invitedSuppliers.length,
@@ -111,9 +116,9 @@ export default async function ProcurementPage() {
           </p>
           <p className="mt-1">
             Purchase Managers source and issue POs. Supplier acceptance is
-            recorded before a PO becomes receivable. Accepted material enters
-            stock only after a Store Keeper or authorized Site Supervisor posts
-            a GRN.
+            tracked but does not block receiving. Accepted material enters stock
+            only after Store Keeper verification and assigned Project Manager
+            approval.
           </p>
         </div>
       </Alert>
@@ -267,6 +272,13 @@ export default async function ProcurementPage() {
                       <PurchaseOrderControls
                         purchaseOrderId={purchaseOrder.id}
                         status={status}
+                      />
+                    ) : null}
+                    {canCreate || canApproveAmendment ? (
+                      <PurchaseOrderAmendmentControls
+                        purchaseOrder={purchaseOrder}
+                        canCreate={canCreate}
+                        canApprove={canApproveAmendment}
                       />
                     ) : null}
                   </CardContent>
