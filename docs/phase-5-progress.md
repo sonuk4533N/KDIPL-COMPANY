@@ -79,3 +79,5 @@ The September 2026 customer decisions are now implemented for the Phase 5 bounda
 - temporary negative stock is limited to Store Keepers, requires a reason, creates an audited exception due in three working days, and resolves through a correcting ledger transaction
 
 Material issue, transfer, adjustment approval, physical count, and project-close automation remain Phase 6 workflows.
+
+Validation status: full CI verification in progress on the customer-alignment branch.
