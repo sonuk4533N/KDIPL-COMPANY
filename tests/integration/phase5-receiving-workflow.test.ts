@@ -19,7 +19,7 @@ const testDb = enabled
 describe.skipIf(!enabled)("Phase 5 receiving workflow", () => {
   afterAll(async () => testDb?.$disconnect());
 
-  it("posts partial and concurrent final receipts, records exceptions, closes the PO, and audits every command", async () => {
+  it("receives from an issued PO through separated verification and approval", async () => {
     const tag = randomUUID().slice(0, 8).toUpperCase();
     const [project, site, material, supplier, actor] = await Promise.all([
       testDb!.project.findUniqueOrThrow({
@@ -172,11 +172,6 @@ describe.skipIf(!enabled)("Phase 5 receiving workflow", () => {
       purchaseManager,
       purchaseOrder.id,
     );
-    await InventoryService.recordSupplierAcceptance(purchaseManager, {
-      purchaseOrderId: purchaseOrder.id,
-      supplierAcceptedAt: "2026-09-02",
-      supplierAcceptanceReference: `ACK-${tag}`,
-    });
 
     const first = await InventoryService.createGoodsReceiptDraft(
       purchaseManager,
