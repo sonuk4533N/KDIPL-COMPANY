@@ -210,8 +210,9 @@ export default async function InventoryPage() {
                       <div className="rounded-lg bg-blue-50 p-3 text-xs text-blue-900">
                         <p className="font-semibold">Direct-site delivery</p>
                         <p>
-                          Receiver {receipt.receiverName ?? "Not recorded"} · GPS{" "}
-                          {receipt.gpsLatitude ?? "—"}, {receipt.gpsLongitude ?? "—"}
+                          Receiver {receipt.receiverName ?? "Not recorded"} ·
+                          GPS {receipt.gpsLatitude ?? "—"},{" "}
+                          {receipt.gpsLongitude ?? "—"}
                         </p>
                         <p>
                           Evidence:{" "}
@@ -247,9 +248,7 @@ export default async function InventoryPage() {
                               goodsReceiptId={receipt.id}
                               canUpload
                               canAcknowledge={false}
-                              acknowledged={Boolean(
-                                receipt.siteAcknowledgedAt,
-                              )}
+                              acknowledged={Boolean(receipt.siteAcknowledgedAt)}
                             />
                           ) : null}
                         </>
