@@ -49,7 +49,7 @@ export function GoodsReceiptForm({
             onChange={(event) => setPurchaseOrderId(event.target.value)}
             required
           >
-            <option value="">Select supplier-accepted PO</option>
+            <option value="">Select issued PO</option>
             {purchaseOrders.map((po) => (
               <option key={po.id} value={po.id}>
                 {po.poNumber} · {po.supplierName} · {po.site.name}
@@ -197,8 +197,8 @@ export function GoodsReceiptForm({
           {pending ? "Saving GRN draft..." : "Create GRN draft"}
         </Button>
         <p className="text-xs text-slate-500">
-          Creating a draft does not change stock. Stock increases only when the
-          GRN is posted.
+          Creating a draft does not change stock. A Store Keeper must verify it
+          before Project Manager approval posts stock.
         </p>
       </div>
       <FormFeedback state={state} success="GRN draft created." />
