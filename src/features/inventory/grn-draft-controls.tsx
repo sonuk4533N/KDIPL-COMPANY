@@ -46,6 +46,31 @@ export function GrnDraftControls({
           className="space-y-4 rounded-lg border border-slate-200 p-4"
         >
           <input type="hidden" name="goodsReceiptId" value={receipt.id} />
+          <input
+            type="hidden"
+            name="directSiteDelivery"
+            value={receipt.directSiteDelivery ? "true" : "false"}
+          />
+          <input
+            type="hidden"
+            name="gpsLatitude"
+            value={receipt.gpsLatitude ?? ""}
+          />
+          <input
+            type="hidden"
+            name="gpsLongitude"
+            value={receipt.gpsLongitude ?? ""}
+          />
+          <input
+            type="hidden"
+            name="gpsCapturedAt"
+            value={receipt.gpsCapturedAt ?? ""}
+          />
+          <input
+            type="hidden"
+            name="receiverName"
+            value={receipt.receiverName ?? ""}
+          />
           <div className="grid gap-3 sm:grid-cols-2">
             <Field
               label="Receiving location"
