@@ -64,7 +64,7 @@ export async function cancelGoodsReceiptAction(
   try {
     await validateMutationOrigin();
     const principal = await getCurrentPrincipal();
-    requirePermission(principal, "inventory.receive");
+    requirePermission(principal, "purchase.create");
     const parsed = cancelGoodsReceiptSchema.safeParse({
       goodsReceiptId: optionalValue(formData.get("goodsReceiptId")),
       reason: optionalValue(formData.get("reason")),
@@ -101,7 +101,7 @@ export async function updateGoodsReceiptDraftAction(
   try {
     await validateMutationOrigin();
     const principal = await getCurrentPrincipal();
-    requirePermission(principal, "inventory.receive");
+    requirePermission(principal, "purchase.create");
     const lineIds = formData.getAll("goodsReceiptLineId");
     const accepted = formData.getAll("acceptedQuantity");
     const damaged = formData.getAll("damagedQuantity");
