@@ -1,6 +1,6 @@
 # Phase 5 — Goods Receiving & Inventory Ledger
 
-Phase 5 is complete on the `phase-5-inventory-foundation` branch. It implements the confirmed purchase-order receiving path and an append-only, ledger-backed inventory workspace.
+The original Phase 5 implementation was merged from `phase-5-inventory-foundation`. PR #3 now aligns it with the customer decisions confirmed in September 2026 while preserving the append-only, ledger-backed inventory design.
 
 ## Delivered
 
@@ -20,15 +20,23 @@ Phase 5 is complete on the `phase-5-inventory-foundation` branch. It implements 
 - Audit records for PO transitions, GRN create/edit/cancel/post, exception resolution, and PO close.
 - PostgreSQL guards for location scope, PO/GRN state evidence, PO close, cumulative receipt quantity, GRN source integrity, immutable posted/cancelled GRNs, and immutable stock transactions.
 
-## Confirmed business defaults
+## September 2026 customer alignment
 
-- Receiving requires recorded supplier acceptance; `ISSUED` alone is not receivable.
+- Receiving begins at `ISSUED`; supplier acknowledgment is tracked but does not gate receiving.
+- Purchase Manager creates the GRN draft, Store Keeper verifies physical receipt, and Project Manager approval atomically posts stock.
+- Temporary, transit, and damaged/rejected location types supplement central, project, and site stores.
+- Excess accepted quantity has no percentage ceiling but requires a Project Manager reason and audit evidence.
+- The full confirmed rules and acceptance tests are in `docs/business-rules.md`, `docs/approval-matrix.md`, and `docs/phase-5-requirements.md`.
+
+## Original Phase 5 defaults superseded by this alignment
+
+- The original implementation required recorded supplier acceptance before receiving.
 - Accepted quantity enters usable stock; damaged and rejected quantity does not.
 - Damaged/rejected quantities remain replaceable and do not consume accepted PO quantity.
 - Posted/cancelled operational records are not edited or deleted. Corrections append a controlled reversal/return record.
 - Stock balance has no mutable source of truth and is always derived from the stock transaction ledger.
-- Direct-to-site receipt requires a site-store GRN and an active Site Supervisor assignment.
-- Negative stock remains prohibited by design; later issue/transfer work must preserve this invariant.
+- Direct-to-site receipt requires a site-store GRN, mandatory evidence, and Site Supervisor acknowledgment.
+- Temporary negative stock is a confirmed Phase 6 exception for Store Keepers and must be tracked with a three-working-day resolution deadline.
 
 ## Verification coverage
 
