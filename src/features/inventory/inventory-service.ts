@@ -95,7 +95,7 @@ async function requireReceivablePurchaseOrder(
   if (!canPostGoodsReceipt(status)) {
     throw new AppError(
       "INVALID_STATUS_TRANSITION",
-      "Material can be received only after supplier acceptance.",
+      "Material can be received after the purchase order is issued.",
     );
   }
   return { purchaseOrder, status };
