@@ -65,9 +65,9 @@ describe("Phase 5 inventory domain", () => {
     expect(stockDirectionForTransaction("ISSUE")).toBe("OUT");
   });
 
-  it("permits GRN posting only after supplier acceptance", () => {
+  it("permits GRN processing once the purchase order is issued", () => {
     expect(canPostGoodsReceipt("DRAFT")).toBe(false);
-    expect(canPostGoodsReceipt("ISSUED")).toBe(false);
+    expect(canPostGoodsReceipt("ISSUED")).toBe(true);
     expect(canPostGoodsReceipt("ACCEPTED")).toBe(true);
     expect(canPostGoodsReceipt("PARTIALLY_RECEIVED")).toBe(true);
   });
