@@ -64,3 +64,19 @@ The original Phase 5 implementation was merged from `phase-5-inventory-foundatio
 ## Production note
 
 Exact GST/accounting treatment remains subject to KDIPL Accounts/CA confirmation and is not encoded into Phase 5 inventory logic.
+
+
+## Final customer-rule alignment
+
+The September 2026 customer decisions are now implemented for the Phase 5 boundary:
+
+- direct-site GRNs capture GPS and receiver identity
+- clean delivery challan, material photo, supplier invoice, and receiver-signature evidence are required
+- the assigned Site Supervisor acknowledges direct-site receipt
+- the assigned Project Manager approves and atomically posts stock
+- evidence is quarantined until local security scanning completes, executable content is blocked, and records are retained through eight financial-year ends
+- issued POs use versioned amendments submitted by the Purchase Manager and independently decided by the Project Director
+- partially received POs may be short-closed by the Purchase Manager only with an audited reason
+- temporary negative stock is limited to Store Keepers, requires a reason, creates an audited exception due in three working days, and resolves through a correcting ledger transaction
+
+Material issue, transfer, adjustment approval, physical count, and project-close automation remain Phase 6 workflows.
