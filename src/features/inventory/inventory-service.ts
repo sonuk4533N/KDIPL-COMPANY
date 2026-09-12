@@ -112,7 +112,7 @@ async function requireReceivablePurchaseOrder(
 
 async function validateReceivingLocation(
   transaction: Prisma.TransactionClient,
-  principal: AuthenticatedPrincipal,
+  _principal: AuthenticatedPrincipal,
   values: { locationId: string; projectId: string; siteId: string },
 ) {
   const location = await transaction.inventoryLocation.findFirst({
@@ -466,6 +466,12 @@ export const InventoryService = {
           "Only a draft GRN can be physically verified.",
         );
       }
+      if (receipt.createdById === principal.userId) {
+        throw new AppError(
+          "FORBIDDEN",
+          "The GRN creator cannot verify the same receipt.",
+        );
+      }
       await validateReceivingLocation(transaction, principal, {
         locationId: receipt.locationId,
         projectId: receipt.purchaseOrder.rfq.requirement.projectId,
@@ -553,6 +559,15 @@ export const InventoryService = {
           "INVALID_STATUS_TRANSITION",
           "Only a Store Keeper-verified GRN can be approved and posted.",
         );
+      if (
+        receipt.createdById === principal.userId ||
+        receipt.verifiedById === principal.userId
+      ) {
+        throw new AppError(
+          "FORBIDDEN",
+          "The GRN creator or verifier cannot approve the same receipt.",
+        );
+      }
       const poStatus = String(
         receipt.purchaseOrder.status,
       ) as PurchaseOrderStatus;
