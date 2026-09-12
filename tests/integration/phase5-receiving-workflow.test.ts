@@ -191,6 +191,7 @@ describe.skipIf(!enabled)("Phase 5 receiving workflow", () => {
     const first = await InventoryService.createGoodsReceiptDraft(
       purchaseManager,
       {
+        directSiteDelivery: false,
         purchaseOrderId: purchaseOrder.id,
         locationId: location.id,
         supplierDeliveryNote: `DN-${tag}-1`,
@@ -242,6 +243,7 @@ describe.skipIf(!enabled)("Phase 5 receiving workflow", () => {
     const finalA = await InventoryService.createGoodsReceiptDraft(
       purchaseManager,
       {
+        directSiteDelivery: false,
         purchaseOrderId: purchaseOrder.id,
         locationId: location.id,
         receivedAt: "2026-09-04T09:00:00.000Z",
@@ -259,6 +261,7 @@ describe.skipIf(!enabled)("Phase 5 receiving workflow", () => {
       where: { goodsReceiptId: finalA.id },
     });
     await InventoryCompletionService.updateGoodsReceiptDraft(purchaseManager, {
+      directSiteDelivery: false,
       goodsReceiptId: finalA.id,
       locationId: location.id,
       receivedAt: "2026-09-04T09:30:00.000Z",
@@ -274,6 +277,7 @@ describe.skipIf(!enabled)("Phase 5 receiving workflow", () => {
     const finalB = await InventoryService.createGoodsReceiptDraft(
       purchaseManager,
       {
+        directSiteDelivery: false,
         purchaseOrderId: purchaseOrder.id,
         locationId: location.id,
         receivedAt: "2026-09-04T10:00:00.000Z",
