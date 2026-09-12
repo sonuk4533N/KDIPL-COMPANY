@@ -12,6 +12,7 @@ import { ApplicationState } from "@/components/ui/states";
 import { StatusBadge, type StandardStatus } from "@/components/ui/status-badge";
 import { GoodsReceiptForm } from "@/features/inventory/goods-receipt-form";
 import { GrnDraftControls } from "@/features/inventory/grn-draft-controls";
+import { GrnEvidenceControls } from "@/features/inventory/grn-evidence-controls";
 import { GrnExceptionControls } from "@/features/inventory/grn-exception-controls";
 import { GrnPostButton } from "@/features/inventory/grn-post-button";
 import { getInventoryWorkspace } from "@/features/inventory/inventory-queries";
@@ -53,6 +54,10 @@ export default async function InventoryPage() {
   const canApproveGrn =
     hasPermission(principal, "inventory.receive") &&
     principal.roleCodes.includes("PROJECT_MANAGER") &&
+    !principal.roleCodes.includes("SYSTEM_ADMINISTRATOR");
+  const canAcknowledgeGrn =
+    hasPermission(principal, "inventory.receive") &&
+    principal.roleCodes.includes("SITE_SUPERVISOR") &&
     !principal.roleCodes.includes("SYSTEM_ADMINISTRATOR");
   const postedCount = workspace.goodsReceipts.filter(
     ({ status }) => status === "POSTED",
@@ -201,6 +206,26 @@ export default async function InventoryPage() {
                         ? ` · Posted by ${receipt.postedBy}`
                         : ""}
                     </p>
+                    {receipt.directSiteDelivery ? (
+                      <div className="rounded-lg bg-blue-50 p-3 text-xs text-blue-900">
+                        <p className="font-semibold">Direct-site delivery</p>
+                        <p>
+                          Receiver {receipt.receiverName ?? "Not recorded"} · GPS{" "}
+                          {receipt.gpsLatitude ?? "—"}, {receipt.gpsLongitude ?? "—"}
+                        </p>
+                        <p>
+                          Evidence:{" "}
+                          {receipt.documents.length
+                            ? receipt.documents
+                                .map(
+                                  (document) =>
+                                    `${document.type}: ${document.scanStatus}`,
+                                )
+                                .join(" · ")
+                            : "None attached"}
+                        </p>
+                      </div>
+                    ) : null}
                   </div>
                   {receipt.status === "DRAFT" &&
                   (canCreateGrn || canVerifyGrn) ? (
@@ -212,11 +237,35 @@ export default async function InventoryPage() {
                         />
                       ) : null}
                       {canCreateGrn ? (
-                        <GrnDraftControls
-                          receipt={receipt}
-                          locations={workspace.locations}
-                        />
+                        <>
+                          <GrnDraftControls
+                            receipt={receipt}
+                            locations={workspace.locations}
+                          />
+                          {receipt.directSiteDelivery ? (
+                            <GrnEvidenceControls
+                              goodsReceiptId={receipt.id}
+                              canUpload
+                              canAcknowledge={false}
+                              acknowledged={Boolean(
+                                receipt.siteAcknowledgedAt,
+                              )}
+                            />
+                          ) : null}
+                        </>
                       ) : null}
+                    </div>
+                  ) : null}
+                  {receipt.status === "PENDING_PM_APPROVAL" &&
+                  receipt.directSiteDelivery &&
+                  (canAcknowledgeGrn || receipt.siteAcknowledgedAt) ? (
+                    <div className="mt-4 border-t border-slate-100 pt-4">
+                      <GrnEvidenceControls
+                        goodsReceiptId={receipt.id}
+                        canUpload={false}
+                        canAcknowledge={canAcknowledgeGrn}
+                        acknowledged={Boolean(receipt.siteAcknowledgedAt)}
+                      />
                     </div>
                   ) : null}
                   {receipt.status === "PENDING_PM_APPROVAL" && canApproveGrn ? (
@@ -355,6 +404,54 @@ export default async function InventoryPage() {
             kind="empty"
             title="No damaged or rejected material"
             description="Exceptions will appear automatically when a posted GRN records damaged or rejected quantities."
+          />
+        )}
+      </section>
+
+      <section className="space-y-4">
+        <div>
+          <h2 className="font-display text-lg font-bold text-slate-950">
+            Temporary negative stock
+          </h2>
+          <p className="mt-1 text-sm text-slate-500">
+            Store Keeper exceptions must be corrected within three working days.
+          </p>
+        </div>
+        {workspace.negativeStockExceptions.length ? (
+          <div className="grid gap-4 lg:grid-cols-2">
+            {workspace.negativeStockExceptions.map((exception) => (
+              <Card key={exception.id}>
+                <CardContent>
+                  <p
+                    className={
+                      exception.overdue
+                        ? "text-xs font-bold uppercase text-red-700"
+                        : "text-xs font-bold uppercase text-amber-700"
+                    }
+                  >
+                    {exception.status}
+                    {exception.overdue ? " · OVERDUE" : ""}
+                  </p>
+                  <h3 className="mt-1 font-display font-bold text-slate-950">
+                    {exception.material.name}
+                  </h3>
+                  <p className="mt-2 text-sm text-slate-600">
+                    {exception.location.name} · deficit{" "}
+                    {exception.deficitQuantity} {exception.unit.symbol}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Due {new Date(exception.resolutionDueAt).toLocaleString()} ·{" "}
+                    {exception.reason}
+                  </p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <ApplicationState
+            kind="empty"
+            title="No temporary negative stock"
+            description="Any authorized negative event will appear here until corrected."
           />
         )}
       </section>
