@@ -307,13 +307,40 @@ CREATE OR REPLACE FUNCTION "kdipl_guard_negative_stock"() RETURNS trigger AS $$
 DECLARE
   resulting_balance DECIMAL(18,3);
   is_store_keeper BOOLEAN;
+  reversed_type "StockTransactionType";
 BEGIN
-  SELECT COALESCE(SUM("quantity"),0) + NEW."quantity"
+  SELECT COALESCE(SUM(
+    CASE
+      WHEN stock."type" IN ('OPENING','RECEIPT','TRANSFER_IN','ADJUSTMENT_IN') THEN stock."quantity"
+      WHEN stock."type" IN ('ISSUE','TRANSFER_OUT','ADJUSTMENT_OUT') THEN -stock."quantity"
+      WHEN stock."type" = 'REVERSAL' AND original."type" IN ('OPENING','RECEIPT','TRANSFER_IN','ADJUSTMENT_IN') THEN -stock."quantity"
+      WHEN stock."type" = 'REVERSAL' THEN stock."quantity"
+      ELSE 0
+    END
+  ),0)
   INTO resulting_balance
-  FROM "StockTransaction"
-  WHERE "locationId" = NEW."locationId"
-    AND "materialId" = NEW."materialId"
-    AND "unitId" = NEW."unitId";
+  FROM "StockTransaction" stock
+  LEFT JOIN "StockTransaction" original ON original."id" = stock."reversalOfId"
+  WHERE stock."locationId" = NEW."locationId"
+    AND stock."materialId" = NEW."materialId"
+    AND stock."unitId" = NEW."unitId";
+
+  IF NEW."type" IN ('OPENING','RECEIPT','TRANSFER_IN','ADJUSTMENT_IN') THEN
+    resulting_balance := resulting_balance + NEW."quantity";
+  ELSIF NEW."type" IN ('ISSUE','TRANSFER_OUT','ADJUSTMENT_OUT') THEN
+    resulting_balance := resulting_balance - NEW."quantity";
+  ELSIF NEW."type" = 'REVERSAL' THEN
+    SELECT "type" INTO reversed_type
+    FROM "StockTransaction"
+    WHERE "id" = NEW."reversalOfId";
+    IF reversed_type IS NULL THEN
+      RAISE EXCEPTION 'A reversal must reference an existing stock transaction';
+    ELSIF reversed_type IN ('OPENING','RECEIPT','TRANSFER_IN','ADJUSTMENT_IN') THEN
+      resulting_balance := resulting_balance - NEW."quantity";
+    ELSE
+      resulting_balance := resulting_balance + NEW."quantity";
+    END IF;
+  END IF;
 
   IF resulting_balance < 0 THEN
     SELECT EXISTS (
@@ -343,12 +370,21 @@ CREATE OR REPLACE FUNCTION "kdipl_track_negative_stock"() RETURNS trigger AS $$
 DECLARE
   resulting_balance DECIMAL(18,3);
 BEGIN
-  SELECT COALESCE(SUM("quantity"),0)
+  SELECT COALESCE(SUM(
+    CASE
+      WHEN stock."type" IN ('OPENING','RECEIPT','TRANSFER_IN','ADJUSTMENT_IN') THEN stock."quantity"
+      WHEN stock."type" IN ('ISSUE','TRANSFER_OUT','ADJUSTMENT_OUT') THEN -stock."quantity"
+      WHEN stock."type" = 'REVERSAL' AND original."type" IN ('OPENING','RECEIPT','TRANSFER_IN','ADJUSTMENT_IN') THEN -stock."quantity"
+      WHEN stock."type" = 'REVERSAL' THEN stock."quantity"
+      ELSE 0
+    END
+  ),0)
   INTO resulting_balance
-  FROM "StockTransaction"
-  WHERE "locationId" = NEW."locationId"
-    AND "materialId" = NEW."materialId"
-    AND "unitId" = NEW."unitId";
+  FROM "StockTransaction" stock
+  LEFT JOIN "StockTransaction" original ON original."id" = stock."reversalOfId"
+  WHERE stock."locationId" = NEW."locationId"
+    AND stock."materialId" = NEW."materialId"
+    AND stock."unitId" = NEW."unitId";
 
   IF resulting_balance < 0 THEN
     INSERT INTO "TemporaryNegativeStockException" (
