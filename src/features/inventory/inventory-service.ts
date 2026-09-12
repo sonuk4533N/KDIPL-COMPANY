@@ -469,6 +469,12 @@ export const InventoryService = {
       const receipt = await transaction.goodsReceipt.findUnique({
         where: { id: goodsReceiptId },
         include: {
+          location: { select: { type: true } },
+          documents: {
+            include: {
+              fileRecord: { select: { scanStatus: true } },
+            },
+          },
           purchaseOrder: {
             include: {
               rfq: {
@@ -498,6 +504,28 @@ export const InventoryService = {
         projectId: receipt.purchaseOrder.rfq.requirement.projectId,
         siteId: receipt.purchaseOrder.rfq.requirement.siteId,
       });
+      if (receipt.directSiteDelivery) {
+        const cleanEvidence = new Set(
+          receipt.documents
+            .filter(({ fileRecord }) => fileRecord.scanStatus === "CLEAN")
+            .map(({ type }) => type),
+        );
+        const requiredEvidence = [
+          "DELIVERY_CHALLAN",
+          "MATERIAL_PHOTO",
+          "SUPPLIER_INVOICE",
+          "RECEIVER_SIGNATURE",
+        ] as const;
+        if (
+          receipt.location.type !== "SITE_STORE" ||
+          requiredEvidence.some((type) => !cleanEvidence.has(type))
+        ) {
+          throw new AppError(
+            "VALIDATION_ERROR",
+            "Direct-site verification requires a site store and clean challan, material photo, supplier invoice, and receiver signature.",
+          );
+        }
+      }
 
       const now = new Date();
       const verified = await transaction.goodsReceipt.updateMany({
