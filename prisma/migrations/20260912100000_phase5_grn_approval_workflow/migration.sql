@@ -148,3 +148,13 @@ BEGIN
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
+
+
+INSERT INTO "RolePermission" ("roleId", "permissionId", "grantedAt")
+SELECT r."id", p."id", CURRENT_TIMESTAMP
+FROM "Role" r
+JOIN "Permission" p ON (
+  (r."code" = 'PURCHASE_MANAGER' AND p."code" = 'inventory.view') OR
+  (r."code" = 'PROJECT_MANAGER' AND p."code" IN ('inventory.view','inventory.receive'))
+)
+ON CONFLICT ("roleId", "permissionId") DO NOTHING;
