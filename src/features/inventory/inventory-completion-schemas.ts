@@ -13,6 +13,7 @@ const checkbox = z.preprocess(
 
 export const closePurchaseOrderSchema = z.object({
   purchaseOrderId: uuid,
+  shortCloseReason: z.string().trim().min(3).max(1000).optional(),
 });
 
 export const cancelGoodsReceiptSchema = z.object({
