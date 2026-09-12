@@ -252,12 +252,17 @@ export const InventoryCompletionService = {
         },
       });
       if (!receipt) throw new AppError("NOT_FOUND", "GRN not found.");
-      if (receipt.status !== "DRAFT") {
+      if (
+        receipt.status !== "DRAFT" &&
+        receipt.status !== "PHYSICALLY_VERIFIED" &&
+        receipt.status !== "PENDING_PM_APPROVAL"
+      ) {
         throw new AppError(
           "INVALID_STATUS_TRANSITION",
-          "Only a draft GRN can be cancelled.",
+          "Only an unposted GRN can be cancelled.",
         );
       }
+      const previousStatus = receipt.status;
       await validateReceivingLocation(transaction, principal, {
         locationId: receipt.locationId,
         projectId: receipt.purchaseOrder.rfq.requirement.projectId,
@@ -266,7 +271,7 @@ export const InventoryCompletionService = {
 
       const now = new Date();
       const changed = await transaction.goodsReceipt.updateMany({
-        where: { id: goodsReceiptId, status: "DRAFT" },
+        where: { id: goodsReceiptId, status: previousStatus },
         data: {
           status: "CANCELLED",
           cancelledById: principal.userId,
@@ -283,7 +288,7 @@ export const InventoryCompletionService = {
           entityType: "GoodsReceipt",
           entityId: goodsReceiptId,
           reason,
-          before: { status: "DRAFT" },
+          before: { status: previousStatus },
           after: { status: "CANCELLED", cancelledAt: now },
         },
         transaction,
