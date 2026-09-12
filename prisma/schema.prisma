@@ -618,6 +618,7 @@ model UnitOfMeasure {
   purchaseOrderLines PurchaseOrderLine[]
   goodsReceiptLines  GoodsReceiptLine[]
   stockTransactions  StockTransaction[]
+  negativeStockExceptions TemporaryNegativeStockException[]
   createdAt          DateTime                  @default(now())
   updatedAt          DateTime                  @updatedAt
 
@@ -638,7 +639,7 @@ model Material {
   defaultUnit       UnitOfMeasure             @relation(fields: [defaultUnitId], references: [id], onDelete: Restrict)
   requirementLines  MaterialRequirementLine[]
   goodsReceiptLines GoodsReceiptLine[]
-  amendmentLines    PurchaseOrderAmendmentLine[]
+  negativeStockExceptions TemporaryNegativeStockException[]
   stockTransactions StockTransaction[]
   createdAt         DateTime                  @default(now())
   updatedAt         DateTime                  @updatedAt
@@ -961,6 +962,7 @@ model PurchaseOrderLine {
   requirementLine   MaterialRequirementLine @relation(fields: [requirementLineId], references: [id], onDelete: Restrict)
   unit              UnitOfMeasure           @relation(fields: [unitId], references: [id], onDelete: Restrict)
   goodsReceiptLines GoodsReceiptLine[]
+  amendmentLines    PurchaseOrderAmendmentLine[]
   createdAt         DateTime                @default(now())
 
   @@unique([purchaseOrderId, requirementLineId])
@@ -981,6 +983,7 @@ model InventoryLocation {
   site              Site?                 @relation(fields: [siteId, projectId], references: [id, projectId], onDelete: Restrict)
   goodsReceipts     GoodsReceipt[]
   stockTransactions StockTransaction[]
+  negativeStockExceptions TemporaryNegativeStockException[]
   createdAt         DateTime              @default(now())
   updatedAt         DateTime              @updatedAt
 
