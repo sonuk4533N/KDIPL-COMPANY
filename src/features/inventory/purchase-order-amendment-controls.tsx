@@ -65,7 +65,10 @@ export function PurchaseOrderAmendmentControls({
             name="purchaseOrderId"
             value={purchaseOrder.id}
           />
-          <Field label="Amendment reason" htmlFor={`po-amend-reason-${purchaseOrder.id}`}>
+          <Field
+            label="Amendment reason"
+            htmlFor={`po-amend-reason-${purchaseOrder.id}`}
+          >
             <Textarea
               id={`po-amend-reason-${purchaseOrder.id}`}
               name="reason"
@@ -87,7 +90,10 @@ export function PurchaseOrderAmendmentControls({
                 required
               />
             </Field>
-            <Field label="Freight" htmlFor={`po-amend-freight-${purchaseOrder.id}`}>
+            <Field
+              label="Freight"
+              htmlFor={`po-amend-freight-${purchaseOrder.id}`}
+            >
               <Input
                 id={`po-amend-freight-${purchaseOrder.id}`}
                 name="freightAmount"
@@ -99,7 +105,10 @@ export function PurchaseOrderAmendmentControls({
               />
             </Field>
           </div>
-          <Field label="Payment terms" htmlFor={`po-amend-terms-${purchaseOrder.id}`}>
+          <Field
+            label="Payment terms"
+            htmlFor={`po-amend-terms-${purchaseOrder.id}`}
+          >
             <Textarea
               id={`po-amend-terms-${purchaseOrder.id}`}
               name="paymentTerms"
@@ -198,7 +207,11 @@ export function PurchaseOrderAmendmentControls({
               placeholder="Rejection reason"
               required
             />
-            <Button type="submit" variant="secondary" disabled={decisionPending}>
+            <Button
+              type="submit"
+              variant="secondary"
+              disabled={decisionPending}
+            >
               Reject amendment
             </Button>
           </form>
