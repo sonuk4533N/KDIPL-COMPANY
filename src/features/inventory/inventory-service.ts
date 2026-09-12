@@ -330,6 +330,12 @@ export const InventoryService = {
         projectId: purchaseOrder.rfq.requirement.projectId,
         siteId: purchaseOrder.rfq.requirement.siteId,
       });
+      if (input.directSiteDelivery && location.type !== "SITE_STORE") {
+        throw new AppError(
+          "VALIDATION_ERROR",
+          "Direct-site delivery must be received into the PO site's SITE_STORE.",
+        );
+      }
       const lineById = new Map(
         purchaseOrder.lines.map((line) => [line.id, line]),
       );
@@ -384,6 +390,19 @@ export const InventoryService = {
           purchaseOrderId: purchaseOrder.id,
           locationId: location.id,
           supplierDeliveryNote: input.supplierDeliveryNote,
+          directSiteDelivery: input.directSiteDelivery,
+          gpsLatitude:
+            input.gpsLatitude === undefined
+              ? undefined
+              : new Prisma.Decimal(input.gpsLatitude),
+          gpsLongitude:
+            input.gpsLongitude === undefined
+              ? undefined
+              : new Prisma.Decimal(input.gpsLongitude),
+          gpsCapturedAt: input.gpsCapturedAt
+            ? parseDateTime(input.gpsCapturedAt)
+            : undefined,
+          receiverName: input.receiverName,
           receivedAt: parseDateTime(input.receivedAt),
           notes: input.notes,
           createdById: principal.userId,
@@ -425,6 +444,7 @@ export const InventoryService = {
             grnNumber: goodsReceipt.grnNumber,
             purchaseOrderId: purchaseOrder.id,
             locationId: location.id,
+            directSiteDelivery: input.directSiteDelivery,
             lineCount: prepared.length,
           },
         },
