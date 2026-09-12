@@ -166,7 +166,41 @@ const rfqSelection = {
       status: true,
       totalAmount: true,
       expectedDeliveryDate: true,
+      paymentTerms: true,
+      freightAmount: true,
+      gstRate: true,
       supplier: { select: { legalName: true, tradeName: true } },
+      lines: {
+        orderBy: { position: "asc" },
+        select: {
+          id: true,
+          quantity: true,
+          unitPrice: true,
+          requirementLine: {
+            select: {
+              material: { select: { materialCode: true, name: true } },
+            },
+          },
+          unit: { select: { symbol: true } },
+        },
+      },
+      amendments: {
+        orderBy: { version: "desc" },
+        select: {
+          id: true,
+          version: true,
+          status: true,
+          reason: true,
+          proposedExpectedDeliveryDate: true,
+          proposedPaymentTerms: true,
+          proposedFreightAmount: true,
+          createdAt: true,
+          decidedAt: true,
+          decisionReason: true,
+          createdBy: { select: { displayName: true } },
+          decidedBy: { select: { displayName: true } },
+        },
+      },
     },
   },
 } satisfies Prisma.RequestForQuotationSelect;
@@ -252,9 +286,25 @@ function mapRfq(
       ? {
           ...rfq.purchaseOrder,
           totalAmount: rfq.purchaseOrder.totalAmount.toFixed(2),
+          freightAmount: rfq.purchaseOrder.freightAmount.toFixed(2),
+          gstRate: rfq.purchaseOrder.gstRate.toFixed(2),
           expectedDeliveryDate: rfq.purchaseOrder.expectedDeliveryDate
             .toISOString()
             .slice(0, 10),
+          lines: rfq.purchaseOrder.lines.map((line) => ({
+            ...line,
+            quantity: line.quantity.toString(),
+            unitPrice: line.unitPrice.toFixed(2),
+          })),
+          amendments: rfq.purchaseOrder.amendments.map((amendment) => ({
+            ...amendment,
+            proposedExpectedDeliveryDate: amendment.proposedExpectedDeliveryDate
+              .toISOString()
+              .slice(0, 10),
+            proposedFreightAmount: amendment.proposedFreightAmount.toFixed(2),
+            createdAt: amendment.createdAt.toISOString(),
+            decidedAt: amendment.decidedAt?.toISOString() ?? null,
+          })),
         }
       : null,
     capabilities: {

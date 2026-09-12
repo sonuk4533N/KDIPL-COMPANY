@@ -39,7 +39,8 @@ export const envSchema = z.object({
     .number()
     .int()
     .positive()
-    .default(10_485_760),
+    .max(52_428_800)
+    .default(52_428_800),
   LOG_LEVEL: z
     .enum(["fatal", "error", "warn", "info", "debug", "trace"])
     .default("info"),

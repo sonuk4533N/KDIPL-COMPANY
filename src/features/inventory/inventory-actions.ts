@@ -133,7 +133,7 @@ export async function createGoodsReceiptDraftAction(
   try {
     await validateMutationOrigin();
     const principal = await getCurrentPrincipal();
-    requirePermission(principal, "inventory.receive");
+    requirePermission(principal, "purchase.create");
     const purchaseOrderLineIds = formData.getAll("purchaseOrderLineId");
     const accepted = formData.getAll("acceptedQuantity");
     const damaged = formData.getAll("damagedQuantity");
@@ -148,6 +148,11 @@ export async function createGoodsReceiptDraftAction(
       ),
       vehicleNumber: optionalValue(formData.get("vehicleNumber")),
       transporter: optionalValue(formData.get("transporter")),
+      directSiteDelivery: formData.get("directSiteDelivery"),
+      gpsLatitude: optionalValue(formData.get("gpsLatitude")),
+      gpsLongitude: optionalValue(formData.get("gpsLongitude")),
+      gpsCapturedAt: optionalValue(formData.get("gpsCapturedAt")),
+      receiverName: optionalValue(formData.get("receiverName")),
       receivedAt: optionalValue(formData.get("receivedAt")),
       notes: optionalValue(formData.get("notes")),
       lines: purchaseOrderLineIds.map((purchaseOrderLineId, index) => ({
@@ -185,6 +190,33 @@ export async function createGoodsReceiptDraftAction(
   }
 }
 
+export async function verifyGoodsReceiptAction(
+  _previous: InventoryActionState,
+  formData: FormData,
+): Promise<InventoryActionState> {
+  try {
+    await validateMutationOrigin();
+    const principal = await getCurrentPrincipal();
+    requirePermission(principal, "inventory.receive");
+    const parsed = goodsReceiptIdSchema.safeParse({
+      goodsReceiptId: optionalValue(formData.get("goodsReceiptId")),
+    });
+    if (!parsed.success)
+      return {
+        ok: false,
+        error: { code: "VALIDATION_ERROR", message: "Invalid GRN." },
+      };
+    const result = await InventoryService.verifyGoodsReceipt(
+      principal,
+      parsed.data.goodsReceiptId,
+    );
+    revalidateInventory();
+    return { ok: true, data: result };
+  } catch (error) {
+    return toCommandError(error);
+  }
+}
+
 export async function postGoodsReceiptAction(
   _previous: InventoryActionState,
   formData: FormData,
@@ -204,6 +236,7 @@ export async function postGoodsReceiptAction(
     const result = await InventoryService.postGoodsReceipt(
       principal,
       parsed.data.goodsReceiptId,
+      optionalValue(formData.get("excessApprovalReason")),
     );
     revalidateInventory();
     return { ok: true, data: { id: result.id } };

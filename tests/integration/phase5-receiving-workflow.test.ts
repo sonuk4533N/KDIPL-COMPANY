@@ -19,7 +19,7 @@ const testDb = enabled
 describe.skipIf(!enabled)("Phase 5 receiving workflow", () => {
   afterAll(async () => testDb?.$disconnect());
 
-  it("posts partial and concurrent final receipts, records exceptions, closes the PO, and audits every command", async () => {
+  it("receives from an issued PO through separated verification and approval", async () => {
     const tag = randomUUID().slice(0, 8).toUpperCase();
     const [project, site, material, supplier, actor] = await Promise.all([
       testDb!.project.findUniqueOrThrow({
@@ -43,9 +43,55 @@ describe.skipIf(!enabled)("Phase 5 receiving workflow", () => {
       roleCodes: ["PURCHASE_MANAGER"],
       permissions: ["purchase.create"],
     } satisfies AuthenticatedPrincipal;
+    const approverEmployee = await testDb!.employee.create({
+      data: {
+        employeeCode: `P5-PM-${tag}`,
+        fullName: `P5 Project Manager ${tag}`,
+      },
+    });
+    await testDb!.projectAssignment.create({
+      data: {
+        projectId: project.id,
+        employeeId: approverEmployee.id,
+        role: "PROJECT_MANAGER",
+        isPrimary: false,
+      },
+    });
+    const [verifierUser, approverUser] = await Promise.all([
+      testDb!.user.create({
+        data: {
+          email: `p5-verifier-${tag}@kdipl.test`,
+          emailNormalized: `p5-verifier-${tag}@kdipl.test`,
+          passwordHash: "integration-test",
+          displayName: `P5 Store Keeper ${tag}`,
+        },
+      }),
+      testDb!.user.create({
+        data: {
+          email: `p5-approver-${tag}@kdipl.test`,
+          emailNormalized: `p5-approver-${tag}@kdipl.test`,
+          passwordHash: "integration-test",
+          displayName: `P5 Project Manager ${tag}`,
+          employeeId: approverEmployee.id,
+        },
+      }),
+    ]);
     const storeKeeper = {
-      ...purchaseManager,
+      userId: verifierUser.id,
+      displayName: verifierUser.displayName,
+      email: verifierUser.email,
+      employeeId: verifierUser.employeeId,
+      mustChangePassword: false,
       roleCodes: ["STORE_KEEPER"],
+      permissions: ["inventory.view", "inventory.receive"],
+    } satisfies AuthenticatedPrincipal;
+    const projectManager = {
+      userId: approverUser.id,
+      displayName: approverUser.displayName,
+      email: approverUser.email,
+      employeeId: approverUser.employeeId,
+      mustChangePassword: false,
+      roleCodes: ["PROJECT_MANAGER"],
       permissions: ["inventory.view", "inventory.receive"],
     } satisfies AuthenticatedPrincipal;
 
@@ -141,28 +187,28 @@ describe.skipIf(!enabled)("Phase 5 receiving workflow", () => {
       purchaseManager,
       purchaseOrder.id,
     );
-    await InventoryService.recordSupplierAcceptance(purchaseManager, {
-      purchaseOrderId: purchaseOrder.id,
-      supplierAcceptedAt: "2026-09-02",
-      supplierAcceptanceReference: `ACK-${tag}`,
-    });
 
-    const first = await InventoryService.createGoodsReceiptDraft(storeKeeper, {
-      purchaseOrderId: purchaseOrder.id,
-      locationId: location.id,
-      supplierDeliveryNote: `DN-${tag}-1`,
-      receivedAt: "2026-09-03T09:00:00.000Z",
-      lines: [
-        {
-          purchaseOrderLineId: purchaseOrder.lines[0].id,
-          acceptedQuantity: 6,
-          damagedQuantity: 1,
-          rejectedQuantity: 1,
-          notes: "Two non-conforming units",
-        },
-      ],
-    });
-    await InventoryService.postGoodsReceipt(storeKeeper, first.id);
+    const first = await InventoryService.createGoodsReceiptDraft(
+      purchaseManager,
+      {
+        directSiteDelivery: false,
+        purchaseOrderId: purchaseOrder.id,
+        locationId: location.id,
+        supplierDeliveryNote: `DN-${tag}-1`,
+        receivedAt: "2026-09-03T09:00:00.000Z",
+        lines: [
+          {
+            purchaseOrderLineId: purchaseOrder.lines[0].id,
+            acceptedQuantity: 6,
+            damagedQuantity: 1,
+            rejectedQuantity: 1,
+            notes: "Two non-conforming units",
+          },
+        ],
+      },
+    );
+    await InventoryService.verifyGoodsReceipt(storeKeeper, first.id);
+    await InventoryService.postGoodsReceipt(projectManager, first.id);
 
     expect(
       await testDb!.purchaseOrder.findUniqueOrThrow({
@@ -181,8 +227,9 @@ describe.skipIf(!enabled)("Phase 5 receiving workflow", () => {
       InventoryCompletionService.closePurchaseOrder(
         purchaseManager,
         purchaseOrder.id,
+        "Supplier will not deliver the remaining quantity",
       ),
-    ).rejects.toMatchObject({ code: "INVALID_STATUS_TRANSITION" });
+    ).rejects.toMatchObject({ code: "CONFLICT" });
     for (const exception of exceptions) {
       await InventoryCompletionService.updateGoodsReceiptException(
         storeKeeper,
@@ -194,23 +241,28 @@ describe.skipIf(!enabled)("Phase 5 receiving workflow", () => {
       );
     }
 
-    const finalA = await InventoryService.createGoodsReceiptDraft(storeKeeper, {
-      purchaseOrderId: purchaseOrder.id,
-      locationId: location.id,
-      receivedAt: "2026-09-04T09:00:00.000Z",
-      lines: [
-        {
-          purchaseOrderLineId: purchaseOrder.lines[0].id,
-          acceptedQuantity: 3,
-          damagedQuantity: 0,
-          rejectedQuantity: 0,
-        },
-      ],
-    });
+    const finalA = await InventoryService.createGoodsReceiptDraft(
+      purchaseManager,
+      {
+        directSiteDelivery: false,
+        purchaseOrderId: purchaseOrder.id,
+        locationId: location.id,
+        receivedAt: "2026-09-04T09:00:00.000Z",
+        lines: [
+          {
+            purchaseOrderLineId: purchaseOrder.lines[0].id,
+            acceptedQuantity: 3,
+            damagedQuantity: 0,
+            rejectedQuantity: 0,
+          },
+        ],
+      },
+    );
     const finalALine = await testDb!.goodsReceiptLine.findFirstOrThrow({
       where: { goodsReceiptId: finalA.id },
     });
-    await InventoryCompletionService.updateGoodsReceiptDraft(storeKeeper, {
+    await InventoryCompletionService.updateGoodsReceiptDraft(purchaseManager, {
+      directSiteDelivery: false,
       goodsReceiptId: finalA.id,
       locationId: location.id,
       receivedAt: "2026-09-04T09:30:00.000Z",
@@ -223,23 +275,31 @@ describe.skipIf(!enabled)("Phase 5 receiving workflow", () => {
         },
       ],
     });
-    const finalB = await InventoryService.createGoodsReceiptDraft(storeKeeper, {
-      purchaseOrderId: purchaseOrder.id,
-      locationId: location.id,
-      receivedAt: "2026-09-04T10:00:00.000Z",
-      lines: [
-        {
-          purchaseOrderLineId: purchaseOrder.lines[0].id,
-          acceptedQuantity: 4,
-          damagedQuantity: 0,
-          rejectedQuantity: 0,
-        },
-      ],
-    });
+    const finalB = await InventoryService.createGoodsReceiptDraft(
+      purchaseManager,
+      {
+        directSiteDelivery: false,
+        purchaseOrderId: purchaseOrder.id,
+        locationId: location.id,
+        receivedAt: "2026-09-04T10:00:00.000Z",
+        lines: [
+          {
+            purchaseOrderLineId: purchaseOrder.lines[0].id,
+            acceptedQuantity: 4,
+            damagedQuantity: 0,
+            rejectedQuantity: 0,
+          },
+        ],
+      },
+    );
 
+    await Promise.all([
+      InventoryService.verifyGoodsReceipt(storeKeeper, finalA.id),
+      InventoryService.verifyGoodsReceipt(storeKeeper, finalB.id),
+    ]);
     const concurrentPosts = await Promise.allSettled([
-      InventoryService.postGoodsReceipt(storeKeeper, finalA.id),
-      InventoryService.postGoodsReceipt(storeKeeper, finalB.id),
+      InventoryService.postGoodsReceipt(projectManager, finalA.id),
+      InventoryService.postGoodsReceipt(projectManager, finalB.id),
     ]);
     expect(
       concurrentPosts.filter(({ status }) => status === "fulfilled"),
@@ -252,10 +312,12 @@ describe.skipIf(!enabled)("Phase 5 receiving workflow", () => {
       where: { id: { in: [finalA.id, finalB.id] } },
       select: { id: true, status: true },
     });
-    const unposted = receipts.find(({ status }) => status === "DRAFT");
+    const unposted = receipts.find(
+      ({ status }) => status === "PENDING_PM_APPROVAL",
+    );
     expect(unposted).toBeDefined();
     await InventoryCompletionService.cancelGoodsReceiptDraft(
-      storeKeeper,
+      purchaseManager,
       unposted!.id,
       "Concurrent duplicate final receipt",
     );

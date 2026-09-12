@@ -69,6 +69,10 @@ export type StoredQuotationDocument = {
   size: number;
   storageKey: string;
   storageProvider: "LOCAL" | "S3";
+  scanProvider: string;
+  scanReference: string;
+  scannedAt: Date;
+  retentionUntil: Date;
 };
 
 function requirePurchaseManager(principal: AuthenticatedPrincipal) {
@@ -474,6 +478,11 @@ export const RfqService = {
           storageProvider: document.storageProvider,
           documentType: "SUPPLIER_QUOTATION",
           uploadedById: principal.userId,
+          scanStatus: "CLEAN",
+          scanProvider: document.scanProvider,
+          scanReference: document.scanReference,
+          scannedAt: document.scannedAt,
+          retentionUntil: document.retentionUntil,
         },
       });
       await transaction.supplierQuotationDocument.create({

@@ -21,7 +21,7 @@ function requirePurchaseManager(principal: AuthenticatedPrincipal) {
   ) {
     throw new AppError(
       "FORBIDDEN",
-      "Only the Purchase Manager can close a fully received purchase order.",
+      "Only the Purchase Manager can manage GRN drafts or close a purchase order.",
     );
   }
 }
@@ -60,10 +60,9 @@ function parseDateTime(value: string) {
 
 async function validateReceivingLocation(
   transaction: Prisma.TransactionClient,
-  principal: AuthenticatedPrincipal,
+  _principal: AuthenticatedPrincipal,
   values: { locationId: string; projectId: string; siteId: string },
 ) {
-  const roles = requireReceivingRole(principal);
   const location = await transaction.inventoryLocation.findFirst({
     where: { id: values.locationId, isActive: true },
   });
@@ -79,7 +78,8 @@ async function validateReceivingLocation(
   const allowedForPo =
     location.type === "CENTRAL_STORE" ||
     (location.type === "PROJECT_STORE" && sameProject) ||
-    (location.type === "SITE_STORE" && sameProject && sameSite);
+    (location.type === "SITE_STORE" && sameProject && sameSite) ||
+    (location.type === "TEMPORARY_STORE" && sameProject);
   if (!allowedForPo) {
     throw new AppError(
       "FORBIDDEN",
@@ -87,29 +87,6 @@ async function validateReceivingLocation(
     );
   }
 
-  if (!roles.isStoreKeeper && roles.isSiteSupervisor) {
-    if (location.type !== "SITE_STORE" || !sameSite || !principal.employeeId) {
-      throw new AppError(
-        "FORBIDDEN",
-        "Site Supervisors may manage only direct deliveries into their assigned site store.",
-      );
-    }
-    const assignment = await transaction.siteAssignment.findFirst({
-      where: {
-        siteId: values.siteId,
-        employeeId: principal.employeeId,
-        role: "SITE_SUPERVISOR",
-        isActive: true,
-      },
-      select: { id: true },
-    });
-    if (!assignment) {
-      throw new AppError(
-        "FORBIDDEN",
-        "An active Site Supervisor assignment is required.",
-      );
-    }
-  }
   return location;
 }
 
@@ -163,6 +140,7 @@ export const InventoryCompletionService = {
   async closePurchaseOrder(
     principal: AuthenticatedPrincipal,
     purchaseOrderId: string,
+    shortCloseReason?: string,
   ) {
     requirePermission(principal, "purchase.create");
     requirePurchaseManager(principal);
@@ -179,15 +157,32 @@ export const InventoryCompletionService = {
       });
       if (!purchaseOrder)
         throw new AppError("NOT_FOUND", "Purchase order not found.");
-      if (purchaseOrder.status !== "RECEIVED") {
+      if (
+        purchaseOrder.status !== "RECEIVED" &&
+        purchaseOrder.status !== "PARTIALLY_RECEIVED"
+      ) {
         throw new AppError(
           "INVALID_STATUS_TRANSITION",
-          "Only a fully received purchase order can be closed.",
+          "Only a received or partially received purchase order can be closed.",
+        );
+      }
+      if (
+        purchaseOrder.status === "PARTIALLY_RECEIVED" &&
+        (!shortCloseReason || shortCloseReason.trim().length < 3)
+      ) {
+        throw new AppError(
+          "VALIDATION_ERROR",
+          "A reason is required to short-close a partially received purchase order.",
         );
       }
 
       const draftReceipts = await transaction.goodsReceipt.count({
-        where: { purchaseOrderId, status: "DRAFT" },
+        where: {
+          purchaseOrderId,
+          status: {
+            in: ["DRAFT", "PHYSICALLY_VERIFIED", "PENDING_PM_APPROVAL"],
+          },
+        },
       });
       if (draftReceipts) {
         throw new AppError(
@@ -217,11 +212,15 @@ export const InventoryCompletionService = {
 
       const now = new Date();
       const changed = await transaction.purchaseOrder.updateMany({
-        where: { id: purchaseOrderId, status: "RECEIVED" },
+        where: { id: purchaseOrderId, status: purchaseOrder.status },
         data: {
           status: "CLOSED",
           closedById: principal.userId,
           closedAt: now,
+          shortCloseReason:
+            purchaseOrder.status === "PARTIALLY_RECEIVED"
+              ? shortCloseReason
+              : null,
         },
       });
       if (changed.count !== 1) {
@@ -237,8 +236,19 @@ export const InventoryCompletionService = {
           action: AuditAction.UPDATE,
           entityType: "PurchaseOrder",
           entityId: purchaseOrderId,
-          before: { status: "RECEIVED" },
-          after: { status: "CLOSED", closedAt: now },
+          reason:
+            purchaseOrder.status === "PARTIALLY_RECEIVED"
+              ? shortCloseReason
+              : undefined,
+          before: { status: purchaseOrder.status },
+          after: {
+            status: "CLOSED",
+            closedAt: now,
+            shortCloseReason:
+              purchaseOrder.status === "PARTIALLY_RECEIVED"
+                ? shortCloseReason
+                : null,
+          },
         },
         transaction,
       );
@@ -251,8 +261,8 @@ export const InventoryCompletionService = {
     goodsReceiptId: string,
     reason: string,
   ) {
-    requirePermission(principal, "inventory.receive");
-    requireReceivingRole(principal);
+    requirePermission(principal, "purchase.create");
+    requirePurchaseManager(principal);
 
     return db.$transaction(async (transaction) => {
       await transaction.$queryRaw`
@@ -275,12 +285,17 @@ export const InventoryCompletionService = {
         },
       });
       if (!receipt) throw new AppError("NOT_FOUND", "GRN not found.");
-      if (receipt.status !== "DRAFT") {
+      if (
+        receipt.status !== "DRAFT" &&
+        receipt.status !== "PHYSICALLY_VERIFIED" &&
+        receipt.status !== "PENDING_PM_APPROVAL"
+      ) {
         throw new AppError(
           "INVALID_STATUS_TRANSITION",
-          "Only a draft GRN can be cancelled.",
+          "Only an unposted GRN can be cancelled.",
         );
       }
+      const previousStatus = receipt.status;
       await validateReceivingLocation(transaction, principal, {
         locationId: receipt.locationId,
         projectId: receipt.purchaseOrder.rfq.requirement.projectId,
@@ -289,7 +304,7 @@ export const InventoryCompletionService = {
 
       const now = new Date();
       const changed = await transaction.goodsReceipt.updateMany({
-        where: { id: goodsReceiptId, status: "DRAFT" },
+        where: { id: goodsReceiptId, status: previousStatus },
         data: {
           status: "CANCELLED",
           cancelledById: principal.userId,
@@ -306,7 +321,7 @@ export const InventoryCompletionService = {
           entityType: "GoodsReceipt",
           entityId: goodsReceiptId,
           reason,
-          before: { status: "DRAFT" },
+          before: { status: previousStatus },
           after: { status: "CANCELLED", cancelledAt: now },
         },
         transaction,
@@ -319,8 +334,8 @@ export const InventoryCompletionService = {
     principal: AuthenticatedPrincipal,
     input: UpdateGoodsReceiptDraftInput,
   ) {
-    requirePermission(principal, "inventory.receive");
-    requireReceivingRole(principal);
+    requirePermission(principal, "purchase.create");
+    requirePurchaseManager(principal);
 
     return db.$transaction(async (transaction) => {
       await transaction.$queryRaw`
@@ -352,6 +367,7 @@ export const InventoryCompletionService = {
         );
       }
       if (
+        receipt.purchaseOrder.status !== "ISSUED" &&
         receipt.purchaseOrder.status !== "ACCEPTED" &&
         receipt.purchaseOrder.status !== "PARTIALLY_RECEIVED"
       ) {
@@ -366,6 +382,12 @@ export const InventoryCompletionService = {
         projectId: receipt.purchaseOrder.rfq.requirement.projectId,
         siteId: receipt.purchaseOrder.rfq.requirement.siteId,
       });
+      if (input.directSiteDelivery && location.type !== "SITE_STORE") {
+        throw new AppError(
+          "VALIDATION_ERROR",
+          "Direct-site delivery must be received into the PO site's SITE_STORE.",
+        );
+      }
 
       if (input.lines.length !== receipt.lines.length) {
         throw new AppError(
@@ -409,6 +431,7 @@ export const InventoryCompletionService = {
           acceptedQuantity: line.acceptedQuantity,
           damagedQuantity: line.damagedQuantity,
           rejectedQuantity: line.rejectedQuantity,
+          allowExcess: true,
         });
         return { existing, line, result };
       });
@@ -428,6 +451,19 @@ export const InventoryCompletionService = {
           supplierDeliveryNoteDate: parseDate(input.supplierDeliveryNoteDate),
           vehicleNumber: input.vehicleNumber,
           transporter: input.transporter,
+          directSiteDelivery: input.directSiteDelivery,
+          gpsLatitude:
+            input.gpsLatitude === undefined
+              ? null
+              : new Prisma.Decimal(input.gpsLatitude),
+          gpsLongitude:
+            input.gpsLongitude === undefined
+              ? null
+              : new Prisma.Decimal(input.gpsLongitude),
+          gpsCapturedAt: input.gpsCapturedAt
+            ? parseDateTime(input.gpsCapturedAt)
+            : null,
+          receiverName: input.receiverName,
           receivedAt: parseDateTime(input.receivedAt),
           notes: input.notes,
         },

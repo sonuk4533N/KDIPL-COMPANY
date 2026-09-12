@@ -41,6 +41,33 @@ enum StorageProvider {
   S3
 }
 
+enum FileScanStatus {
+  QUARANTINED
+  CLEAN
+  REJECTED
+  SCAN_FAILED
+}
+
+enum GoodsReceiptDocumentType {
+  DELIVERY_CHALLAN
+  MATERIAL_PHOTO
+  SUPPLIER_INVOICE
+  RECEIVER_SIGNATURE
+}
+
+enum PurchaseOrderAmendmentStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum NegativeStockExceptionStatus {
+  OPEN
+  RESOLVED
+}
+
 enum ProjectStatus {
   PLANNING
   ACTIVE
@@ -118,10 +145,15 @@ enum InventoryLocationType {
   CENTRAL_STORE
   PROJECT_STORE
   SITE_STORE
+  TEMPORARY_STORE
+  TRANSIT
+  DAMAGED_REJECTED
 }
 
 enum GoodsReceiptStatus {
   DRAFT
+  PHYSICALLY_VERIFIED
+  PENDING_PM_APPROVAL
   POSTED
   CANCELLED
 }
@@ -224,6 +256,10 @@ model User {
   sessions                        Session[]
   auditEvents                     AuditLog[]                         @relation("AuditActor")
   uploadedFiles                   FileRecord[]
+  purchaseOrderAmendmentsCreated PurchaseOrderAmendment[]           @relation("PurchaseOrderAmendmentCreator")
+  purchaseOrderAmendmentsDecided PurchaseOrderAmendment[]           @relation("PurchaseOrderAmendmentDecisionActor")
+  goodsReceiptsSiteAcknowledged  GoodsReceipt[]                     @relation("GoodsReceiptSiteAcknowledger")
+  negativeStockExceptionsCreated TemporaryNegativeStockException[]  @relation("NegativeStockExceptionCreator")
   materialRequirementsCreated     MaterialRequirement[]              @relation("MaterialRequirementCreator")
   materialRequirementsSubmitted   MaterialRequirement[]              @relation("MaterialRequirementSubmitter")
   materialRequirementsDecided     MaterialRequirement[]              @relation("MaterialRequirementDecisionActor")
@@ -240,6 +276,8 @@ model User {
   purchaseOrdersClosed            PurchaseOrder[]                    @relation("PurchaseOrderCloser")
   purchaseOrdersCancelled         PurchaseOrder[]                    @relation("PurchaseOrderCanceller")
   goodsReceiptsCreated            GoodsReceipt[]                     @relation("GoodsReceiptCreator")
+  goodsReceiptsVerified           GoodsReceipt[]                     @relation("GoodsReceiptVerifier")
+  goodsReceiptsApproved           GoodsReceipt[]                     @relation("GoodsReceiptApprover")
   goodsReceiptsPosted             GoodsReceipt[]                     @relation("GoodsReceiptPoster")
   goodsReceiptsCancelled          GoodsReceipt[]                     @relation("GoodsReceiptCanceller")
   stockTransactionsCreated        StockTransaction[]                 @relation("StockTransactionCreator")
@@ -341,10 +379,95 @@ model FileRecord {
   uploadedById      String?                    @db.Uuid
   uploadedBy        User?                      @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
   quotationDocument SupplierQuotationDocument?
+  goodsReceiptDocument GoodsReceiptDocument?
+  scanStatus        FileScanStatus             @default(QUARANTINED)
+  scanProvider      String?                    @db.VarChar(80)
+  scanReference     String?                    @db.VarChar(500)
+  scannedAt         DateTime?
+  retentionUntil    DateTime                   @db.Date
   uploadedAt        DateTime                   @default(now())
 
   @@index([uploadedById, uploadedAt])
   @@index([documentType, uploadedAt])
+  @@index([scanStatus, uploadedAt])
+  @@index([retentionUntil])
+}
+
+model PurchaseOrderAmendment {
+  id                           String                       @id @default(uuid()) @db.Uuid
+  purchaseOrderId              String                       @db.Uuid
+  version                      Int
+  status                       PurchaseOrderAmendmentStatus @default(DRAFT)
+  reason                       String                       @db.VarChar(1000)
+  proposedExpectedDeliveryDate DateTime                     @db.Date
+  proposedPaymentTerms         String                       @db.VarChar(500)
+  proposedFreightAmount        Decimal                      @db.Decimal(18, 2)
+  createdById                  String                       @db.Uuid
+  submittedAt                  DateTime?
+  decidedById                  String?                      @db.Uuid
+  decidedAt                    DateTime?
+  decisionReason               String?                      @db.VarChar(1000)
+  purchaseOrder                PurchaseOrder                @relation(fields: [purchaseOrderId], references: [id], onDelete: Restrict)
+  createdBy                    User                         @relation("PurchaseOrderAmendmentCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  decidedBy                    User?                        @relation("PurchaseOrderAmendmentDecisionActor", fields: [decidedById], references: [id], onDelete: Restrict)
+  lines                        PurchaseOrderAmendmentLine[]
+  createdAt                    DateTime                     @default(now())
+  updatedAt                    DateTime                     @updatedAt
+
+  @@unique([purchaseOrderId, version])
+  @@index([purchaseOrderId, status])
+  @@index([decidedById, decidedAt])
+}
+
+model PurchaseOrderAmendmentLine {
+  id                      String                 @id @default(uuid()) @db.Uuid
+  amendmentId             String                 @db.Uuid
+  purchaseOrderLineId     String                 @db.Uuid
+  proposedQuantity        Decimal                @db.Decimal(18, 3)
+  proposedUnitPrice       Decimal                @db.Decimal(18, 2)
+  amendment               PurchaseOrderAmendment @relation(fields: [amendmentId], references: [id], onDelete: Restrict)
+  purchaseOrderLine       PurchaseOrderLine      @relation(fields: [purchaseOrderLineId], references: [id], onDelete: Restrict)
+  createdAt               DateTime               @default(now())
+
+  @@unique([amendmentId, purchaseOrderLineId])
+  @@index([purchaseOrderLineId])
+}
+
+model GoodsReceiptDocument {
+  id             String                   @id @default(uuid()) @db.Uuid
+  goodsReceiptId String                   @db.Uuid
+  fileRecordId   String                   @unique @db.Uuid
+  type           GoodsReceiptDocumentType
+  goodsReceipt   GoodsReceipt             @relation(fields: [goodsReceiptId], references: [id], onDelete: Restrict)
+  fileRecord     FileRecord               @relation(fields: [fileRecordId], references: [id], onDelete: Restrict)
+  createdAt      DateTime                 @default(now())
+
+  @@index([goodsReceiptId, type])
+}
+
+model TemporaryNegativeStockException {
+  id                      String                       @id @default(uuid()) @db.Uuid
+  locationId              String                       @db.Uuid
+  materialId              String                       @db.Uuid
+  unitId                  String                       @db.Uuid
+  sourceTransactionId     String                       @unique @db.Uuid
+  deficitQuantity         Decimal                      @db.Decimal(18, 3)
+  reason                  String                       @db.VarChar(1000)
+  createdById             String                       @db.Uuid
+  detectedAt              DateTime                     @default(now())
+  resolutionDueAt         DateTime
+  status                  NegativeStockExceptionStatus @default(OPEN)
+  resolutionTransactionId String?                      @db.Uuid
+  resolvedAt              DateTime?
+  location                InventoryLocation            @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  material                Material                     @relation(fields: [materialId], references: [id], onDelete: Restrict)
+  unit                    UnitOfMeasure                @relation(fields: [unitId], references: [id], onDelete: Restrict)
+  sourceTransaction       StockTransaction             @relation("NegativeStockSourceTransaction", fields: [sourceTransactionId], references: [id], onDelete: Restrict)
+  resolutionTransaction   StockTransaction?            @relation("NegativeStockResolutionTransaction", fields: [resolutionTransactionId], references: [id], onDelete: Restrict)
+  createdBy               User                         @relation("NegativeStockExceptionCreator", fields: [createdById], references: [id], onDelete: Restrict)
+
+  @@index([status, resolutionDueAt])
+  @@index([locationId, materialId, status])
 }
 
 model BusinessSequence {
@@ -495,6 +618,7 @@ model UnitOfMeasure {
   purchaseOrderLines PurchaseOrderLine[]
   goodsReceiptLines  GoodsReceiptLine[]
   stockTransactions  StockTransaction[]
+  negativeStockExceptions TemporaryNegativeStockException[]
   createdAt          DateTime                  @default(now())
   updatedAt          DateTime                  @updatedAt
 
@@ -515,6 +639,7 @@ model Material {
   defaultUnit       UnitOfMeasure             @relation(fields: [defaultUnitId], references: [id], onDelete: Restrict)
   requirementLines  MaterialRequirementLine[]
   goodsReceiptLines GoodsReceiptLine[]
+  negativeStockExceptions TemporaryNegativeStockException[]
   stockTransactions StockTransaction[]
   createdAt         DateTime                  @default(now())
   updatedAt         DateTime                  @updatedAt
@@ -800,6 +925,7 @@ model PurchaseOrder {
   cancelledById               String?             @db.Uuid
   cancelledAt                 DateTime?
   cancellationReason          String?             @db.VarChar(1000)
+  shortCloseReason             String?             @db.VarChar(1000)
   rfq                         RequestForQuotation @relation(fields: [rfqId], references: [id], onDelete: Restrict)
   quotation                   SupplierQuotation   @relation(fields: [quotationId], references: [id], onDelete: Restrict)
   supplier                    Supplier            @relation(fields: [supplierId], references: [id], onDelete: Restrict)
@@ -810,6 +936,7 @@ model PurchaseOrder {
   cancelledBy                 User?               @relation("PurchaseOrderCanceller", fields: [cancelledById], references: [id], onDelete: Restrict)
   lines                       PurchaseOrderLine[]
   goodsReceipts               GoodsReceipt[]
+  amendments                   PurchaseOrderAmendment[]
   createdAt                   DateTime            @default(now())
   updatedAt                   DateTime            @updatedAt
 
@@ -835,6 +962,7 @@ model PurchaseOrderLine {
   requirementLine   MaterialRequirementLine @relation(fields: [requirementLineId], references: [id], onDelete: Restrict)
   unit              UnitOfMeasure           @relation(fields: [unitId], references: [id], onDelete: Restrict)
   goodsReceiptLines GoodsReceiptLine[]
+  amendmentLines    PurchaseOrderAmendmentLine[]
   createdAt         DateTime                @default(now())
 
   @@unique([purchaseOrderId, requirementLineId])
@@ -855,6 +983,7 @@ model InventoryLocation {
   site              Site?                 @relation(fields: [siteId, projectId], references: [id, projectId], onDelete: Restrict)
   goodsReceipts     GoodsReceipt[]
   stockTransactions StockTransaction[]
+  negativeStockExceptions TemporaryNegativeStockException[]
   createdAt         DateTime              @default(now())
   updatedAt         DateTime              @updatedAt
 
@@ -875,6 +1004,18 @@ model GoodsReceipt {
   receivedAt               DateTime?
   notes                    String?
   createdById              String             @db.Uuid
+  verifiedById             String?            @db.Uuid
+  verifiedAt               DateTime?
+  approvedById             String?            @db.Uuid
+  approvedAt               DateTime?
+  excessApprovalReason     String?            @db.VarChar(1000)
+  directSiteDelivery       Boolean            @default(false)
+  gpsLatitude              Decimal?           @db.Decimal(9, 6)
+  gpsLongitude             Decimal?           @db.Decimal(9, 6)
+  gpsCapturedAt            DateTime?
+  receiverName             String?            @db.VarChar(160)
+  siteAcknowledgedById     String?            @db.Uuid
+  siteAcknowledgedAt       DateTime?
   postedById               String?            @db.Uuid
   postedAt                 DateTime?
   cancelledById            String?            @db.Uuid
@@ -883,14 +1024,21 @@ model GoodsReceipt {
   purchaseOrder            PurchaseOrder      @relation(fields: [purchaseOrderId], references: [id], onDelete: Restrict)
   location                 InventoryLocation  @relation(fields: [locationId], references: [id], onDelete: Restrict)
   createdBy                User               @relation("GoodsReceiptCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  verifiedBy               User?              @relation("GoodsReceiptVerifier", fields: [verifiedById], references: [id], onDelete: Restrict)
+  approvedBy               User?              @relation("GoodsReceiptApprover", fields: [approvedById], references: [id], onDelete: Restrict)
   postedBy                 User?              @relation("GoodsReceiptPoster", fields: [postedById], references: [id], onDelete: Restrict)
   cancelledBy              User?              @relation("GoodsReceiptCanceller", fields: [cancelledById], references: [id], onDelete: Restrict)
-  lines                    GoodsReceiptLine[]
+  siteAcknowledgedBy        User?              @relation("GoodsReceiptSiteAcknowledger", fields: [siteAcknowledgedById], references: [id], onDelete: Restrict)
+  lines                     GoodsReceiptLine[]
+  documents                 GoodsReceiptDocument[]
   createdAt                DateTime           @default(now())
   updatedAt                DateTime           @updatedAt
 
   @@index([purchaseOrderId, status])
   @@index([locationId, status])
+  @@index([verifiedById, verifiedAt])
+  @@index([approvedById, approvedAt])
+  @@index([siteAcknowledgedById, siteAcknowledgedAt])
 }
 
 model GoodsReceiptLine {
@@ -953,6 +1101,8 @@ model StockTransaction {
   goodsReceiptLine   GoodsReceiptLine?    @relation(fields: [goodsReceiptLineId], references: [id], onDelete: Restrict)
   reversalOf         StockTransaction?    @relation("StockTransactionReversal", fields: [reversalOfId], references: [id], onDelete: Restrict)
   reversals          StockTransaction[]   @relation("StockTransactionReversal")
+  negativeExceptionSource TemporaryNegativeStockException? @relation("NegativeStockSourceTransaction")
+  negativeExceptionsResolved TemporaryNegativeStockException[] @relation("NegativeStockResolutionTransaction")
   createdBy          User                 @relation("StockTransactionCreator", fields: [createdById], references: [id], onDelete: Restrict)
   createdAt          DateTime             @default(now())
 

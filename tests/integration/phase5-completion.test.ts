@@ -33,6 +33,24 @@ describe.skipIf(!enabled)("Phase 5 completion database controls", () => {
     ]);
   });
 
+  it("installs the separated GRN approval lifecycle", async () => {
+    const rows = await testDb!.$queryRaw<Array<{ value: string }>>`
+      SELECT e.enumlabel AS "value"
+      FROM pg_type t
+      JOIN pg_enum e ON e.enumtypid = t.oid
+      WHERE t.typname = 'GoodsReceiptStatus'
+      ORDER BY e.enumsortorder
+    `;
+
+    expect(rows.map(({ value }) => value)).toEqual([
+      "DRAFT",
+      "POSTED",
+      "CANCELLED",
+      "PHYSICALLY_VERIFIED",
+      "PENDING_PM_APPROVAL",
+    ]);
+  });
+
   it("installs damaged/rejected exception statuses and guard triggers", async () => {
     const statuses = await testDb!.$queryRaw<Array<{ value: string }>>`
       SELECT e.enumlabel AS "value"

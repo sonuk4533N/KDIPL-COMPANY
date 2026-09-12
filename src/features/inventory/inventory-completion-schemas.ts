@@ -2,9 +2,18 @@ import { z } from "zod";
 
 const uuid = z.string().uuid();
 const quantity = z.coerce.number().finite().min(0);
+const optionalCoordinate = z.preprocess(
+  (value) => (value === "" || value === undefined ? undefined : value),
+  z.coerce.number().finite().optional(),
+);
+const checkbox = z.preprocess(
+  (value) => value === "on" || value === "true" || value === true,
+  z.boolean(),
+);
 
 export const closePurchaseOrderSchema = z.object({
   purchaseOrderId: uuid,
+  shortCloseReason: z.string().trim().min(3).max(1000).optional(),
 });
 
 export const cancelGoodsReceiptSchema = z.object({
@@ -19,6 +28,11 @@ export const updateGoodsReceiptDraftSchema = z.object({
   supplierDeliveryNoteDate: z.string().optional(),
   vehicleNumber: z.string().trim().max(50).optional(),
   transporter: z.string().trim().max(160).optional(),
+  directSiteDelivery: checkbox.default(false),
+  gpsLatitude: optionalCoordinate,
+  gpsLongitude: optionalCoordinate,
+  gpsCapturedAt: z.string().optional(),
+  receiverName: z.string().trim().max(160).optional(),
   receivedAt: z.string().min(1),
   notes: z.string().trim().max(2000).optional(),
   lines: z

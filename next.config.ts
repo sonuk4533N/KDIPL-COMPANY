@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   turbopack: { root: process.cwd() },
   experimental: {
-    serverActions: { bodySizeLimit: "11mb" },
+    serverActions: { bodySizeLimit: "51mb" },
   },
   async headers() {
     return [
@@ -17,7 +17,8 @@ const nextConfig: NextConfig = {
           { key: "X-Frame-Options", value: "DENY" },
           {
             key: "Permissions-Policy",
-            value: "camera=(), microphone=(), geolocation=(), payment=()",
+            value:
+              "camera=(self), microphone=(self), geolocation=(self), payment=()",
           },
           ...(isDevelopment
             ? []

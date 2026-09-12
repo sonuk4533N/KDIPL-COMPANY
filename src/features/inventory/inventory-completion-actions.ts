@@ -39,6 +39,7 @@ export async function closePurchaseOrderAction(
     requirePermission(principal, "purchase.create");
     const parsed = closePurchaseOrderSchema.safeParse({
       purchaseOrderId: optionalValue(formData.get("purchaseOrderId")),
+      shortCloseReason: optionalValue(formData.get("shortCloseReason")),
     });
     if (!parsed.success) {
       return {
@@ -49,6 +50,7 @@ export async function closePurchaseOrderAction(
     const result = await InventoryCompletionService.closePurchaseOrder(
       principal,
       parsed.data.purchaseOrderId,
+      parsed.data.shortCloseReason,
     );
     revalidateInventory();
     return { ok: true, data: result };
@@ -64,7 +66,7 @@ export async function cancelGoodsReceiptAction(
   try {
     await validateMutationOrigin();
     const principal = await getCurrentPrincipal();
-    requirePermission(principal, "inventory.receive");
+    requirePermission(principal, "purchase.create");
     const parsed = cancelGoodsReceiptSchema.safeParse({
       goodsReceiptId: optionalValue(formData.get("goodsReceiptId")),
       reason: optionalValue(formData.get("reason")),
@@ -101,7 +103,7 @@ export async function updateGoodsReceiptDraftAction(
   try {
     await validateMutationOrigin();
     const principal = await getCurrentPrincipal();
-    requirePermission(principal, "inventory.receive");
+    requirePermission(principal, "purchase.create");
     const lineIds = formData.getAll("goodsReceiptLineId");
     const accepted = formData.getAll("acceptedQuantity");
     const damaged = formData.getAll("damagedQuantity");
@@ -116,6 +118,11 @@ export async function updateGoodsReceiptDraftAction(
       ),
       vehicleNumber: optionalValue(formData.get("vehicleNumber")),
       transporter: optionalValue(formData.get("transporter")),
+      directSiteDelivery: formData.get("directSiteDelivery"),
+      gpsLatitude: optionalValue(formData.get("gpsLatitude")),
+      gpsLongitude: optionalValue(formData.get("gpsLongitude")),
+      gpsCapturedAt: optionalValue(formData.get("gpsCapturedAt")),
+      receiverName: optionalValue(formData.get("receiverName")),
       receivedAt: optionalValue(formData.get("receivedAt")),
       notes: optionalValue(formData.get("notes")),
       lines: lineIds.map((goodsReceiptLineId, index) => ({

@@ -12,6 +12,7 @@ import { ApplicationState } from "@/components/ui/states";
 import { StatusBadge, type StandardStatus } from "@/components/ui/status-badge";
 import { GoodsReceiptForm } from "@/features/inventory/goods-receipt-form";
 import { GrnDraftControls } from "@/features/inventory/grn-draft-controls";
+import { GrnEvidenceControls } from "@/features/inventory/grn-evidence-controls";
 import { GrnExceptionControls } from "@/features/inventory/grn-exception-controls";
 import { GrnPostButton } from "@/features/inventory/grn-post-button";
 import { getInventoryWorkspace } from "@/features/inventory/inventory-queries";
@@ -42,16 +43,30 @@ export default async function InventoryPage() {
   }
 
   const workspace = await getInventoryWorkspace(principal);
-  const canReceive =
+  const canCreateGrn =
+    hasPermission(principal, "purchase.create") &&
+    principal.roleCodes.includes("PURCHASE_MANAGER") &&
+    !principal.roleCodes.includes("SYSTEM_ADMINISTRATOR");
+  const canVerifyGrn =
     hasPermission(principal, "inventory.receive") &&
-    !principal.roleCodes.includes("SYSTEM_ADMINISTRATOR") &&
-    (principal.roleCodes.includes("STORE_KEEPER") ||
-      principal.roleCodes.includes("SITE_SUPERVISOR"));
+    principal.roleCodes.includes("STORE_KEEPER") &&
+    !principal.roleCodes.includes("SYSTEM_ADMINISTRATOR");
+  const canApproveGrn =
+    hasPermission(principal, "inventory.receive") &&
+    principal.roleCodes.includes("PROJECT_MANAGER") &&
+    !principal.roleCodes.includes("SYSTEM_ADMINISTRATOR");
+  const canAcknowledgeGrn =
+    hasPermission(principal, "inventory.receive") &&
+    principal.roleCodes.includes("SITE_SUPERVISOR") &&
+    !principal.roleCodes.includes("SYSTEM_ADMINISTRATOR");
   const postedCount = workspace.goodsReceipts.filter(
     ({ status }) => status === "POSTED",
   ).length;
   const draftCount = workspace.goodsReceipts.filter(
-    ({ status }) => status === "DRAFT",
+    ({ status }) =>
+      status === "DRAFT" ||
+      status === "PHYSICALLY_VERIFIED" ||
+      status === "PENDING_PM_APPROVAL",
   ).length;
   const openExceptionCount = workspace.exceptions.filter(
     ({ status }) => status !== "RESOLVED" && status !== "RETURNED",
@@ -62,7 +77,7 @@ export default async function InventoryPage() {
       <PageHeader
         eyebrow="Phase 5 · goods receiving & stock ledger"
         title="Inventory and receiving"
-        description="Receive supplier material against accepted purchase orders and derive stock only from posted ledger transactions."
+        description="Create, verify, and approve receipts against issued purchase orders; stock changes only after PM approval."
       />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
@@ -113,15 +128,16 @@ export default async function InventoryPage() {
         </Card>
       </div>
 
-      {canReceive && workspace.purchaseOrders.length ? (
+      {canCreateGrn && workspace.purchaseOrders.length ? (
         <Card>
           <CardHeader>
             <h2 className="font-display text-lg font-bold text-slate-950">
               Receive material
             </h2>
             <p className="mt-1 text-sm text-slate-500">
-              Only supplier-accepted purchase orders are available. Accepted
-              quantity enters usable stock only after posting.
+              Issued purchase orders are available. The Purchase Manager creates
+              the draft; stock changes only after Store Keeper verification and
+              Project Manager approval.
             </p>
           </CardHeader>
           <CardContent>
@@ -131,11 +147,11 @@ export default async function InventoryPage() {
             />
           </CardContent>
         </Card>
-      ) : canReceive ? (
+      ) : canCreateGrn ? (
         <ApplicationState
           kind="empty"
           title="No purchase orders ready to receive"
-          description="A Purchase Manager must issue the PO and record supplier acceptance before a GRN can be created."
+          description="A Purchase Manager must issue the PO before a GRN can be created."
         />
       ) : null}
 
@@ -168,7 +184,10 @@ export default async function InventoryPage() {
                           ? "Posted"
                           : receipt.status === "CANCELLED"
                             ? "Cancelled"
-                            : "Draft"
+                            : receipt.status === "PENDING_PM_APPROVAL" ||
+                                receipt.status === "PHYSICALLY_VERIFIED"
+                              ? "Pending"
+                              : "Draft"
                       }
                     />
                   </div>
@@ -187,13 +206,72 @@ export default async function InventoryPage() {
                         ? ` · Posted by ${receipt.postedBy}`
                         : ""}
                     </p>
+                    {receipt.directSiteDelivery ? (
+                      <div className="rounded-lg bg-blue-50 p-3 text-xs text-blue-900">
+                        <p className="font-semibold">Direct-site delivery</p>
+                        <p>
+                          Receiver {receipt.receiverName ?? "Not recorded"} ·
+                          GPS {receipt.gpsLatitude ?? "—"},{" "}
+                          {receipt.gpsLongitude ?? "—"}
+                        </p>
+                        <p>
+                          Evidence:{" "}
+                          {receipt.documents.length
+                            ? receipt.documents
+                                .map(
+                                  (document) =>
+                                    `${document.type}: ${document.scanStatus}`,
+                                )
+                                .join(" · ")
+                            : "None attached"}
+                        </p>
+                      </div>
+                    ) : null}
                   </div>
-                  {canReceive && receipt.status === "DRAFT" ? (
+                  {receipt.status === "DRAFT" &&
+                  (canCreateGrn || canVerifyGrn) ? (
                     <div className="mt-4 space-y-4 border-t border-slate-100 pt-4">
-                      <GrnPostButton goodsReceiptId={receipt.id} />
-                      <GrnDraftControls
-                        receipt={receipt}
-                        locations={workspace.locations}
+                      {canVerifyGrn ? (
+                        <GrnPostButton
+                          goodsReceiptId={receipt.id}
+                          mode="verify"
+                        />
+                      ) : null}
+                      {canCreateGrn ? (
+                        <>
+                          <GrnDraftControls
+                            receipt={receipt}
+                            locations={workspace.locations}
+                          />
+                          {receipt.directSiteDelivery ? (
+                            <GrnEvidenceControls
+                              goodsReceiptId={receipt.id}
+                              canUpload
+                              canAcknowledge={false}
+                              acknowledged={Boolean(receipt.siteAcknowledgedAt)}
+                            />
+                          ) : null}
+                        </>
+                      ) : null}
+                    </div>
+                  ) : null}
+                  {receipt.status === "PENDING_PM_APPROVAL" &&
+                  receipt.directSiteDelivery &&
+                  (canAcknowledgeGrn || receipt.siteAcknowledgedAt) ? (
+                    <div className="mt-4 border-t border-slate-100 pt-4">
+                      <GrnEvidenceControls
+                        goodsReceiptId={receipt.id}
+                        canUpload={false}
+                        canAcknowledge={canAcknowledgeGrn}
+                        acknowledged={Boolean(receipt.siteAcknowledgedAt)}
+                      />
+                    </div>
+                  ) : null}
+                  {receipt.status === "PENDING_PM_APPROVAL" && canApproveGrn ? (
+                    <div className="mt-4 border-t border-slate-100 pt-4">
+                      <GrnPostButton
+                        goodsReceiptId={receipt.id}
+                        mode="approve"
                       />
                     </div>
                   ) : null}
@@ -205,7 +283,7 @@ export default async function InventoryPage() {
           <ApplicationState
             kind="empty"
             title="No goods receipts yet"
-            description="Create a GRN when supplier-accepted material reaches a controlled store or site store."
+            description="Create a GRN after an issued PO reaches a controlled store or site store."
           />
         )}
       </section>
@@ -311,7 +389,7 @@ export default async function InventoryPage() {
                       {exception.reason ?? "No reason recorded"}
                     </p>
                   </div>
-                  {canReceive ? (
+                  {canVerifyGrn ? (
                     <div className="mt-4 border-t border-slate-100 pt-4">
                       <GrnExceptionControls exception={exception} />
                     </div>
@@ -325,6 +403,54 @@ export default async function InventoryPage() {
             kind="empty"
             title="No damaged or rejected material"
             description="Exceptions will appear automatically when a posted GRN records damaged or rejected quantities."
+          />
+        )}
+      </section>
+
+      <section className="space-y-4">
+        <div>
+          <h2 className="font-display text-lg font-bold text-slate-950">
+            Temporary negative stock
+          </h2>
+          <p className="mt-1 text-sm text-slate-500">
+            Store Keeper exceptions must be corrected within three working days.
+          </p>
+        </div>
+        {workspace.negativeStockExceptions.length ? (
+          <div className="grid gap-4 lg:grid-cols-2">
+            {workspace.negativeStockExceptions.map((exception) => (
+              <Card key={exception.id}>
+                <CardContent>
+                  <p
+                    className={
+                      exception.overdue
+                        ? "text-xs font-bold uppercase text-red-700"
+                        : "text-xs font-bold uppercase text-amber-700"
+                    }
+                  >
+                    {exception.status}
+                    {exception.overdue ? " · OVERDUE" : ""}
+                  </p>
+                  <h3 className="mt-1 font-display font-bold text-slate-950">
+                    {exception.material.name}
+                  </h3>
+                  <p className="mt-2 text-sm text-slate-600">
+                    {exception.location.name} · deficit{" "}
+                    {exception.deficitQuantity} {exception.unit.symbol}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Due {new Date(exception.resolutionDueAt).toLocaleString()} ·{" "}
+                    {exception.reason}
+                  </p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <ApplicationState
+            kind="empty"
+            title="No temporary negative stock"
+            description="Any authorized negative event will appear here until corrected."
           />
         )}
       </section>

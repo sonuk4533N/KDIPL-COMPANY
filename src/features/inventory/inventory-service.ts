@@ -33,19 +33,28 @@ function requirePurchaseManager(principal: AuthenticatedPrincipal) {
   }
 }
 
-function requireReceivingRole(principal: AuthenticatedPrincipal) {
-  const isStoreKeeper = principal.roleCodes.includes("STORE_KEEPER");
-  const isSiteSupervisor = principal.roleCodes.includes("SITE_SUPERVISOR");
+function requireStoreKeeper(principal: AuthenticatedPrincipal) {
   if (
-    (!isStoreKeeper && !isSiteSupervisor) ||
+    !principal.roleCodes.includes("STORE_KEEPER") ||
     principal.roleCodes.includes("SYSTEM_ADMINISTRATOR")
   ) {
     throw new AppError(
       "FORBIDDEN",
-      "Only an authorized Store Keeper or Site Supervisor can receive material.",
+      "Only a Store Keeper can verify physical receipt.",
     );
   }
-  return { isStoreKeeper, isSiteSupervisor };
+}
+
+function requireProjectManager(principal: AuthenticatedPrincipal) {
+  if (
+    !principal.roleCodes.includes("PROJECT_MANAGER") ||
+    principal.roleCodes.includes("SYSTEM_ADMINISTRATOR")
+  ) {
+    throw new AppError(
+      "FORBIDDEN",
+      "Only a Project Manager can approve and post a verified GRN.",
+    );
+  }
 }
 
 function parseDate(value: string) {
@@ -95,7 +104,7 @@ async function requireReceivablePurchaseOrder(
   if (!canPostGoodsReceipt(status)) {
     throw new AppError(
       "INVALID_STATUS_TRANSITION",
-      "Material can be received only after supplier acceptance.",
+      "Material can be received after the purchase order is issued.",
     );
   }
   return { purchaseOrder, status };
@@ -103,10 +112,9 @@ async function requireReceivablePurchaseOrder(
 
 async function validateReceivingLocation(
   transaction: Prisma.TransactionClient,
-  principal: AuthenticatedPrincipal,
+  _principal: AuthenticatedPrincipal,
   values: { locationId: string; projectId: string; siteId: string },
 ) {
-  const roles = requireReceivingRole(principal);
   const location = await transaction.inventoryLocation.findFirst({
     where: { id: values.locationId, isActive: true },
   });
@@ -121,7 +129,8 @@ async function validateReceivingLocation(
   const allowedForPo =
     location.type === "CENTRAL_STORE" ||
     (location.type === "PROJECT_STORE" && sameProject) ||
-    (location.type === "SITE_STORE" && sameProject && sameSite);
+    (location.type === "SITE_STORE" && sameProject && sameSite) ||
+    (location.type === "TEMPORARY_STORE" && sameProject);
   if (!allowedForPo) {
     throw new AppError(
       "FORBIDDEN",
@@ -129,29 +138,6 @@ async function validateReceivingLocation(
     );
   }
 
-  if (!roles.isStoreKeeper && roles.isSiteSupervisor) {
-    if (location.type !== "SITE_STORE" || !sameSite || !principal.employeeId) {
-      throw new AppError(
-        "FORBIDDEN",
-        "Site Supervisors may receive only direct deliveries into their assigned site store.",
-      );
-    }
-    const assignment = await transaction.siteAssignment.findFirst({
-      where: {
-        siteId: values.siteId,
-        employeeId: principal.employeeId,
-        role: "SITE_SUPERVISOR",
-        isActive: true,
-      },
-      select: { id: true },
-    });
-    if (!assignment) {
-      throw new AppError(
-        "FORBIDDEN",
-        "An active Site Supervisor assignment is required for direct-site receipt.",
-      );
-    }
-  }
   return location;
 }
 
@@ -321,7 +307,8 @@ export const InventoryService = {
     principal: AuthenticatedPrincipal,
     input: GoodsReceiptDraftInput,
   ) {
-    requirePermission(principal, "inventory.receive");
+    requirePermission(principal, "purchase.create");
+    requirePurchaseManager(principal);
     return db.$transaction(async (transaction) => {
       if (input.goodsReceiptId) {
         throw new AppError(
@@ -343,6 +330,12 @@ export const InventoryService = {
         projectId: purchaseOrder.rfq.requirement.projectId,
         siteId: purchaseOrder.rfq.requirement.siteId,
       });
+      if (input.directSiteDelivery && location.type !== "SITE_STORE") {
+        throw new AppError(
+          "VALIDATION_ERROR",
+          "Direct-site delivery must be received into the PO site's SITE_STORE.",
+        );
+      }
       const lineById = new Map(
         purchaseOrder.lines.map((line) => [line.id, line]),
       );
@@ -376,6 +369,7 @@ export const InventoryService = {
           acceptedQuantity: line.acceptedQuantity,
           damagedQuantity: line.damagedQuantity,
           rejectedQuantity: line.rejectedQuantity,
+          allowExcess: true,
         });
         return { poLine, input: line, result };
       });
@@ -396,6 +390,19 @@ export const InventoryService = {
           purchaseOrderId: purchaseOrder.id,
           locationId: location.id,
           supplierDeliveryNote: input.supplierDeliveryNote,
+          directSiteDelivery: input.directSiteDelivery,
+          gpsLatitude:
+            input.gpsLatitude === undefined
+              ? undefined
+              : new Prisma.Decimal(input.gpsLatitude),
+          gpsLongitude:
+            input.gpsLongitude === undefined
+              ? undefined
+              : new Prisma.Decimal(input.gpsLongitude),
+          gpsCapturedAt: input.gpsCapturedAt
+            ? parseDateTime(input.gpsCapturedAt)
+            : undefined,
+          receiverName: input.receiverName,
           receivedAt: parseDateTime(input.receivedAt),
           notes: input.notes,
           createdById: principal.userId,
@@ -437,6 +444,7 @@ export const InventoryService = {
             grnNumber: goodsReceipt.grnNumber,
             purchaseOrderId: purchaseOrder.id,
             locationId: location.id,
+            directSiteDelivery: input.directSiteDelivery,
             lineCount: prepared.length,
           },
         },
@@ -446,12 +454,120 @@ export const InventoryService = {
     });
   },
 
-  async postGoodsReceipt(
+  async verifyGoodsReceipt(
     principal: AuthenticatedPrincipal,
     goodsReceiptId: string,
   ) {
     requirePermission(principal, "inventory.receive");
-    requireReceivingRole(principal);
+    requireStoreKeeper(principal);
+    return db.$transaction(async (transaction) => {
+      await transaction.$queryRaw`
+        SELECT "id" FROM "GoodsReceipt"
+        WHERE "id" = ${goodsReceiptId}::uuid
+        FOR UPDATE
+      `;
+      const receipt = await transaction.goodsReceipt.findUnique({
+        where: { id: goodsReceiptId },
+        include: {
+          location: { select: { type: true } },
+          documents: {
+            include: {
+              fileRecord: { select: { scanStatus: true } },
+            },
+          },
+          purchaseOrder: {
+            include: {
+              rfq: {
+                select: {
+                  requirement: { select: { projectId: true, siteId: true } },
+                },
+              },
+            },
+          },
+        },
+      });
+      if (!receipt) throw new AppError("NOT_FOUND", "GRN not found.");
+      if (receipt.status !== "DRAFT") {
+        throw new AppError(
+          "INVALID_STATUS_TRANSITION",
+          "Only a draft GRN can be physically verified.",
+        );
+      }
+      if (receipt.createdById === principal.userId) {
+        throw new AppError(
+          "FORBIDDEN",
+          "The GRN creator cannot verify the same receipt.",
+        );
+      }
+      await validateReceivingLocation(transaction, principal, {
+        locationId: receipt.locationId,
+        projectId: receipt.purchaseOrder.rfq.requirement.projectId,
+        siteId: receipt.purchaseOrder.rfq.requirement.siteId,
+      });
+      if (receipt.directSiteDelivery) {
+        const cleanEvidence = new Set(
+          receipt.documents
+            .filter(({ fileRecord }) => fileRecord.scanStatus === "CLEAN")
+            .map(({ type }) => type),
+        );
+        const requiredEvidence = [
+          "DELIVERY_CHALLAN",
+          "MATERIAL_PHOTO",
+          "SUPPLIER_INVOICE",
+          "RECEIVER_SIGNATURE",
+        ] as const;
+        if (
+          receipt.location.type !== "SITE_STORE" ||
+          requiredEvidence.some((type) => !cleanEvidence.has(type))
+        ) {
+          throw new AppError(
+            "VALIDATION_ERROR",
+            "Direct-site verification requires a site store and clean challan, material photo, supplier invoice, and receiver signature.",
+          );
+        }
+      }
+
+      const now = new Date();
+      const verified = await transaction.goodsReceipt.updateMany({
+        where: { id: goodsReceiptId, status: "DRAFT" },
+        data: {
+          status: "PHYSICALLY_VERIFIED",
+          verifiedById: principal.userId,
+          verifiedAt: now,
+        },
+      });
+      if (verified.count !== 1) throw new AppError("CONFLICT");
+      const submitted = await transaction.goodsReceipt.updateMany({
+        where: { id: goodsReceiptId, status: "PHYSICALLY_VERIFIED" },
+        data: { status: "PENDING_PM_APPROVAL" },
+      });
+      if (submitted.count !== 1) throw new AppError("CONFLICT");
+
+      await AuditService.record(
+        {
+          actorUserId: principal.userId,
+          action: AuditAction.UPDATE,
+          entityType: "GoodsReceipt",
+          entityId: goodsReceiptId,
+          before: { status: "DRAFT" },
+          after: {
+            status: "PENDING_PM_APPROVAL",
+            verifiedAt: now,
+          },
+        },
+        transaction,
+      );
+      return { id: goodsReceiptId };
+    });
+  },
+
+  async postGoodsReceipt(
+    principal: AuthenticatedPrincipal,
+    goodsReceiptId: string,
+    excessApprovalReason?: string,
+  ) {
+    requirePermission(principal, "inventory.receive");
+    requireProjectManager(principal);
     return db.$transaction(async (transaction) => {
       await transaction.$queryRaw`
         SELECT po."id"
@@ -488,8 +604,29 @@ export const InventoryService = {
           "DUPLICATE_TRANSACTION",
           "This GRN is already posted.",
         );
-      if (receipt.status !== "DRAFT")
-        throw new AppError("INVALID_STATUS_TRANSITION");
+      if (receipt.status !== "PENDING_PM_APPROVAL")
+        throw new AppError(
+          "INVALID_STATUS_TRANSITION",
+          "Only a Store Keeper-verified GRN can be approved and posted.",
+        );
+      if (
+        receipt.directSiteDelivery &&
+        (!receipt.siteAcknowledgedById || !receipt.siteAcknowledgedAt)
+      ) {
+        throw new AppError(
+          "VALIDATION_ERROR",
+          "The assigned Site Supervisor must acknowledge a direct-site GRN before approval.",
+        );
+      }
+      if (
+        receipt.createdById === principal.userId ||
+        receipt.verifiedById === principal.userId
+      ) {
+        throw new AppError(
+          "FORBIDDEN",
+          "The GRN creator or verifier cannot approve the same receipt.",
+        );
+      }
       const poStatus = String(
         receipt.purchaseOrder.status,
       ) as PurchaseOrderStatus;
@@ -503,6 +640,27 @@ export const InventoryService = {
         projectId: receipt.purchaseOrder.rfq.requirement.projectId,
         siteId: receipt.purchaseOrder.rfq.requirement.siteId,
       });
+
+      const assignmentTime = new Date();
+      const projectAssignment = principal.employeeId
+        ? await transaction.projectAssignment.findFirst({
+            where: {
+              employeeId: principal.employeeId,
+              projectId: receipt.purchaseOrder.rfq.requirement.projectId,
+              role: "PROJECT_MANAGER",
+              isActive: true,
+              startsAt: { lte: assignmentTime },
+              OR: [{ endsAt: null }, { endsAt: { gte: assignmentTime } }],
+            },
+            select: { id: true },
+          })
+        : null;
+      if (!projectAssignment) {
+        throw new AppError(
+          "FORBIDDEN",
+          "Only the Project Manager actively assigned to this project can approve the GRN.",
+        );
+      }
 
       const previous = await previousReceiptTotals(
         transaction,
@@ -530,14 +688,22 @@ export const InventoryService = {
           acceptedQuantity: currentAccepted,
           damagedQuantity: currentDamaged,
           rejectedQuantity: currentRejected,
+          allowExcess: Boolean(excessApprovalReason),
         });
         cumulativeAccepted.set(poLine.id, prior.accepted + currentAccepted);
       }
 
       const now = new Date();
       const changed = await transaction.goodsReceipt.updateMany({
-        where: { id: receipt.id, status: "DRAFT" },
-        data: { status: "POSTED", postedById: principal.userId, postedAt: now },
+        where: { id: receipt.id, status: "PENDING_PM_APPROVAL" },
+        data: {
+          status: "POSTED",
+          approvedById: principal.userId,
+          approvedAt: now,
+          excessApprovalReason,
+          postedById: principal.userId,
+          postedAt: now,
+        },
       });
       if (changed.count !== 1) throw new AppError("CONFLICT");
 
@@ -573,7 +739,7 @@ export const InventoryService = {
         UPDATE "PurchaseOrder"
         SET "status" = ${targetStatus}::"PurchaseOrderStatus"
         WHERE "id" = ${receipt.purchaseOrderId}::uuid
-          AND "status" IN ('ACCEPTED'::"PurchaseOrderStatus", 'PARTIALLY_RECEIVED'::"PurchaseOrderStatus")
+          AND "status" IN ('ISSUED'::"PurchaseOrderStatus", 'ACCEPTED'::"PurchaseOrderStatus", 'PARTIALLY_RECEIVED'::"PurchaseOrderStatus")
         RETURNING "id"
       `;
       if (!poChanged.length)
@@ -588,9 +754,11 @@ export const InventoryService = {
           action: AuditAction.RECEIVE,
           entityType: "GoodsReceipt",
           entityId: receipt.id,
-          before: { status: "DRAFT" },
+          before: { status: "PENDING_PM_APPROVAL" },
           after: {
             status: "POSTED",
+            approvedAt: now,
+            excessApprovalReason: excessApprovalReason ?? null,
             postedAt: now,
             acceptedStockLines: receipt.lines.filter((line) =>
               line.acceptedQuantity.gt(0),

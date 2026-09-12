@@ -6,6 +6,7 @@ export interface ReceiptQuantityInput {
   acceptedQuantity: number;
   damagedQuantity: number;
   rejectedQuantity: number;
+  allowExcess?: boolean;
 }
 
 export interface ReceiptQuantityResult {
@@ -49,7 +50,10 @@ export function calculateReceiptQuantities(
   const cumulativeAcceptedQuantity =
     input.previouslyAcceptedQuantity + input.acceptedQuantity;
 
-  if (cumulativeAcceptedQuantity > input.orderedQuantity) {
+  if (
+    cumulativeAcceptedQuantity > input.orderedQuantity &&
+    !input.allowExcess
+  ) {
     throw new Error("Accepted quantity exceeds the purchase-order quantity.");
   }
 
@@ -67,7 +71,7 @@ export function calculateReceiptQuantities(
   const maximumCurrentDelivery =
     remainingAcceptableQuantity + replacementAllowance;
 
-  if (receivedQuantity > maximumCurrentDelivery) {
+  if (receivedQuantity > maximumCurrentDelivery && !input.allowExcess) {
     throw new Error(
       "Delivery exceeds remaining PO quantity plus approved replacement allowance.",
     );
@@ -78,8 +82,10 @@ export function calculateReceiptQuantities(
     cumulativeAcceptedQuantity,
     cumulativeNonConformingQuantity:
       previousNonConforming + currentNonConforming,
-    remainingAcceptableQuantity:
+    remainingAcceptableQuantity: Math.max(
+      0,
       input.orderedQuantity - cumulativeAcceptedQuantity,
+    ),
     replacementAllowance,
   };
 }
@@ -120,8 +126,12 @@ export function canAcceptPurchaseOrder(status: PurchaseOrderStatus): boolean {
 }
 
 export function canPostGoodsReceipt(status: PurchaseOrderStatus): boolean {
-  // KDIPL confirmed that receiving occurs only after supplier acceptance.
-  return status === "ACCEPTED" || status === "PARTIALLY_RECEIVED";
+  // Supplier acknowledgment is tracked but does not gate physical receiving.
+  return (
+    status === "ISSUED" ||
+    status === "ACCEPTED" ||
+    status === "PARTIALLY_RECEIVED"
+  );
 }
 
 export function purchaseOrderStatusAfterReceipt(
@@ -134,11 +144,7 @@ export function purchaseOrderStatusAfterReceipt(
   if (cumulativeAcceptedQuantity < 0) {
     throw new Error("cumulativeAcceptedQuantity cannot be negative.");
   }
-  if (cumulativeAcceptedQuantity > orderedQuantity) {
-    throw new Error("Accepted quantity exceeds the purchase-order quantity.");
-  }
-
-  return cumulativeAcceptedQuantity === orderedQuantity
+  return cumulativeAcceptedQuantity >= orderedQuantity
     ? "RECEIVED"
     : "PARTIALLY_RECEIVED";
 }
