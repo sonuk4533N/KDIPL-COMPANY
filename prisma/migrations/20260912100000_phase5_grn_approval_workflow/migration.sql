@@ -5,7 +5,8 @@ ALTER TABLE "GoodsReceipt"
 ADD COLUMN "verifiedById" UUID,
 ADD COLUMN "verifiedAt" TIMESTAMP(3),
 ADD COLUMN "approvedById" UUID,
-ADD COLUMN "approvedAt" TIMESTAMP(3);
+ADD COLUMN "approvedAt" TIMESTAMP(3),
+ADD COLUMN "excessApprovalReason" VARCHAR(1000);
 
 ALTER TABLE "GoodsReceipt"
 ADD CONSTRAINT "GoodsReceipt_verifiedById_fkey"
@@ -130,6 +131,7 @@ BEGIN
             AND previous_grn."status" = 'POSTED'
             AND previous_grn."id" <> NEW."id"
         ) + line."acceptedQuantity" > po_line."quantity"
+        AND NULLIF(BTRIM(NEW."excessApprovalReason"), '') IS NULL
       );
 
     SELECT COALESCE(SUM(line."receivedQuantity"), 0)
@@ -138,7 +140,7 @@ BEGIN
     WHERE line."goodsReceiptId" = NEW."id";
 
     IF invalid_line_count > 0 OR received_total <= 0 THEN
-      RAISE EXCEPTION 'Posted GRN lines do not match the purchase order or exceed its accepted quantity';
+      RAISE EXCEPTION 'Posted GRN lines do not match the PO or excess approval reason is missing';
     END IF;
   END IF;
 
@@ -209,6 +211,15 @@ BEGIN
       RAISE EXCEPTION 'Purchase order cannot close with unresolved receipt exceptions';
     END IF;
   END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+
+-- Draft lines may contain a proposed excess. The atomic post guard above is
+-- authoritative and requires the Project Manager's recorded reason.
+CREATE OR REPLACE FUNCTION "kdipl_validate_grn_line_post"() RETURNS trigger AS $$
+BEGIN
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
