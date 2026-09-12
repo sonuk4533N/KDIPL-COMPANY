@@ -17,7 +17,9 @@ export async function getInventoryWorkspace(principal: AuthenticatedPrincipal) {
 
   const hasOrganizationScope =
     principal.roleCodes.includes("SYSTEM_ADMINISTRATOR") ||
-    principal.roleCodes.includes("STORE_KEEPER");
+    principal.roleCodes.includes("STORE_KEEPER") ||
+    principal.roleCodes.includes("PURCHASE_MANAGER") ||
+    principal.roleCodes.includes("PROJECT_MANAGER");
   const assignedSiteScope =
     !hasOrganizationScope &&
     principal.roleCodes.includes("SITE_SUPERVISOR") &&
