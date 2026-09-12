@@ -120,8 +120,12 @@ export function canAcceptPurchaseOrder(status: PurchaseOrderStatus): boolean {
 }
 
 export function canPostGoodsReceipt(status: PurchaseOrderStatus): boolean {
-  // KDIPL confirmed that receiving occurs only after supplier acceptance.
-  return status === "ACCEPTED" || status === "PARTIALLY_RECEIVED";
+  // Supplier acknowledgment is tracked but does not gate physical receiving.
+  return (
+    status === "ISSUED" ||
+    status === "ACCEPTED" ||
+    status === "PARTIALLY_RECEIVED"
+  );
 }
 
 export function purchaseOrderStatusAfterReceipt(
