@@ -60,7 +60,7 @@ function parseDateTime(value: string) {
 
 async function validateReceivingLocation(
   transaction: Prisma.TransactionClient,
-  principal: AuthenticatedPrincipal,
+  _principal: AuthenticatedPrincipal,
   values: { locationId: string; projectId: string; siteId: string },
 ) {
   const location = await transaction.inventoryLocation.findFirst({
