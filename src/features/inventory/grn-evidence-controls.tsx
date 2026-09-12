@@ -39,7 +39,10 @@ export function GrnEvidenceControls({
         >
           <input type="hidden" name="goodsReceiptId" value={goodsReceiptId} />
           <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="Evidence type" htmlFor={`evidence-type-${goodsReceiptId}`}>
+            <Field
+              label="Evidence type"
+              htmlFor={`evidence-type-${goodsReceiptId}`}
+            >
               <Select
                 id={`evidence-type-${goodsReceiptId}`}
                 name="documentType"
@@ -51,7 +54,10 @@ export function GrnEvidenceControls({
                 <option value="RECEIVER_SIGNATURE">Receiver signature</option>
               </Select>
             </Field>
-            <Field label="Evidence file" htmlFor={`evidence-file-${goodsReceiptId}`}>
+            <Field
+              label="Evidence file"
+              htmlFor={`evidence-file-${goodsReceiptId}`}
+            >
               <Input
                 id={`evidence-file-${goodsReceiptId}`}
                 name="file"
@@ -67,7 +73,10 @@ export function GrnEvidenceControls({
           <Button type="submit" disabled={uploadPending}>
             {uploadPending ? "Scanning and attaching..." : "Attach evidence"}
           </Button>
-          <FormFeedback state={uploadState} success="Clean evidence attached." />
+          <FormFeedback
+            state={uploadState}
+            success="Clean evidence attached."
+          />
         </form>
       ) : null}
 
@@ -77,10 +86,7 @@ export function GrnEvidenceControls({
           <Button type="submit" disabled={ackPending}>
             {ackPending ? "Acknowledging..." : "Acknowledge site receipt"}
           </Button>
-          <FormFeedback
-            state={ackState}
-            success="Site receipt acknowledged."
-          />
+          <FormFeedback state={ackState} success="Site receipt acknowledged." />
         </form>
       ) : null}
 

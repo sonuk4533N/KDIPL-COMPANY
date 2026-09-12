@@ -167,7 +167,11 @@ export function GoodsReceiptForm({
                 <p className="text-xs text-red-700">{gpsError}</p>
               ) : null}
             </div>
-            <input name="gpsLatitude" type="hidden" value={gps?.latitude ?? ""} />
+            <input
+              name="gpsLatitude"
+              type="hidden"
+              value={gps?.latitude ?? ""}
+            />
             <input
               name="gpsLongitude"
               type="hidden"

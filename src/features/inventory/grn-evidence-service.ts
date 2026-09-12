@@ -11,10 +11,7 @@ import {
   retentionUntilForEightFinancialYears,
   scanFileLocally,
 } from "@/server/storage/file-security";
-import {
-  getStorageProvider,
-  validateUpload,
-} from "@/server/storage/storage";
+import { getStorageProvider, validateUpload } from "@/server/storage/storage";
 import type { AuthenticatedPrincipal } from "@/types/application";
 
 function requirePurchaseManager(principal: AuthenticatedPrincipal) {
