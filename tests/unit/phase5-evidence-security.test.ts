@@ -28,16 +28,12 @@ describe("Phase 5 evidence security", () => {
 
   it("retains evidence through eight financial-year ends", () => {
     expect(
-      retentionUntilForEightFinancialYears(
-        new Date("2026-09-12T00:00:00.000Z"),
-      )
+      retentionUntilForEightFinancialYears(new Date("2026-09-12T00:00:00.000Z"))
         .toISOString()
         .slice(0, 10),
     ).toBe("2035-03-31");
     expect(
-      retentionUntilForEightFinancialYears(
-        new Date("2026-02-10T00:00:00.000Z"),
-      )
+      retentionUntilForEightFinancialYears(new Date("2026-02-10T00:00:00.000Z"))
         .toISOString()
         .slice(0, 10),
     ).toBe("2034-03-31");
