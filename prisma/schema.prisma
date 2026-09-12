@@ -125,6 +125,8 @@ enum InventoryLocationType {
 
 enum GoodsReceiptStatus {
   DRAFT
+  PHYSICALLY_VERIFIED
+  PENDING_PM_APPROVAL
   POSTED
   CANCELLED
 }
@@ -243,6 +245,8 @@ model User {
   purchaseOrdersClosed            PurchaseOrder[]                    @relation("PurchaseOrderCloser")
   purchaseOrdersCancelled         PurchaseOrder[]                    @relation("PurchaseOrderCanceller")
   goodsReceiptsCreated            GoodsReceipt[]                     @relation("GoodsReceiptCreator")
+  goodsReceiptsVerified           GoodsReceipt[]                     @relation("GoodsReceiptVerifier")
+  goodsReceiptsApproved           GoodsReceipt[]                     @relation("GoodsReceiptApprover")
   goodsReceiptsPosted             GoodsReceipt[]                     @relation("GoodsReceiptPoster")
   goodsReceiptsCancelled          GoodsReceipt[]                     @relation("GoodsReceiptCanceller")
   stockTransactionsCreated        StockTransaction[]                 @relation("StockTransactionCreator")
@@ -878,6 +882,10 @@ model GoodsReceipt {
   receivedAt               DateTime?
   notes                    String?
   createdById              String             @db.Uuid
+  verifiedById             String?            @db.Uuid
+  verifiedAt               DateTime?
+  approvedById             String?            @db.Uuid
+  approvedAt               DateTime?
   postedById               String?            @db.Uuid
   postedAt                 DateTime?
   cancelledById            String?            @db.Uuid
@@ -886,6 +894,8 @@ model GoodsReceipt {
   purchaseOrder            PurchaseOrder      @relation(fields: [purchaseOrderId], references: [id], onDelete: Restrict)
   location                 InventoryLocation  @relation(fields: [locationId], references: [id], onDelete: Restrict)
   createdBy                User               @relation("GoodsReceiptCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  verifiedBy               User?              @relation("GoodsReceiptVerifier", fields: [verifiedById], references: [id], onDelete: Restrict)
+  approvedBy               User?              @relation("GoodsReceiptApprover", fields: [approvedById], references: [id], onDelete: Restrict)
   postedBy                 User?              @relation("GoodsReceiptPoster", fields: [postedById], references: [id], onDelete: Restrict)
   cancelledBy              User?              @relation("GoodsReceiptCanceller", fields: [cancelledById], references: [id], onDelete: Restrict)
   lines                    GoodsReceiptLine[]
@@ -894,6 +904,8 @@ model GoodsReceipt {
 
   @@index([purchaseOrderId, status])
   @@index([locationId, status])
+  @@index([verifiedById, verifiedAt])
+  @@index([approvedById, approvedAt])
 }
 
 model GoodsReceiptLine {
