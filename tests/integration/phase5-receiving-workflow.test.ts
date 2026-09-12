@@ -243,7 +243,7 @@ describe.skipIf(!enabled)("Phase 5 receiving workflow", () => {
     const finalALine = await testDb!.goodsReceiptLine.findFirstOrThrow({
       where: { goodsReceiptId: finalA.id },
     });
-    await InventoryCompletionService.updateGoodsReceiptDraft(storeKeeper, {
+    await InventoryCompletionService.updateGoodsReceiptDraft(purchaseManager, {
       goodsReceiptId: finalA.id,
       locationId: location.id,
       receivedAt: "2026-09-04T09:30:00.000Z",
@@ -292,10 +292,12 @@ describe.skipIf(!enabled)("Phase 5 receiving workflow", () => {
       where: { id: { in: [finalA.id, finalB.id] } },
       select: { id: true, status: true },
     });
-    const unposted = receipts.find(({ status }) => status === "DRAFT");
+    const unposted = receipts.find(
+      ({ status }) => status === "PENDING_PM_APPROVAL",
+    );
     expect(unposted).toBeDefined();
     await InventoryCompletionService.cancelGoodsReceiptDraft(
-      storeKeeper,
+      purchaseManager,
       unposted!.id,
       "Concurrent duplicate final receipt",
     );
