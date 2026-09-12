@@ -158,3 +158,57 @@ JOIN "Permission" p ON (
   (r."code" = 'PROJECT_MANAGER' AND p."code" IN ('inventory.view','inventory.receive'))
 )
 ON CONFLICT ("roleId", "permissionId") DO NOTHING;
+
+
+CREATE OR REPLACE FUNCTION "kdipl_create_grn_exceptions"() RETURNS trigger AS $$
+BEGIN
+  IF NEW."status" = 'POSTED' AND OLD."status" = 'PENDING_PM_APPROVAL' THEN
+    INSERT INTO "GoodsReceiptException" (
+      "goodsReceiptLineId", "type", "quantity", "reason"
+    )
+    SELECT grl."id", 'DAMAGED'::"GoodsReceiptExceptionType", grl."damagedQuantity",
+           COALESCE(NULLIF(BTRIM(grl."notes"), ''), 'Damaged material recorded at receipt')
+    FROM "GoodsReceiptLine" grl
+    WHERE grl."goodsReceiptId" = NEW."id" AND grl."damagedQuantity" > 0
+    ON CONFLICT ("goodsReceiptLineId", "type") DO NOTHING;
+
+    INSERT INTO "GoodsReceiptException" (
+      "goodsReceiptLineId", "type", "quantity", "reason"
+    )
+    SELECT grl."id", 'REJECTED'::"GoodsReceiptExceptionType", grl."rejectedQuantity",
+           COALESCE(NULLIF(BTRIM(grl."notes"), ''), 'Rejected material recorded at receipt')
+    FROM "GoodsReceiptLine" grl
+    WHERE grl."goodsReceiptId" = NEW."id" AND grl."rejectedQuantity" > 0
+    ON CONFLICT ("goodsReceiptLineId", "type") DO NOTHING;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION "kdipl_guard_po_close"() RETURNS trigger AS $$
+BEGIN
+  IF NEW."status" = 'CLOSED' AND OLD."status" <> 'CLOSED' THEN
+    IF OLD."status" <> 'RECEIVED' THEN
+      RAISE EXCEPTION 'Only a fully received purchase order can be closed';
+    END IF;
+    IF EXISTS (
+      SELECT 1 FROM "GoodsReceipt"
+      WHERE "purchaseOrderId" = NEW."id"
+        AND "status" IN ('DRAFT','PHYSICALLY_VERIFIED','PENDING_PM_APPROVAL')
+    ) THEN
+      RAISE EXCEPTION 'Purchase order cannot close while unposted GRNs exist';
+    END IF;
+    IF EXISTS (
+      SELECT 1
+      FROM "GoodsReceiptException" exception
+      JOIN "GoodsReceiptLine" line ON line."id" = exception."goodsReceiptLineId"
+      JOIN "GoodsReceipt" receipt ON receipt."id" = line."goodsReceiptId"
+      WHERE receipt."purchaseOrderId" = NEW."id"
+        AND exception."status" IN ('OPEN','REPLACEMENT_EXPECTED','RETURN_PENDING')
+    ) THEN
+      RAISE EXCEPTION 'Purchase order cannot close with unresolved receipt exceptions';
+    END IF;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
