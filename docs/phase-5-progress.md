@@ -65,7 +65,6 @@ The original Phase 5 implementation was merged from `phase-5-inventory-foundatio
 
 Exact GST/accounting treatment remains subject to KDIPL Accounts/CA confirmation and is not encoded into Phase 5 inventory logic.
 
-
 ## Final customer-rule alignment
 
 The September 2026 customer decisions are now implemented for the Phase 5 boundary:
