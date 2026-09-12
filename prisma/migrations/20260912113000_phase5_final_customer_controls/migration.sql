@@ -444,12 +444,58 @@ BEFORE UPDATE OR DELETE ON "FileRecord"
 FOR EACH ROW EXECUTE FUNCTION "kdipl_guard_file_record"();
 
 CREATE OR REPLACE FUNCTION "kdipl_guard_amendment_mutation"() RETURNS trigger AS $$
+DECLARE
+  po_status "PurchaseOrderStatus";
+  invalid_line_count BIGINT;
 BEGIN
   IF TG_OP = 'DELETE' THEN
     RAISE EXCEPTION 'Purchase-order amendment history cannot be deleted';
   END IF;
   IF OLD."status" IN ('APPROVED','REJECTED','CANCELLED') AND NEW IS DISTINCT FROM OLD THEN
     RAISE EXCEPTION 'Finalized purchase-order amendments are immutable';
+  END IF;
+  IF NEW."status" = 'APPROVED' AND OLD."status" <> 'APPROVED' THEN
+    SELECT "status" INTO po_status
+    FROM "PurchaseOrder"
+    WHERE "id" = NEW."purchaseOrderId"
+    FOR UPDATE;
+
+    IF po_status NOT IN ('ISSUED','ACCEPTED','PARTIALLY_RECEIVED') THEN
+      RAISE EXCEPTION 'Purchase order is not open for amendment';
+    END IF;
+
+    SELECT COUNT(*) INTO invalid_line_count
+    FROM "PurchaseOrderLine" po_line
+    LEFT JOIN "PurchaseOrderAmendmentLine" amendment_line
+      ON amendment_line."purchaseOrderLineId" = po_line."id"
+      AND amendment_line."amendmentId" = NEW."id"
+    WHERE po_line."purchaseOrderId" = NEW."purchaseOrderId"
+      AND (
+        amendment_line."id" IS NULL
+        OR amendment_line."proposedQuantity" < (
+          SELECT COALESCE(SUM(
+            receipt_line."acceptedQuantity"
+            + receipt_line."damagedQuantity"
+            + receipt_line."rejectedQuantity"
+          ), 0)
+          FROM "GoodsReceiptLine" receipt_line
+          JOIN "GoodsReceipt" receipt
+            ON receipt."id" = receipt_line."goodsReceiptId"
+          WHERE receipt_line."purchaseOrderLineId" = po_line."id"
+            AND receipt."status" = 'POSTED'
+        )
+      );
+
+    IF invalid_line_count > 0 OR EXISTS (
+      SELECT 1
+      FROM "PurchaseOrderAmendmentLine" amendment_line
+      JOIN "PurchaseOrderLine" po_line
+        ON po_line."id" = amendment_line."purchaseOrderLineId"
+      WHERE amendment_line."amendmentId" = NEW."id"
+        AND po_line."purchaseOrderId" <> NEW."purchaseOrderId"
+    ) THEN
+      RAISE EXCEPTION 'Approved amendment must cover every PO line and cannot reduce below received quantity';
+    END IF;
   END IF;
   RETURN NEW;
 END;
