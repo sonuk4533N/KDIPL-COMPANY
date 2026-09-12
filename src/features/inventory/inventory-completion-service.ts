@@ -349,6 +349,12 @@ export const InventoryCompletionService = {
         projectId: receipt.purchaseOrder.rfq.requirement.projectId,
         siteId: receipt.purchaseOrder.rfq.requirement.siteId,
       });
+      if (input.directSiteDelivery && location.type !== "SITE_STORE") {
+        throw new AppError(
+          "VALIDATION_ERROR",
+          "Direct-site delivery must be received into the PO site's SITE_STORE.",
+        );
+      }
 
       if (input.lines.length !== receipt.lines.length) {
         throw new AppError(
@@ -412,6 +418,19 @@ export const InventoryCompletionService = {
           supplierDeliveryNoteDate: parseDate(input.supplierDeliveryNoteDate),
           vehicleNumber: input.vehicleNumber,
           transporter: input.transporter,
+          directSiteDelivery: input.directSiteDelivery,
+          gpsLatitude:
+            input.gpsLatitude === undefined
+              ? null
+              : new Prisma.Decimal(input.gpsLatitude),
+          gpsLongitude:
+            input.gpsLongitude === undefined
+              ? null
+              : new Prisma.Decimal(input.gpsLongitude),
+          gpsCapturedAt: input.gpsCapturedAt
+            ? parseDateTime(input.gpsCapturedAt)
+            : null,
+          receiverName: input.receiverName,
           receivedAt: parseDateTime(input.receivedAt),
           notes: input.notes,
         },
