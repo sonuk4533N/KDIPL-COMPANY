@@ -886,6 +886,7 @@ model GoodsReceipt {
   verifiedAt               DateTime?
   approvedById             String?            @db.Uuid
   approvedAt               DateTime?
+  excessApprovalReason     String?            @db.VarChar(1000)
   postedById               String?            @db.Uuid
   postedAt                 DateTime?
   cancelledById            String?            @db.Uuid
