@@ -8,7 +8,7 @@ export type FileScanResult = {
 
 const blockedSignatures = [
   "EICAR-STANDARD-ANTIVIRUS-TEST-FILE",
-  "<script language="VBScript">",
+  '<script language="VBScript">',
   "powershell -encodedcommand",
 ];
 
