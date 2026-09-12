@@ -21,19 +21,21 @@ export const createPurchaseOrderAmendmentSchema = z.object({
     .min(1),
 });
 
-export const decidePurchaseOrderAmendmentSchema = z.object({
-  amendmentId: uuid,
-  decision: z.enum(["APPROVE", "REJECT"]),
-  reason: z.string().trim().min(3).max(1000).optional(),
-}).superRefine((value, context) => {
-  if (value.decision === "REJECT" && !value.reason) {
-    context.addIssue({
-      code: "custom",
-      path: ["reason"],
-      message: "A rejection reason is required.",
-    });
-  }
-});
+export const decidePurchaseOrderAmendmentSchema = z
+  .object({
+    amendmentId: uuid,
+    decision: z.enum(["APPROVE", "REJECT"]),
+    reason: z.string().trim().min(3).max(1000).optional(),
+  })
+  .superRefine((value, context) => {
+    if (value.decision === "REJECT" && !value.reason) {
+      context.addIssue({
+        code: "custom",
+        path: ["reason"],
+        message: "A rejection reason is required.",
+      });
+    }
+  });
 
 export type CreatePurchaseOrderAmendmentInput = z.infer<
   typeof createPurchaseOrderAmendmentSchema
