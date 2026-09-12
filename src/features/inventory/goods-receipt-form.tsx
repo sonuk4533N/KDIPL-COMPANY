@@ -28,11 +28,37 @@ export function GoodsReceiptForm({
     null,
   );
   const [purchaseOrderId, setPurchaseOrderId] = useState("");
+  const [directSiteDelivery, setDirectSiteDelivery] = useState(false);
+  const [gps, setGps] = useState<{
+    latitude: string;
+    longitude: string;
+    capturedAt: string;
+  } | null>(null);
+  const [gpsError, setGpsError] = useState<string | null>(null);
   const selectedPurchaseOrder = useMemo(
     () => purchaseOrders.find(({ id }) => id === purchaseOrderId),
     [purchaseOrderId, purchaseOrders],
   );
   const fields = fieldsFor(state);
+
+  function captureGps() {
+    if (!navigator.geolocation) {
+      setGpsError("GPS is not available on this device.");
+      return;
+    }
+    setGpsError(null);
+    navigator.geolocation.getCurrentPosition(
+      ({ coords, timestamp }) => {
+        setGps({
+          latitude: coords.latitude.toFixed(6),
+          longitude: coords.longitude.toFixed(6),
+          capturedAt: new Date(timestamp).toISOString(),
+        });
+      },
+      () => setGpsError("Allow location access and try again."),
+      { enableHighAccuracy: true, timeout: 15_000 },
+    );
+  }
 
   return (
     <form action={action} className="space-y-6">
@@ -99,6 +125,66 @@ export function GoodsReceiptForm({
         <Field label="Transporter" htmlFor="grn-transporter">
           <Input id="grn-transporter" name="transporter" maxLength={160} />
         </Field>
+      </div>
+
+      <div className="space-y-4 rounded-xl border border-slate-200 p-4">
+        <label className="flex items-center gap-3 text-sm font-semibold text-slate-900">
+          <input
+            type="checkbox"
+            name="directSiteDelivery"
+            checked={directSiteDelivery}
+            onChange={(event) => {
+              setDirectSiteDelivery(event.target.checked);
+              if (!event.target.checked) setGps(null);
+            }}
+          />
+          Supplier delivered directly to the project site
+        </label>
+        {directSiteDelivery ? (
+          <div className="grid gap-4 md:grid-cols-2">
+            <Field
+              label="Receiver name"
+              htmlFor="grn-receiver"
+              error={fields?.receiverName?.[0]}
+            >
+              <Input
+                id="grn-receiver"
+                name="receiverName"
+                maxLength={160}
+                required
+              />
+            </Field>
+            <div className="space-y-2">
+              <Button type="button" variant="secondary" onClick={captureGps}>
+                Capture GPS location
+              </Button>
+              {gps ? (
+                <p className="text-xs text-emerald-700">
+                  GPS captured: {gps.latitude}, {gps.longitude}
+                </p>
+              ) : null}
+              {gpsError ? (
+                <p className="text-xs text-red-700">{gpsError}</p>
+              ) : null}
+            </div>
+            <input name="gpsLatitude" type="hidden" value={gps?.latitude ?? ""} />
+            <input
+              name="gpsLongitude"
+              type="hidden"
+              value={gps?.longitude ?? ""}
+            />
+            <input
+              name="gpsCapturedAt"
+              type="hidden"
+              value={gps?.capturedAt ?? ""}
+            />
+          </div>
+        ) : null}
+        <p className="text-xs text-slate-500">
+          Direct-site receipts require a SITE_STORE, GPS, four clean evidence
+          types, receiver signature, and Site Supervisor acknowledgment before
+          Project Manager approval.
+        </p>
       </div>
 
       {selectedPurchaseOrder ? (
