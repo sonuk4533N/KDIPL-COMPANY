@@ -148,6 +148,11 @@ export async function createGoodsReceiptDraftAction(
       ),
       vehicleNumber: optionalValue(formData.get("vehicleNumber")),
       transporter: optionalValue(formData.get("transporter")),
+      directSiteDelivery: formData.get("directSiteDelivery"),
+      gpsLatitude: optionalValue(formData.get("gpsLatitude")),
+      gpsLongitude: optionalValue(formData.get("gpsLongitude")),
+      gpsCapturedAt: optionalValue(formData.get("gpsCapturedAt")),
+      receiverName: optionalValue(formData.get("receiverName")),
       receivedAt: optionalValue(formData.get("receivedAt")),
       notes: optionalValue(formData.get("notes")),
       lines: purchaseOrderLineIds.map((purchaseOrderLineId, index) => ({
