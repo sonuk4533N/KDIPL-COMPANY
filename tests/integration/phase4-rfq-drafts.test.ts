@@ -505,6 +505,10 @@ describe.skipIf(!enabled)("Phase 4 RFQ workflow", () => {
         size: 128,
         storageKey: `supplier_quotation/test/${tag}.pdf`,
         storageProvider: "LOCAL",
+        scanProvider: "LOCAL_SIGNATURE_SCANNER",
+        scanReference: "NO_BLOCKED_SIGNATURE",
+        scannedAt: new Date(),
+        retentionUntil: new Date("2035-03-31T00:00:00.000Z"),
       },
     );
 
