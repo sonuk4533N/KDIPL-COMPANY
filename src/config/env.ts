@@ -41,8 +41,6 @@ export const envSchema = z.object({
     .positive()
     .max(52_428_800)
     .default(52_428_800),
-  FILE_SCAN_ENDPOINT: optionalUrl,
-  FILE_SCAN_TOKEN: z.string().optional(),
   LOG_LEVEL: z
     .enum(["fatal", "error", "warn", "info", "debug", "trace"])
     .default("info"),
