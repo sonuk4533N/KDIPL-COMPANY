@@ -18,6 +18,10 @@ import { getCurrentPrincipal } from "@/server/auth/current-user";
 import { validateMutationOrigin } from "@/server/auth/request-security";
 import { requirePermission } from "@/server/authorization/authorization";
 import { toCommandError } from "@/server/errors/app-error";
+import {
+  retentionUntilForEightFinancialYears,
+  scanFileLocally,
+} from "@/server/storage/file-security";
 import { getStorageProvider } from "@/server/storage/storage";
 import type { CommandResult } from "@/types/application";
 
@@ -140,12 +144,23 @@ export async function recordSupplierQuotationAction(
         },
       };
     }
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    const scan = scanFileLocally(bytes);
+    if (scan.status !== "CLEAN") {
+      return {
+        ok: false,
+        error: {
+          code: "FILE_UPLOAD_ERROR",
+          message: "The quotation document failed its security scan.",
+        },
+      };
+    }
     const provider = getStorageProvider();
     const storedObject = await provider.put({
       filename: file.name,
       mimeType: file.type,
       size: file.size,
-      bytes: new Uint8Array(await file.arrayBuffer()),
+      bytes,
       documentType: "SUPPLIER_QUOTATION",
     });
     stored = {
@@ -154,6 +169,10 @@ export async function recordSupplierQuotationAction(
       size: file.size,
       storageKey: storedObject.storageKey,
       storageProvider: storedObject.provider,
+      scanProvider: scan.provider,
+      scanReference: scan.reference,
+      scannedAt: new Date(),
+      retentionUntil: retentionUntilForEightFinancialYears(new Date()),
     };
     const result = await RfqService.recordQuotation(
       principal,
