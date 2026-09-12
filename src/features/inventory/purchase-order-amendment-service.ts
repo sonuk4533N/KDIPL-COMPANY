@@ -207,6 +207,16 @@ export const PurchaseOrderAmendmentService = {
           "Only a pending PO amendment can be decided.",
         );
       }
+      await transaction.$queryRaw`
+        SELECT "id" FROM "PurchaseOrder"
+        WHERE "id" = ${amendment.purchaseOrderId}::uuid
+        FOR UPDATE
+      `;
+      const currentPurchaseOrder =
+        await transaction.purchaseOrder.findUniqueOrThrow({
+          where: { id: amendment.purchaseOrderId },
+          include: { lines: true },
+        });
       if (amendment.createdById === principal.userId) {
         throw new AppError(
           "FORBIDDEN",
@@ -240,9 +250,9 @@ export const PurchaseOrderAmendmentService = {
       }
 
       if (
-        amendment.purchaseOrder.status !== "ISSUED" &&
-        amendment.purchaseOrder.status !== "ACCEPTED" &&
-        amendment.purchaseOrder.status !== "PARTIALLY_RECEIVED"
+        currentPurchaseOrder.status !== "ISSUED" &&
+        currentPurchaseOrder.status !== "ACCEPTED" &&
+        currentPurchaseOrder.status !== "PARTIALLY_RECEIVED"
       ) {
         throw new AppError(
           "INVALID_STATUS_TRANSITION",
@@ -253,7 +263,7 @@ export const PurchaseOrderAmendmentService = {
         amendment.lines.map((line) => [line.purchaseOrderLineId, line]),
       );
       let subtotal = new Prisma.Decimal(0);
-      for (const poLine of amendment.purchaseOrder.lines) {
+      for (const poLine of currentPurchaseOrder.lines) {
         const proposed = lineById.get(poLine.id);
         if (!proposed) {
           throw new AppError("CONFLICT", "Amendment line set is incomplete.");
@@ -272,7 +282,7 @@ export const PurchaseOrderAmendmentService = {
         });
       }
       const gstAmount = subtotal
-        .mul(amendment.purchaseOrder.gstRate)
+        .mul(currentPurchaseOrder.gstRate)
         .div(100)
         .toDecimalPlaces(2);
       const totalAmount = subtotal
