@@ -1,6 +1,6 @@
 # KDIPL Operations Platform
 
-Phase 1 identity/access, Phase 2 project/master-data, Phase 3 material requirement approval, Phase 4 commercial sourcing, and the Phase 5 inventory foundation for Kumar Designs India Private Limited's internal operations platform.
+Phase 1 identity/access, Phase 2 project/master-data, Phase 3 material requirement approval, Phase 4 commercial sourcing, Phase 5 goods receiving, and Phase 6 customer-aligned stock movements for Kumar Designs India Private Limited's internal operations platform.
 
 ## Foundation
 
@@ -61,7 +61,8 @@ Database tests require `RUN_DATABASE_TESTS=1` and an isolated `TEST_DATABASE_URL
 - [Phase 3 progress record](docs/phase-3-progress.md)
 - [Phase 4 progress record](docs/phase-4-progress.md)
 - [Phase 5 progress record](docs/phase-5-progress.md)
+- [Phase 6 customer alignment](docs/phase-6-customer-alignment.md)
 
 ## Phase boundary
 
-Completed milestones are Phase 1 **Authentication, Employees, Users, Roles & Permissions**, Phase 2 **Clients, Projects, Sites, Assignments & Master Data**, Phase 3 **Material Requirements & Approval**, Phase 4 **RFQ Commercial Workflow through Draft PO Creation**, and Phase 5 **Goods Receiving & Inventory Ledger** through PO close, controlled exceptions, immutable ledger entries, and ledger-derived stock balances. Phase 6 issue, transfer, adjustment, count, consumption, and return commands have not started. External supplier communication, accounts, and reporting remain locked to future approved increments.
+Completed milestones are Phase 1 **Authentication, Employees, Users, Roles & Permissions**, Phase 2 **Clients, Projects, Sites, Assignments & Master Data**, Phase 3 **Material Requirements & Approval**, Phase 4 **RFQ Commercial Workflow through Draft PO Creation**, Phase 5 **Goods Receiving & Inventory Ledger**, and Phase 6 **Customer-aligned Stock Movements & Project Closure**. Phase 6 covers issue, transfer, return, adjustment, physical count, non-usable stock, and closure workflows without introducing a consumption register. External supplier communication, accounting, and reporting remain locked to future approved increments.

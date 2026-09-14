@@ -1,3 +1,4 @@
+import Link from "next/link";
 import {
   AlertTriangle,
   Boxes,
@@ -74,8 +75,14 @@ export default async function InventoryPage() {
 
   return (
     <div className="space-y-7">
+      <Link
+        href="/inventory/movements"
+        className="inline-flex rounded-lg border px-4 py-2 text-sm font-medium"
+      >
+        Stock movements &amp; project closure
+      </Link>
       <PageHeader
-        eyebrow="Phase 5 · goods receiving & stock ledger"
+        eyebrow="Phases 5 & 6 · receiving, stock ledger & movements"
         title="Inventory and receiving"
         description="Create, verify, and approve receipts against issued purchase orders; stock changes only after PM approval."
       />

@@ -5,6 +5,7 @@ import { defineConfig, devices } from "@playwright/test";
 export default defineConfig({
   testDir: "./tests/e2e",
   fullyParallel: false,
+  workers: 1,
   retries: process.env.CI ? 2 : 0,
   reporter: process.env.CI ? "github" : "list",
   use: {
@@ -26,6 +27,11 @@ export default defineConfig({
   ],
   webServer: {
     command: "node node_modules/next/dist/bin/next start",
+    env: {
+      ...process.env,
+      DATABASE_URL:
+        process.env.TEST_DATABASE_URL ?? process.env.DATABASE_URL ?? "",
+    } as Record<string, string>,
     url: `${process.env.APP_URL ?? "http://localhost:3000"}/login`,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

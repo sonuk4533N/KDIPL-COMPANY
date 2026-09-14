@@ -32,7 +32,14 @@ describe.skipIf(!enabled)("Phase 5 receiving workflow", () => {
         where: { materialCode: "MAT-PVC-25MM" },
       }),
       testDb!.supplier.findFirstOrThrow(),
-      testDb!.user.findFirstOrThrow(),
+      testDb!.user.findFirstOrThrow({
+        where: {
+          status: "ACTIVE",
+          roles: {
+            some: { role: { code: "SYSTEM_ADMINISTRATOR", isActive: true } },
+          },
+        },
+      }),
     ]);
     const purchaseManager = {
       userId: actor.id,

@@ -27,6 +27,8 @@ const roles = [
 ] as const;
 
 const businessRoleGrants = {
+  MANAGING_DIRECTOR: ["app.access", "inventory.view"],
+  ACCOUNTS: ["app.access", "inventory.view"],
   SITE_SUPERVISOR: [
     "app.access",
     "project.view",
@@ -37,6 +39,7 @@ const businessRoleGrants = {
     "inventory.receive",
   ],
   PROJECT_MANAGER: [
+    "inventory.view",
     "app.access",
     "project.view",
     "site.view",
@@ -45,6 +48,7 @@ const businessRoleGrants = {
     "material_requirement.approve",
   ],
   PROJECT_DIRECTOR: [
+    "inventory.view",
     "app.access",
     "project.view",
     "site.view",
@@ -93,6 +97,22 @@ const positions = [
 ] as const;
 
 const phase2Employees = [
+  {
+    employeeCode: "DEMO-MD-001",
+    fullName: "Demo Managing Director",
+    designation: "Managing Director",
+    email: "managing.director@kdipl.test",
+    departmentCode: "MANAGEMENT",
+    positionCode: "MANAGING_DIRECTOR",
+  },
+  {
+    employeeCode: "DEMO-ACC-001",
+    fullName: "Demo Accounts Verifier",
+    designation: "Accounts Executive",
+    email: "accounts@kdipl.test",
+    departmentCode: "ACCOUNTS",
+    positionCode: "ACCOUNTS_EXECUTIVE",
+  },
   {
     employeeCode: "DEMO-PD-001",
     fullName: "Priya Malhotra",
@@ -152,6 +172,16 @@ const phase2Employees = [
 ] as const;
 
 const demoBusinessUsers = [
+  {
+    employeeCode: "DEMO-MD-001",
+    roleCode: "MANAGING_DIRECTOR",
+    email: "managing.director@kdipl.test",
+  },
+  {
+    employeeCode: "DEMO-ACC-001",
+    roleCode: "ACCOUNTS",
+    email: "accounts@kdipl.test",
+  },
   {
     employeeCode: "DEMO-PD-001",
     roleCode: "PROJECT_DIRECTOR",

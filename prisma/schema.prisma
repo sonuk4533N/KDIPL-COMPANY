@@ -240,6 +240,11 @@ model Employee {
 }
 
 model User {
+  movementRequests CustomerStockMovement[] @relation("MovementCreator")
+  movementUpdates CustomerStockMovement[] @relation("MovementActor")
+  movementApprovals CustomerStockMovement[] @relation("MovementApprover")
+  movementDispatches CustomerStockMovement[] @relation("MovementDispatcher")
+  stockClosures ProjectStockClosure[]
   id                              String                             @id @default(uuid()) @db.Uuid
   email                           String                             @db.VarChar(320)
   emailNormalized                 String                             @unique @db.VarChar(320)
@@ -369,6 +374,7 @@ model AuditLog {
 }
 
 model FileRecord {
+  movementEvidence CustomerStockMovement[]
   id                String                     @id @default(uuid()) @db.Uuid
   filename          String                     @db.VarChar(255)
   mimeType          String                     @db.VarChar(160)
@@ -508,6 +514,7 @@ model Client {
 }
 
 model Project {
+  stockClosure ProjectStockClosure?
   id                     String                @id @default(uuid()) @db.Uuid
   projectCode            String                @unique @db.VarChar(50)
   name                   String                @db.VarChar(180)
@@ -605,6 +612,7 @@ model MaterialCategory {
 }
 
 model UnitOfMeasure {
+  customerMovements CustomerStockMovement[]
   id                 String                    @id @default(uuid()) @db.Uuid
   code               String                    @unique @db.VarChar(30)
   name               String                    @unique @db.VarChar(80)
@@ -626,6 +634,7 @@ model UnitOfMeasure {
 }
 
 model Material {
+  customerMovements CustomerStockMovement[]
   id                String                    @id @default(uuid()) @db.Uuid
   materialCode      String                    @unique @db.VarChar(50)
   name              String                    @db.VarChar(180)
@@ -972,6 +981,8 @@ model PurchaseOrderLine {
 }
 
 model InventoryLocation {
+  outgoingCustomerMovements CustomerStockMovement[] @relation("MovementSource")
+  incomingCustomerMovements CustomerStockMovement[] @relation("MovementDestination")
   id                String                @id @default(uuid()) @db.Uuid
   locationCode      String                @unique @db.VarChar(50)
   name              String                @db.VarChar(180)
@@ -1084,6 +1095,7 @@ model GoodsReceiptException {
 }
 
 model StockTransaction {
+  movementPosting CustomerMovementPosting?
   id                 String               @id @default(uuid()) @db.Uuid
   transactionNumber  String               @unique @db.VarChar(30)
   type               StockTransactionType
@@ -1108,4 +1120,89 @@ model StockTransaction {
 
   @@index([locationId, materialId, createdAt])
   @@index([materialId, createdAt])
+}
+
+// Additive Phase 6 records; Phase 5 models and migration history are retained.
+model CustomerStockMovement {
+  id String @id @default(uuid()) @db.Uuid
+  number String @unique @db.VarChar(30)
+  kind String @db.VarChar(20)
+  status String @default("REQUESTED") @db.VarChar(20)
+  sourceLocationId String @db.Uuid
+  destinationLocationId String? @db.Uuid
+  materialId String @db.Uuid
+  unitId String @db.Uuid
+  quantity Decimal @db.Decimal(18,3)
+  approvedQuantity Decimal? @db.Decimal(18,3)
+  actualQuantity Decimal? @db.Decimal(18,3)
+  bookQuantity Decimal? @db.Decimal(18,3)
+  unitCost Decimal? @db.Decimal(24,6)
+  reason String @db.VarChar(1000)
+  transitionReason String @db.VarChar(1000)
+  evidenceId String? @db.Uuid
+  latitude Decimal? @db.Decimal(9,6)
+  longitude Decimal? @db.Decimal(9,6)
+  gpsCapturedAt DateTime?
+  receiptLatitude Decimal? @db.Decimal(9,6)
+  receiptLongitude Decimal? @db.Decimal(9,6)
+  receiptGpsCapturedAt DateTime?
+  category String? @db.VarChar(20)
+  direction String @default("OUT") @db.VarChar(3)
+  disposition String @default("DISPOSAL") @db.VarChar(10)
+  originalIssueId String? @db.Uuid
+  varianceOfId String? @unique @db.Uuid
+  correctionOfId String? @db.Uuid
+  closureProjectId String? @db.Uuid
+  createdById String @db.Uuid
+  updatedById String @db.Uuid
+  approvedById String? @db.Uuid
+  dispatchedById String? @db.Uuid
+  approvedAt DateTime?
+  dispatchedAt DateTime?
+  completedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  source InventoryLocation @relation("MovementSource", fields: [sourceLocationId], references: [id], onDelete: Restrict)
+  destination InventoryLocation? @relation("MovementDestination", fields: [destinationLocationId], references: [id], onDelete: Restrict)
+  material Material @relation(fields: [materialId], references: [id], onDelete: Restrict)
+  unit UnitOfMeasure @relation(fields: [unitId], references: [id], onDelete: Restrict)
+  evidence FileRecord? @relation(fields: [evidenceId], references: [id], onDelete: Restrict)
+  createdBy User @relation("MovementCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  updatedBy User @relation("MovementActor", fields: [updatedById], references: [id], onDelete: Restrict)
+  approvedBy User? @relation("MovementApprover", fields: [approvedById], references: [id], onDelete: Restrict)
+  dispatchedBy User? @relation("MovementDispatcher", fields: [dispatchedById], references: [id], onDelete: Restrict)
+  originalIssue CustomerStockMovement? @relation("IssueReturns", fields: [originalIssueId], references: [id], onDelete: Restrict)
+  returns CustomerStockMovement[] @relation("IssueReturns")
+  varianceOf CustomerStockMovement? @relation("MovementVariance", fields: [varianceOfId], references: [id], onDelete: Restrict)
+  variance CustomerStockMovement? @relation("MovementVariance")
+  correctionOf CustomerStockMovement? @relation("MovementCorrection", fields: [correctionOfId], references: [id], onDelete: Restrict)
+  corrections CustomerStockMovement[] @relation("MovementCorrection")
+  closure ProjectStockClosure? @relation(fields: [closureProjectId], references: [projectId], onDelete: Restrict)
+  postings CustomerMovementPosting[]
+  @@index([sourceLocationId, materialId, status])
+  @@index([destinationLocationId, status])
+  @@index([originalIssueId, status])
+  @@index([closureProjectId, status])
+}
+
+model CustomerMovementPosting {
+  id String @id @default(uuid()) @db.Uuid
+  movementId String @db.Uuid
+  transactionId String @unique @db.Uuid
+  leg String @db.VarChar(20)
+  unitCost Decimal @db.Decimal(24,6)
+  movement CustomerStockMovement @relation(fields: [movementId], references: [id], onDelete: Restrict)
+  transaction StockTransaction @relation(fields: [transactionId], references: [id], onDelete: Restrict)
+  @@unique([movementId, leg])
+}
+
+model ProjectStockClosure {
+  projectId String @id @db.Uuid
+  status String @default("OPEN") @db.VarChar(10)
+  createdById String @db.Uuid
+  createdAt DateTime @default(now())
+  closedAt DateTime?
+  project Project @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  createdBy User @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  movements CustomerStockMovement[]
 }
