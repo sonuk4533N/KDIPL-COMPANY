@@ -1,10 +1,5 @@
-import { ModulePlaceholder } from "@/components/shared/module-placeholder";
+import { FinancePage } from "@/features/finance/finance-page";
+
 export default function Page() {
-  return (
-    <ModulePlaceholder
-      title="Accounts"
-      description="Invoice verification and accounting integration await rules approved by KDIPL Accounts."
-      phase="Phase 7 — Accounts"
-    />
-  );
+  return <FinancePage mode="overview" />;
 }

@@ -61,7 +61,12 @@ export const primaryNavigation = [
     label: "Approvals",
     href: "/approvals",
     icon: CheckSquare2,
-    permissions: ["material_requirement.approve", "purchase.approve"],
+    permissions: [
+      "material_requirement.approve",
+      "purchase.approve",
+      "invoice.approve",
+      "payment.approve",
+    ],
   },
   {
     label: "Reports",

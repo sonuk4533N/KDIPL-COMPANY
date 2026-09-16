@@ -21,14 +21,57 @@ const roles = [
   ["PROJECT_MANAGER", "Project Manager"],
   ["PURCHASE_MANAGER", "Purchase Manager"],
   ["ACCOUNTS", "Accounts"],
+  ["ACCOUNTS_ADMIN", "Accounts Admin"],
   ["SITE_SUPERVISOR", "Site Supervisor"],
   ["STORE_KEEPER", "Store Keeper"],
   ["SYSTEM_ADMINISTRATOR", "System Administrator"],
 ] as const;
 
 const businessRoleGrants = {
-  MANAGING_DIRECTOR: ["app.access", "inventory.view"],
-  ACCOUNTS: ["app.access", "inventory.view"],
+  MANAGING_DIRECTOR: [
+    "app.access",
+    "inventory.view",
+    "invoice.view",
+    "invoice.approve",
+    "payment.view",
+    "payment.approve",
+    "report.view",
+    "report.export",
+    "notification.view",
+  ],
+  ACCOUNTS: [
+    "app.access",
+    "inventory.view",
+    "project.view",
+    "purchase.view",
+    "invoice.view",
+    "invoice.create",
+    "invoice.match",
+    "invoice.verify",
+    "payment.view",
+    "payment.create",
+    "tally.export",
+    "report.view",
+    "report.export",
+    "notification.view",
+  ],
+  ACCOUNTS_ADMIN: [
+    "app.access",
+    "inventory.view",
+    "project.view",
+    "purchase.view",
+    "invoice.view",
+    "invoice.create",
+    "invoice.match",
+    "invoice.verify",
+    "payment.view",
+    "payment.create",
+    "tax.manage",
+    "tally.export",
+    "report.view",
+    "report.export",
+    "notification.view",
+  ],
   SITE_SUPERVISOR: [
     "app.access",
     "project.view",
@@ -91,6 +134,7 @@ const positions = [
   ["PROJECT_MANAGER", "Project Manager", "PROJECTS"],
   ["PURCHASE_MANAGER", "Purchase Manager", "PROCUREMENT"],
   ["ACCOUNTS_EXECUTIVE", "Accounts Executive", "ACCOUNTS"],
+  ["ACCOUNTS_ADMIN", "Accounts Admin", "ACCOUNTS"],
   ["SITE_SUPERVISOR", "Site Supervisor", "SITE_OPERATIONS"],
   ["STORE_KEEPER", "Store Keeper", "STORES"],
   ["SYSTEM_ADMINISTRATOR", "System Administrator", "ADMINISTRATION"],
@@ -112,6 +156,14 @@ const phase2Employees = [
     email: "accounts@kdipl.test",
     departmentCode: "ACCOUNTS",
     positionCode: "ACCOUNTS_EXECUTIVE",
+  },
+  {
+    employeeCode: "DEMO-ACCA-001",
+    fullName: "Demo Accounts Administrator",
+    designation: "Accounts Administrator",
+    email: "accounts.admin@kdipl.test",
+    departmentCode: "ACCOUNTS",
+    positionCode: "ACCOUNTS_ADMIN",
   },
   {
     employeeCode: "DEMO-PD-001",
@@ -181,6 +233,11 @@ const demoBusinessUsers = [
     employeeCode: "DEMO-ACC-001",
     roleCode: "ACCOUNTS",
     email: "accounts@kdipl.test",
+  },
+  {
+    employeeCode: "DEMO-ACCA-001",
+    roleCode: "ACCOUNTS_ADMIN",
+    email: "accounts.admin@kdipl.test",
   },
   {
     employeeCode: "DEMO-PD-001",
@@ -868,7 +925,288 @@ async function seedDemoBusinessUsers(password: string) {
       });
     });
   }
-  console.info("Seeded five opt-in business-role demo login accounts.");
+  console.info(
+    `Seeded ${demoBusinessUsers.length} opt-in business-role demo login accounts.`,
+  );
+}
+
+async function seedPhase7Demo() {
+  const [accounts, managingDirector, project, supplier, material] =
+    await Promise.all([
+      prisma.user.findUniqueOrThrow({
+        where: { emailNormalized: "accounts@kdipl.test" },
+      }),
+      prisma.user.findUniqueOrThrow({
+        where: { emailNormalized: "managing.director@kdipl.test" },
+      }),
+      prisma.project.findUniqueOrThrow({
+        where: { projectCode: "PRJ-DLF-001" },
+      }),
+      prisma.supplier.findUniqueOrThrow({
+        where: { supplierCode: "SUP-NATIONAL-HW" },
+      }),
+      prisma.material.findUniqueOrThrow({
+        where: { materialCode: "MAT-MS-SQ-PIPE" },
+      }),
+    ]);
+  const site = await prisma.site.findUniqueOrThrow({
+    where: {
+      projectId_siteCode: { projectId: project.id, siteCode: "FLOOR-03" },
+    },
+  });
+  await prisma.project.update({
+    where: { id: project.id },
+    data: { procurementBudget: "5000000" },
+  });
+  await prisma.supplier.update({
+    where: { id: supplier.id },
+    data: { defaultCreditDays: 30 },
+  });
+
+  const requirement = await prisma.materialRequirement.upsert({
+    where: { requirementNumber: "MR-2026-P7DEMO" },
+    update: {},
+    create: {
+      requirementNumber: "MR-2026-P7DEMO",
+      projectId: project.id,
+      siteId: site.id,
+      neededBy: dateOnly("2026-10-15"),
+      purpose: "Phase 7 accounts-payable demonstration",
+      createdById: accounts.id,
+    },
+  });
+  const requirementLine = await prisma.materialRequirementLine.upsert({
+    where: {
+      requirementId_materialId: {
+        requirementId: requirement.id,
+        materialId: material.id,
+      },
+    },
+    update: {},
+    create: {
+      requirementId: requirement.id,
+      materialId: material.id,
+      unitId: material.defaultUnitId,
+      quantity: "100",
+    },
+  });
+  const rfq = await prisma.requestForQuotation.upsert({
+    where: { rfqNumber: "RFQ-2026-P7DEMO" },
+    update: {},
+    create: {
+      rfqNumber: "RFQ-2026-P7DEMO",
+      requirementId: requirement.id,
+      responseDueDate: dateOnly("2026-10-20"),
+      createdById: accounts.id,
+    },
+  });
+  let quotation = await prisma.supplierQuotation.findUnique({
+    where: { rfqId_supplierId: { rfqId: rfq.id, supplierId: supplier.id } },
+    include: { lines: true },
+  });
+  if (!quotation)
+    quotation = await prisma.supplierQuotation.create({
+      data: {
+        rfqId: rfq.id,
+        supplierId: supplier.id,
+        quoteReference: "P7-DEMO-QUOTE",
+        quoteDate: dateOnly("2026-09-01"),
+        validUntil: dateOnly("2027-03-31"),
+        offeredDeliveryDate: dateOnly("2026-09-15"),
+        paymentTerms: "30 days",
+        subtotal: "100000",
+        gstRate: "18",
+        gstAmount: "18000",
+        freightAmount: "0",
+        landedTotal: "118000",
+        recordedById: accounts.id,
+        lines: {
+          create: {
+            requirementLineId: requirementLine.id,
+            unitId: material.defaultUnitId,
+            quantity: "100",
+            unitPrice: "1000",
+            lineSubtotal: "100000",
+          },
+        },
+      },
+      include: { lines: true },
+    });
+  let purchaseOrder = await prisma.purchaseOrder.findUnique({
+    where: { poNumber: "PO-2026-P7DEMO" },
+    include: { lines: true },
+  });
+  if (!purchaseOrder)
+    purchaseOrder = await prisma.purchaseOrder.create({
+      data: {
+        poNumber: "PO-2026-P7DEMO",
+        rfqId: rfq.id,
+        quotationId: quotation.id,
+        supplierId: supplier.id,
+        status: "ACCEPTED",
+        subtotal: "100000",
+        gstRate: "18",
+        gstAmount: "18000",
+        freightAmount: "0",
+        totalAmount: "118000",
+        expectedDeliveryDate: dateOnly("2026-09-15"),
+        paymentTerms: "30 days",
+        creditDays: 30,
+        permitsAdvance: true,
+        maximumAdvancePercent: "25",
+        createdById: accounts.id,
+        issuedById: accounts.id,
+        issuedAt: new Date("2026-09-01T09:00:00.000Z"),
+        supplierAcceptedAt: new Date("2026-09-02T09:00:00.000Z"),
+        supplierAcceptanceReference: "P7-DEMO-ACCEPTED",
+        acceptedRecordedById: accounts.id,
+        lines: {
+          create: {
+            quotationLineId: quotation.lines[0].id,
+            requirementLineId: requirementLine.id,
+            unitId: material.defaultUnitId,
+            quantity: "100",
+            unitPrice: "1000",
+            lineSubtotal: "100000",
+          },
+        },
+      },
+      include: { lines: true },
+    });
+  const location = await prisma.inventoryLocation.upsert({
+    where: { locationCode: "CENTRAL-DEMO" },
+    update: {},
+    create: {
+      locationCode: "CENTRAL-DEMO",
+      name: "Demo Central Store",
+      type: "CENTRAL_STORE",
+    },
+  });
+  let receipt = await prisma.goodsReceipt.findUnique({
+    where: { grnNumber: "GRN-2026-P7DEMO" },
+    include: { lines: true },
+  });
+  if (!receipt) {
+    receipt = await prisma.goodsReceipt.create({
+      data: {
+        grnNumber: "GRN-2026-P7DEMO",
+        purchaseOrderId: purchaseOrder.id,
+        locationId: location.id,
+        supplierDeliveryNote: "DN-P7-DEMO",
+        receivedAt: new Date("2026-09-15T09:00:00.000Z"),
+        createdById: accounts.id,
+        lines: {
+          create: {
+            purchaseOrderLineId: purchaseOrder.lines[0].id,
+            materialId: material.id,
+            unitId: material.defaultUnitId,
+            orderedQuantity: "100",
+            receivedQuantity: "100",
+            acceptedQuantity: "100",
+          },
+        },
+      },
+      include: { lines: true },
+    });
+    const verifiedAt = new Date("2026-09-15T10:00:00.000Z");
+    await prisma.goodsReceipt.update({
+      where: { id: receipt.id },
+      data: {
+        status: "PHYSICALLY_VERIFIED",
+        verifiedById: accounts.id,
+        verifiedAt,
+      },
+    });
+    await prisma.goodsReceipt.update({
+      where: { id: receipt.id },
+      data: { status: "PENDING_PM_APPROVAL" },
+    });
+    await prisma.goodsReceipt.update({
+      where: { id: receipt.id },
+      data: {
+        status: "POSTED",
+        approvedById: managingDirector.id,
+        approvedAt: verifiedAt,
+        postedById: accounts.id,
+        postedAt: verifiedAt,
+      },
+    });
+    await prisma.stockTransaction.create({
+      data: {
+        transactionNumber: "STK-2026-P7DEMO",
+        type: "RECEIPT",
+        locationId: location.id,
+        materialId: material.id,
+        unitId: material.defaultUnitId,
+        quantity: "100",
+        goodsReceiptLineId: receipt.lines[0].id,
+        reason: "Posted Phase 7 demo goods receipt",
+        createdById: accounts.id,
+      },
+    });
+  }
+
+  await prisma.taxRuleVersion.upsert({
+    where: {
+      code_effectiveFrom: {
+        code: "GST18-CA",
+        effectiveFrom: dateOnly("2026-04-01"),
+      },
+    },
+    update: {},
+    create: {
+      code: "GST18-CA",
+      kind: "GST",
+      rate: "18",
+      effectiveFrom: dateOnly("2026-04-01"),
+      settings: { caApprovalReference: "KDIPL-CA-GST-2026" },
+      approvedById: accounts.id,
+      createdById: accounts.id,
+    },
+  });
+  await prisma.companyBankAccount.upsert({
+    where: {
+      bankName_maskedAccount: {
+        bankName: "HDFC Bank",
+        maskedAccount: "XXXX4421",
+      },
+    },
+    update: { isActive: true },
+    create: {
+      accountName: "KDIPL Operating Account",
+      bankName: "HDFC Bank",
+      maskedAccount: "XXXX4421",
+      ifsc: "HDFC0000123",
+    },
+  });
+  for (const documentType of [
+    "SUPPLIER_INVOICE",
+    "PAYMENT_PROOF",
+    "ADVANCE_PAYMENT_EVIDENCE",
+    "CREDIT_NOTE",
+    "DEBIT_NOTE",
+  ])
+    await prisma.fileRecord.upsert({
+      where: { storageKey: `seed/phase7/${documentType}.pdf` },
+      update: {},
+      create: {
+        filename: `phase7-${documentType.toLowerCase()}.pdf`,
+        mimeType: "application/pdf",
+        size: BigInt(128),
+        storageKey: `seed/phase7/${documentType}.pdf`,
+        storageProvider: "LOCAL",
+        documentType,
+        uploadedById: accounts.id,
+        scanStatus: "CLEAN",
+        scanProvider: "SEED",
+        scanReference: "trusted-demo-fixture",
+        scannedAt: new Date(),
+        retentionUntil: dateOnly("2035-03-31"),
+      },
+    });
+  console.info(
+    "Seeded Phase 7 PO, posted GRN, tax, bank, and document demo fixtures.",
+  );
 }
 
 async function main() {
@@ -959,6 +1297,7 @@ async function main() {
   const demoBusinessPassword = process.env.DEMO_BUSINESS_PASSWORD;
   if (demoBusinessPassword) {
     await seedDemoBusinessUsers(demoBusinessPassword);
+    await seedPhase7Demo();
   } else {
     console.info(
       "Skipped business-role demo logins; DEMO_BUSINESS_PASSWORD is not configured.",

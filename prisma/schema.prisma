@@ -240,54 +240,54 @@ model Employee {
 }
 
 model User {
-  movementRequests CustomerStockMovement[] @relation("MovementCreator")
-  movementUpdates CustomerStockMovement[] @relation("MovementActor")
-  movementApprovals CustomerStockMovement[] @relation("MovementApprover")
-  movementDispatches CustomerStockMovement[] @relation("MovementDispatcher")
-  stockClosures ProjectStockClosure[]
-  id                              String                             @id @default(uuid()) @db.Uuid
-  email                           String                             @db.VarChar(320)
-  emailNormalized                 String                             @unique @db.VarChar(320)
-  passwordHash                    String
-  displayName                     String                             @db.VarChar(160)
-  status                          UserStatus                         @default(ACTIVE)
-  authVersion                     Int                                @default(1)
-  mustChangePassword              Boolean                            @default(false)
-  passwordChangedAt               DateTime?
-  lastLoginAt                     DateTime?
-  employeeId                      String?                            @unique @db.Uuid
-  employee                        Employee?                          @relation(fields: [employeeId], references: [id], onDelete: SetNull)
-  roles                           UserRole[]
-  sessions                        Session[]
-  auditEvents                     AuditLog[]                         @relation("AuditActor")
-  uploadedFiles                   FileRecord[]
-  purchaseOrderAmendmentsCreated PurchaseOrderAmendment[]           @relation("PurchaseOrderAmendmentCreator")
-  purchaseOrderAmendmentsDecided PurchaseOrderAmendment[]           @relation("PurchaseOrderAmendmentDecisionActor")
-  goodsReceiptsSiteAcknowledged  GoodsReceipt[]                     @relation("GoodsReceiptSiteAcknowledger")
-  negativeStockExceptionsCreated TemporaryNegativeStockException[]  @relation("NegativeStockExceptionCreator")
-  materialRequirementsCreated     MaterialRequirement[]              @relation("MaterialRequirementCreator")
-  materialRequirementsSubmitted   MaterialRequirement[]              @relation("MaterialRequirementSubmitter")
-  materialRequirementsDecided     MaterialRequirement[]              @relation("MaterialRequirementDecisionActor")
-  materialRequirementEvents       MaterialRequirementWorkflowEvent[]
-  requestsForQuotationCreated     RequestForQuotation[]              @relation("RequestForQuotationCreator")
-  requestsForQuotationIssued      RequestForQuotation[]              @relation("RequestForQuotationIssuer")
-  requestsForQuotationRecommended RequestForQuotation[]              @relation("RequestForQuotationRecommender")
-  requestsForQuotationDecided     RequestForQuotation[]              @relation("RequestForQuotationDecisionActor")
-  requestForQuotationEvents       RequestForQuotationWorkflowEvent[]
-  supplierQuotationsRecorded      SupplierQuotation[]                @relation("SupplierQuotationRecorder")
-  purchaseOrdersCreated           PurchaseOrder[]                    @relation("PurchaseOrderCreator")
-  purchaseOrdersIssued            PurchaseOrder[]                    @relation("PurchaseOrderIssuer")
-  purchaseOrderAcceptancesRecorded PurchaseOrder[]                   @relation("PurchaseOrderAcceptanceRecorder")
-  purchaseOrdersClosed            PurchaseOrder[]                    @relation("PurchaseOrderCloser")
-  purchaseOrdersCancelled         PurchaseOrder[]                    @relation("PurchaseOrderCanceller")
-  goodsReceiptsCreated            GoodsReceipt[]                     @relation("GoodsReceiptCreator")
-  goodsReceiptsVerified           GoodsReceipt[]                     @relation("GoodsReceiptVerifier")
-  goodsReceiptsApproved           GoodsReceipt[]                     @relation("GoodsReceiptApprover")
-  goodsReceiptsPosted             GoodsReceipt[]                     @relation("GoodsReceiptPoster")
-  goodsReceiptsCancelled          GoodsReceipt[]                     @relation("GoodsReceiptCanceller")
-  stockTransactionsCreated        StockTransaction[]                 @relation("StockTransactionCreator")
-  createdAt                       DateTime                            @default(now())
-  updatedAt                       DateTime                            @updatedAt
+  movementRequests                 CustomerStockMovement[]            @relation("MovementCreator")
+  movementUpdates                  CustomerStockMovement[]            @relation("MovementActor")
+  movementApprovals                CustomerStockMovement[]            @relation("MovementApprover")
+  movementDispatches               CustomerStockMovement[]            @relation("MovementDispatcher")
+  stockClosures                    ProjectStockClosure[]
+  id                               String                             @id @default(uuid()) @db.Uuid
+  email                            String                             @db.VarChar(320)
+  emailNormalized                  String                             @unique @db.VarChar(320)
+  passwordHash                     String
+  displayName                      String                             @db.VarChar(160)
+  status                           UserStatus                         @default(ACTIVE)
+  authVersion                      Int                                @default(1)
+  mustChangePassword               Boolean                            @default(false)
+  passwordChangedAt                DateTime?
+  lastLoginAt                      DateTime?
+  employeeId                       String?                            @unique @db.Uuid
+  employee                         Employee?                          @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+  roles                            UserRole[]
+  sessions                         Session[]
+  auditEvents                      AuditLog[]                         @relation("AuditActor")
+  uploadedFiles                    FileRecord[]
+  purchaseOrderAmendmentsCreated   PurchaseOrderAmendment[]           @relation("PurchaseOrderAmendmentCreator")
+  purchaseOrderAmendmentsDecided   PurchaseOrderAmendment[]           @relation("PurchaseOrderAmendmentDecisionActor")
+  goodsReceiptsSiteAcknowledged    GoodsReceipt[]                     @relation("GoodsReceiptSiteAcknowledger")
+  negativeStockExceptionsCreated   TemporaryNegativeStockException[]  @relation("NegativeStockExceptionCreator")
+  materialRequirementsCreated      MaterialRequirement[]              @relation("MaterialRequirementCreator")
+  materialRequirementsSubmitted    MaterialRequirement[]              @relation("MaterialRequirementSubmitter")
+  materialRequirementsDecided      MaterialRequirement[]              @relation("MaterialRequirementDecisionActor")
+  materialRequirementEvents        MaterialRequirementWorkflowEvent[]
+  requestsForQuotationCreated      RequestForQuotation[]              @relation("RequestForQuotationCreator")
+  requestsForQuotationIssued       RequestForQuotation[]              @relation("RequestForQuotationIssuer")
+  requestsForQuotationRecommended  RequestForQuotation[]              @relation("RequestForQuotationRecommender")
+  requestsForQuotationDecided      RequestForQuotation[]              @relation("RequestForQuotationDecisionActor")
+  requestForQuotationEvents        RequestForQuotationWorkflowEvent[]
+  supplierQuotationsRecorded       SupplierQuotation[]                @relation("SupplierQuotationRecorder")
+  purchaseOrdersCreated            PurchaseOrder[]                    @relation("PurchaseOrderCreator")
+  purchaseOrdersIssued             PurchaseOrder[]                    @relation("PurchaseOrderIssuer")
+  purchaseOrderAcceptancesRecorded PurchaseOrder[]                    @relation("PurchaseOrderAcceptanceRecorder")
+  purchaseOrdersClosed             PurchaseOrder[]                    @relation("PurchaseOrderCloser")
+  purchaseOrdersCancelled          PurchaseOrder[]                    @relation("PurchaseOrderCanceller")
+  goodsReceiptsCreated             GoodsReceipt[]                     @relation("GoodsReceiptCreator")
+  goodsReceiptsVerified            GoodsReceipt[]                     @relation("GoodsReceiptVerifier")
+  goodsReceiptsApproved            GoodsReceipt[]                     @relation("GoodsReceiptApprover")
+  goodsReceiptsPosted              GoodsReceipt[]                     @relation("GoodsReceiptPoster")
+  goodsReceiptsCancelled           GoodsReceipt[]                     @relation("GoodsReceiptCanceller")
+  stockTransactionsCreated         StockTransaction[]                 @relation("StockTransactionCreator")
+  createdAt                        DateTime                           @default(now())
+  updatedAt                        DateTime                           @updatedAt
 
   @@index([status])
 }
@@ -374,24 +374,24 @@ model AuditLog {
 }
 
 model FileRecord {
-  movementEvidence CustomerStockMovement[]
-  id                String                     @id @default(uuid()) @db.Uuid
-  filename          String                     @db.VarChar(255)
-  mimeType          String                     @db.VarChar(160)
-  size              BigInt
-  storageKey        String                     @unique @db.VarChar(500)
-  storageProvider   StorageProvider
-  documentType      String                     @db.VarChar(80)
-  uploadedById      String?                    @db.Uuid
-  uploadedBy        User?                      @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
-  quotationDocument SupplierQuotationDocument?
+  movementEvidence     CustomerStockMovement[]
+  id                   String                     @id @default(uuid()) @db.Uuid
+  filename             String                     @db.VarChar(255)
+  mimeType             String                     @db.VarChar(160)
+  size                 BigInt
+  storageKey           String                     @unique @db.VarChar(500)
+  storageProvider      StorageProvider
+  documentType         String                     @db.VarChar(80)
+  uploadedById         String?                    @db.Uuid
+  uploadedBy           User?                      @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+  quotationDocument    SupplierQuotationDocument?
   goodsReceiptDocument GoodsReceiptDocument?
-  scanStatus        FileScanStatus             @default(QUARANTINED)
-  scanProvider      String?                    @db.VarChar(80)
-  scanReference     String?                    @db.VarChar(500)
-  scannedAt         DateTime?
-  retentionUntil    DateTime                   @db.Date
-  uploadedAt        DateTime                   @default(now())
+  scanStatus           FileScanStatus             @default(QUARANTINED)
+  scanProvider         String?                    @db.VarChar(80)
+  scanReference        String?                    @db.VarChar(500)
+  scannedAt            DateTime?
+  retentionUntil       DateTime                   @db.Date
+  uploadedAt           DateTime                   @default(now())
 
   @@index([uploadedById, uploadedAt])
   @@index([documentType, uploadedAt])
@@ -426,14 +426,14 @@ model PurchaseOrderAmendment {
 }
 
 model PurchaseOrderAmendmentLine {
-  id                      String                 @id @default(uuid()) @db.Uuid
-  amendmentId             String                 @db.Uuid
-  purchaseOrderLineId     String                 @db.Uuid
-  proposedQuantity        Decimal                @db.Decimal(18, 3)
-  proposedUnitPrice       Decimal                @db.Decimal(18, 2)
-  amendment               PurchaseOrderAmendment @relation(fields: [amendmentId], references: [id], onDelete: Restrict)
-  purchaseOrderLine       PurchaseOrderLine      @relation(fields: [purchaseOrderLineId], references: [id], onDelete: Restrict)
-  createdAt               DateTime               @default(now())
+  id                  String                 @id @default(uuid()) @db.Uuid
+  amendmentId         String                 @db.Uuid
+  purchaseOrderLineId String                 @db.Uuid
+  proposedQuantity    Decimal                @db.Decimal(18, 3)
+  proposedUnitPrice   Decimal                @db.Decimal(18, 2)
+  amendment           PurchaseOrderAmendment @relation(fields: [amendmentId], references: [id], onDelete: Restrict)
+  purchaseOrderLine   PurchaseOrderLine      @relation(fields: [purchaseOrderLineId], references: [id], onDelete: Restrict)
+  createdAt           DateTime               @default(now())
 
   @@unique([amendmentId, purchaseOrderLineId])
   @@index([purchaseOrderLineId])
@@ -514,7 +514,7 @@ model Client {
 }
 
 model Project {
-  stockClosure ProjectStockClosure?
+  stockClosure           ProjectStockClosure?
   id                     String                @id @default(uuid()) @db.Uuid
   projectCode            String                @unique @db.VarChar(50)
   name                   String                @db.VarChar(180)
@@ -525,6 +525,7 @@ model Project {
   startDate              DateTime?             @db.Date
   expectedCompletionDate DateTime?             @db.Date
   actualCompletionDate   DateTime?             @db.Date
+  procurementBudget      Decimal?              @db.Decimal(18, 2)
   client                 Client                @relation(fields: [clientId], references: [id], onDelete: Restrict)
   sites                  Site[]
   assignments            ProjectAssignment[]
@@ -612,46 +613,46 @@ model MaterialCategory {
 }
 
 model UnitOfMeasure {
-  customerMovements CustomerStockMovement[]
-  id                 String                    @id @default(uuid()) @db.Uuid
-  code               String                    @unique @db.VarChar(30)
-  name               String                    @unique @db.VarChar(80)
-  symbol             String                    @db.VarChar(20)
-  description        String?
-  decimalScale       Int                       @default(3)
-  isActive           Boolean                   @default(true)
-  materials          Material[]
-  requirementLines   MaterialRequirementLine[]
-  quotationLines     SupplierQuotationLine[]
-  purchaseOrderLines PurchaseOrderLine[]
-  goodsReceiptLines  GoodsReceiptLine[]
-  stockTransactions  StockTransaction[]
+  customerMovements       CustomerStockMovement[]
+  id                      String                            @id @default(uuid()) @db.Uuid
+  code                    String                            @unique @db.VarChar(30)
+  name                    String                            @unique @db.VarChar(80)
+  symbol                  String                            @db.VarChar(20)
+  description             String?
+  decimalScale            Int                               @default(3)
+  isActive                Boolean                           @default(true)
+  materials               Material[]
+  requirementLines        MaterialRequirementLine[]
+  quotationLines          SupplierQuotationLine[]
+  purchaseOrderLines      PurchaseOrderLine[]
+  goodsReceiptLines       GoodsReceiptLine[]
+  stockTransactions       StockTransaction[]
   negativeStockExceptions TemporaryNegativeStockException[]
-  createdAt          DateTime                  @default(now())
-  updatedAt          DateTime                  @updatedAt
+  createdAt               DateTime                          @default(now())
+  updatedAt               DateTime                          @updatedAt
 
   @@index([isActive, name])
 }
 
 model Material {
-  customerMovements CustomerStockMovement[]
-  id                String                    @id @default(uuid()) @db.Uuid
-  materialCode      String                    @unique @db.VarChar(50)
-  name              String                    @db.VarChar(180)
-  description       String?
-  categoryId        String                    @db.Uuid
-  defaultUnitId     String                    @db.Uuid
-  minimumStockLevel Decimal                   @default(0) @db.Decimal(18, 3)
-  reorderLevel      Decimal                   @default(0) @db.Decimal(18, 3)
-  isActive          Boolean                   @default(true)
-  category          MaterialCategory          @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  defaultUnit       UnitOfMeasure             @relation(fields: [defaultUnitId], references: [id], onDelete: Restrict)
-  requirementLines  MaterialRequirementLine[]
-  goodsReceiptLines GoodsReceiptLine[]
+  customerMovements       CustomerStockMovement[]
+  id                      String                            @id @default(uuid()) @db.Uuid
+  materialCode            String                            @unique @db.VarChar(50)
+  name                    String                            @db.VarChar(180)
+  description             String?
+  categoryId              String                            @db.Uuid
+  defaultUnitId           String                            @db.Uuid
+  minimumStockLevel       Decimal                           @default(0) @db.Decimal(18, 3)
+  reorderLevel            Decimal                           @default(0) @db.Decimal(18, 3)
+  isActive                Boolean                           @default(true)
+  category                MaterialCategory                  @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  defaultUnit             UnitOfMeasure                     @relation(fields: [defaultUnitId], references: [id], onDelete: Restrict)
+  requirementLines        MaterialRequirementLine[]
+  goodsReceiptLines       GoodsReceiptLine[]
   negativeStockExceptions TemporaryNegativeStockException[]
-  stockTransactions StockTransaction[]
-  createdAt         DateTime                  @default(now())
-  updatedAt         DateTime                  @updatedAt
+  stockTransactions       StockTransaction[]
+  createdAt               DateTime                          @default(now())
+  updatedAt               DateTime                          @updatedAt
 
   @@unique([name, defaultUnitId])
   @@index([categoryId, isActive])
@@ -660,25 +661,27 @@ model Material {
 }
 
 model Supplier {
-  id              String                        @id @default(uuid()) @db.Uuid
-  supplierCode    String                        @unique @db.VarChar(50)
-  legalName       String                        @db.VarChar(180)
-  tradeName       String?                       @db.VarChar(180)
-  gstin           String?                       @unique @db.VarChar(15)
-  address         String?
-  city            String                        @db.VarChar(120)
-  state           String                        @db.VarChar(120)
-  postalCode      String?                       @db.VarChar(12)
-  phone           String?                       @db.VarChar(30)
-  email           String?                       @db.VarChar(320)
-  isGstRegistered Boolean                       @default(false)
-  isActive        Boolean                       @default(true)
-  contacts        SupplierContact[]
-  rfqInvitations  RequestForQuotationSupplier[]
-  quotations      SupplierQuotation[]
-  purchaseOrders  PurchaseOrder[]
-  createdAt       DateTime                      @default(now())
-  updatedAt       DateTime                      @updatedAt
+  id                           String                        @id @default(uuid()) @db.Uuid
+  supplierCode                 String                        @unique @db.VarChar(50)
+  legalName                    String                        @db.VarChar(180)
+  tradeName                    String?                       @db.VarChar(180)
+  gstin                        String?                       @unique @db.VarChar(15)
+  address                      String?
+  city                         String                        @db.VarChar(120)
+  state                        String                        @db.VarChar(120)
+  postalCode                   String?                       @db.VarChar(12)
+  phone                        String?                       @db.VarChar(30)
+  email                        String?                       @db.VarChar(320)
+  isGstRegistered              Boolean                       @default(false)
+  accountsApprovedUnregistered Boolean                       @default(false)
+  defaultCreditDays            Int                           @default(30)
+  isActive                     Boolean                       @default(true)
+  contacts                     SupplierContact[]
+  rfqInvitations               RequestForQuotationSupplier[]
+  quotations                   SupplierQuotation[]
+  purchaseOrders               PurchaseOrder[]
+  createdAt                    DateTime                      @default(now())
+  updatedAt                    DateTime                      @updatedAt
 
   @@unique([legalName, city])
   @@index([isActive, legalName])
@@ -909,45 +912,48 @@ model SupplierQuotationDocument {
 }
 
 model PurchaseOrder {
-  id                          String              @id @default(uuid()) @db.Uuid
-  poNumber                    String              @unique @db.VarChar(30)
-  rfqId                       String              @unique @db.Uuid
-  quotationId                 String              @unique @db.Uuid
-  supplierId                  String              @db.Uuid
-  status                      PurchaseOrderStatus @default(DRAFT)
-  currency                    String              @default("INR") @db.Char(3)
-  subtotal                    Decimal             @db.Decimal(18, 2)
-  gstRate                     Decimal             @db.Decimal(5, 2)
-  gstAmount                   Decimal             @db.Decimal(18, 2)
-  freightAmount               Decimal             @db.Decimal(18, 2)
-  totalAmount                 Decimal             @db.Decimal(18, 2)
-  expectedDeliveryDate        DateTime            @db.Date
-  paymentTerms                String              @db.VarChar(500)
-  createdById                 String              @db.Uuid
-  issuedById                  String?             @db.Uuid
+  id                          String                   @id @default(uuid()) @db.Uuid
+  poNumber                    String                   @unique @db.VarChar(30)
+  rfqId                       String                   @unique @db.Uuid
+  quotationId                 String                   @unique @db.Uuid
+  supplierId                  String                   @db.Uuid
+  status                      PurchaseOrderStatus      @default(DRAFT)
+  currency                    String                   @default("INR") @db.Char(3)
+  subtotal                    Decimal                  @db.Decimal(18, 2)
+  gstRate                     Decimal                  @db.Decimal(5, 2)
+  gstAmount                   Decimal                  @db.Decimal(18, 2)
+  freightAmount               Decimal                  @db.Decimal(18, 2)
+  totalAmount                 Decimal                  @db.Decimal(18, 2)
+  expectedDeliveryDate        DateTime                 @db.Date
+  paymentTerms                String                   @db.VarChar(500)
+  creditDays                  Int?
+  permitsAdvance              Boolean                  @default(false)
+  maximumAdvancePercent       Decimal?                 @db.Decimal(5, 2)
+  createdById                 String                   @db.Uuid
+  issuedById                  String?                  @db.Uuid
   issuedAt                    DateTime?
   supplierAcceptedAt          DateTime?
-  supplierAcceptanceReference String?             @db.VarChar(100)
-  acceptedRecordedById        String?             @db.Uuid
-  closedById                  String?             @db.Uuid
+  supplierAcceptanceReference String?                  @db.VarChar(100)
+  acceptedRecordedById        String?                  @db.Uuid
+  closedById                  String?                  @db.Uuid
   closedAt                    DateTime?
-  cancelledById               String?             @db.Uuid
+  cancelledById               String?                  @db.Uuid
   cancelledAt                 DateTime?
-  cancellationReason          String?             @db.VarChar(1000)
-  shortCloseReason             String?             @db.VarChar(1000)
-  rfq                         RequestForQuotation @relation(fields: [rfqId], references: [id], onDelete: Restrict)
-  quotation                   SupplierQuotation   @relation(fields: [quotationId], references: [id], onDelete: Restrict)
-  supplier                    Supplier            @relation(fields: [supplierId], references: [id], onDelete: Restrict)
-  createdBy                   User                @relation("PurchaseOrderCreator", fields: [createdById], references: [id], onDelete: Restrict)
-  issuedBy                    User?               @relation("PurchaseOrderIssuer", fields: [issuedById], references: [id], onDelete: Restrict)
-  acceptedRecordedBy          User?               @relation("PurchaseOrderAcceptanceRecorder", fields: [acceptedRecordedById], references: [id], onDelete: Restrict)
-  closedBy                    User?               @relation("PurchaseOrderCloser", fields: [closedById], references: [id], onDelete: Restrict)
-  cancelledBy                 User?               @relation("PurchaseOrderCanceller", fields: [cancelledById], references: [id], onDelete: Restrict)
+  cancellationReason          String?                  @db.VarChar(1000)
+  shortCloseReason            String?                  @db.VarChar(1000)
+  rfq                         RequestForQuotation      @relation(fields: [rfqId], references: [id], onDelete: Restrict)
+  quotation                   SupplierQuotation        @relation(fields: [quotationId], references: [id], onDelete: Restrict)
+  supplier                    Supplier                 @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  createdBy                   User                     @relation("PurchaseOrderCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  issuedBy                    User?                    @relation("PurchaseOrderIssuer", fields: [issuedById], references: [id], onDelete: Restrict)
+  acceptedRecordedBy          User?                    @relation("PurchaseOrderAcceptanceRecorder", fields: [acceptedRecordedById], references: [id], onDelete: Restrict)
+  closedBy                    User?                    @relation("PurchaseOrderCloser", fields: [closedById], references: [id], onDelete: Restrict)
+  cancelledBy                 User?                    @relation("PurchaseOrderCanceller", fields: [cancelledById], references: [id], onDelete: Restrict)
   lines                       PurchaseOrderLine[]
   goodsReceipts               GoodsReceipt[]
-  amendments                   PurchaseOrderAmendment[]
-  createdAt                   DateTime            @default(now())
-  updatedAt                   DateTime            @updatedAt
+  amendments                  PurchaseOrderAmendment[]
+  createdAt                   DateTime                 @default(now())
+  updatedAt                   DateTime                 @updatedAt
 
   @@index([supplierId, status])
   @@index([createdById, createdAt])
@@ -957,22 +963,22 @@ model PurchaseOrder {
 }
 
 model PurchaseOrderLine {
-  id                String                  @id @default(uuid()) @db.Uuid
-  purchaseOrderId   String                  @db.Uuid
-  quotationLineId   String                  @unique @db.Uuid
-  requirementLineId String                  @db.Uuid
-  unitId            String                  @db.Uuid
-  quantity          Decimal                 @db.Decimal(18, 3)
-  unitPrice         Decimal                 @db.Decimal(18, 2)
-  lineSubtotal      Decimal                 @db.Decimal(18, 2)
-  position          Int                     @default(0)
-  purchaseOrder     PurchaseOrder           @relation(fields: [purchaseOrderId], references: [id], onDelete: Restrict)
-  quotation         SupplierQuotationLine   @relation(fields: [quotationLineId], references: [id], onDelete: Restrict)
-  requirementLine   MaterialRequirementLine @relation(fields: [requirementLineId], references: [id], onDelete: Restrict)
-  unit              UnitOfMeasure           @relation(fields: [unitId], references: [id], onDelete: Restrict)
+  id                String                       @id @default(uuid()) @db.Uuid
+  purchaseOrderId   String                       @db.Uuid
+  quotationLineId   String                       @unique @db.Uuid
+  requirementLineId String                       @db.Uuid
+  unitId            String                       @db.Uuid
+  quantity          Decimal                      @db.Decimal(18, 3)
+  unitPrice         Decimal                      @db.Decimal(18, 2)
+  lineSubtotal      Decimal                      @db.Decimal(18, 2)
+  position          Int                          @default(0)
+  purchaseOrder     PurchaseOrder                @relation(fields: [purchaseOrderId], references: [id], onDelete: Restrict)
+  quotation         SupplierQuotationLine        @relation(fields: [quotationLineId], references: [id], onDelete: Restrict)
+  requirementLine   MaterialRequirementLine      @relation(fields: [requirementLineId], references: [id], onDelete: Restrict)
+  unit              UnitOfMeasure                @relation(fields: [unitId], references: [id], onDelete: Restrict)
   goodsReceiptLines GoodsReceiptLine[]
   amendmentLines    PurchaseOrderAmendmentLine[]
-  createdAt         DateTime                @default(now())
+  createdAt         DateTime                     @default(now())
 
   @@unique([purchaseOrderId, requirementLineId])
   @@index([purchaseOrderId, position])
@@ -981,69 +987,69 @@ model PurchaseOrderLine {
 }
 
 model InventoryLocation {
-  outgoingCustomerMovements CustomerStockMovement[] @relation("MovementSource")
-  incomingCustomerMovements CustomerStockMovement[] @relation("MovementDestination")
-  id                String                @id @default(uuid()) @db.Uuid
-  locationCode      String                @unique @db.VarChar(50)
-  name              String                @db.VarChar(180)
-  type              InventoryLocationType
-  projectId         String?               @db.Uuid
-  siteId            String?               @db.Uuid
-  isActive          Boolean               @default(true)
-  project           Project?              @relation(fields: [projectId], references: [id], onDelete: Restrict)
-  site              Site?                 @relation(fields: [siteId, projectId], references: [id, projectId], onDelete: Restrict)
-  goodsReceipts     GoodsReceipt[]
-  stockTransactions StockTransaction[]
-  negativeStockExceptions TemporaryNegativeStockException[]
-  createdAt         DateTime              @default(now())
-  updatedAt         DateTime              @updatedAt
+  outgoingCustomerMovements CustomerStockMovement[]           @relation("MovementSource")
+  incomingCustomerMovements CustomerStockMovement[]           @relation("MovementDestination")
+  id                        String                            @id @default(uuid()) @db.Uuid
+  locationCode              String                            @unique @db.VarChar(50)
+  name                      String                            @db.VarChar(180)
+  type                      InventoryLocationType
+  projectId                 String?                           @db.Uuid
+  siteId                    String?                           @db.Uuid
+  isActive                  Boolean                           @default(true)
+  project                   Project?                          @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  site                      Site?                             @relation(fields: [siteId, projectId], references: [id, projectId], onDelete: Restrict)
+  goodsReceipts             GoodsReceipt[]
+  stockTransactions         StockTransaction[]
+  negativeStockExceptions   TemporaryNegativeStockException[]
+  createdAt                 DateTime                          @default(now())
+  updatedAt                 DateTime                          @updatedAt
 
   @@index([projectId, isActive])
   @@index([siteId, isActive])
 }
 
 model GoodsReceipt {
-  id                       String             @id @default(uuid()) @db.Uuid
-  grnNumber                String             @unique @db.VarChar(30)
-  purchaseOrderId          String             @db.Uuid
-  locationId               String             @db.Uuid
-  status                   GoodsReceiptStatus @default(DRAFT)
-  supplierDeliveryNote     String?            @db.VarChar(100)
-  supplierDeliveryNoteDate DateTime?          @db.Date
-  vehicleNumber            String?            @db.VarChar(50)
-  transporter              String?            @db.VarChar(160)
+  id                       String                 @id @default(uuid()) @db.Uuid
+  grnNumber                String                 @unique @db.VarChar(30)
+  purchaseOrderId          String                 @db.Uuid
+  locationId               String                 @db.Uuid
+  status                   GoodsReceiptStatus     @default(DRAFT)
+  supplierDeliveryNote     String?                @db.VarChar(100)
+  supplierDeliveryNoteDate DateTime?              @db.Date
+  vehicleNumber            String?                @db.VarChar(50)
+  transporter              String?                @db.VarChar(160)
   receivedAt               DateTime?
   notes                    String?
-  createdById              String             @db.Uuid
-  verifiedById             String?            @db.Uuid
+  createdById              String                 @db.Uuid
+  verifiedById             String?                @db.Uuid
   verifiedAt               DateTime?
-  approvedById             String?            @db.Uuid
+  approvedById             String?                @db.Uuid
   approvedAt               DateTime?
-  excessApprovalReason     String?            @db.VarChar(1000)
-  directSiteDelivery       Boolean            @default(false)
-  gpsLatitude              Decimal?           @db.Decimal(9, 6)
-  gpsLongitude             Decimal?           @db.Decimal(9, 6)
+  excessApprovalReason     String?                @db.VarChar(1000)
+  directSiteDelivery       Boolean                @default(false)
+  gpsLatitude              Decimal?               @db.Decimal(9, 6)
+  gpsLongitude             Decimal?               @db.Decimal(9, 6)
   gpsCapturedAt            DateTime?
-  receiverName             String?            @db.VarChar(160)
-  siteAcknowledgedById     String?            @db.Uuid
+  receiverName             String?                @db.VarChar(160)
+  siteAcknowledgedById     String?                @db.Uuid
   siteAcknowledgedAt       DateTime?
-  postedById               String?            @db.Uuid
+  postedById               String?                @db.Uuid
   postedAt                 DateTime?
-  cancelledById            String?            @db.Uuid
+  cancelledById            String?                @db.Uuid
   cancelledAt              DateTime?
-  cancellationReason       String?            @db.VarChar(1000)
-  purchaseOrder            PurchaseOrder      @relation(fields: [purchaseOrderId], references: [id], onDelete: Restrict)
-  location                 InventoryLocation  @relation(fields: [locationId], references: [id], onDelete: Restrict)
-  createdBy                User               @relation("GoodsReceiptCreator", fields: [createdById], references: [id], onDelete: Restrict)
-  verifiedBy               User?              @relation("GoodsReceiptVerifier", fields: [verifiedById], references: [id], onDelete: Restrict)
-  approvedBy               User?              @relation("GoodsReceiptApprover", fields: [approvedById], references: [id], onDelete: Restrict)
-  postedBy                 User?              @relation("GoodsReceiptPoster", fields: [postedById], references: [id], onDelete: Restrict)
-  cancelledBy              User?              @relation("GoodsReceiptCanceller", fields: [cancelledById], references: [id], onDelete: Restrict)
-  siteAcknowledgedBy        User?              @relation("GoodsReceiptSiteAcknowledger", fields: [siteAcknowledgedById], references: [id], onDelete: Restrict)
-  lines                     GoodsReceiptLine[]
-  documents                 GoodsReceiptDocument[]
-  createdAt                DateTime           @default(now())
-  updatedAt                DateTime           @updatedAt
+  cancellationReason       String?                @db.VarChar(1000)
+  purchaseOrder            PurchaseOrder          @relation(fields: [purchaseOrderId], references: [id], onDelete: Restrict)
+  location                 InventoryLocation      @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  createdBy                User                   @relation("GoodsReceiptCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  verifiedBy               User?                  @relation("GoodsReceiptVerifier", fields: [verifiedById], references: [id], onDelete: Restrict)
+  approvedBy               User?                  @relation("GoodsReceiptApprover", fields: [approvedById], references: [id], onDelete: Restrict)
+  postedBy                 User?                  @relation("GoodsReceiptPoster", fields: [postedById], references: [id], onDelete: Restrict)
+  cancelledBy              User?                  @relation("GoodsReceiptCanceller", fields: [cancelledById], references: [id], onDelete: Restrict)
+  siteAcknowledgedBy       User?                  @relation("GoodsReceiptSiteAcknowledger", fields: [siteAcknowledgedById], references: [id], onDelete: Restrict)
+  lines                    GoodsReceiptLine[]
+  documents                GoodsReceiptDocument[]
+  createdAt                DateTime               @default(now())
+  updatedAt                DateTime               @updatedAt
 
   @@index([purchaseOrderId, status])
   @@index([locationId, status])
@@ -1053,24 +1059,24 @@ model GoodsReceipt {
 }
 
 model GoodsReceiptLine {
-  id                  String             @id @default(uuid()) @db.Uuid
-  goodsReceiptId      String             @db.Uuid
-  purchaseOrderLineId String             @db.Uuid
-  materialId          String             @db.Uuid
-  unitId              String             @db.Uuid
-  orderedQuantity     Decimal            @db.Decimal(18, 3)
-  receivedQuantity    Decimal            @db.Decimal(18, 3)
-  acceptedQuantity    Decimal            @db.Decimal(18, 3)
-  damagedQuantity     Decimal            @default(0) @db.Decimal(18, 3)
-  rejectedQuantity    Decimal            @default(0) @db.Decimal(18, 3)
-  notes               String?            @db.VarChar(500)
-  goodsReceipt        GoodsReceipt       @relation(fields: [goodsReceiptId], references: [id], onDelete: Restrict)
-  purchaseOrderLine   PurchaseOrderLine  @relation(fields: [purchaseOrderLineId], references: [id], onDelete: Restrict)
-  material            Material           @relation(fields: [materialId], references: [id], onDelete: Restrict)
-  unit                UnitOfMeasure      @relation(fields: [unitId], references: [id], onDelete: Restrict)
+  id                  String                  @id @default(uuid()) @db.Uuid
+  goodsReceiptId      String                  @db.Uuid
+  purchaseOrderLineId String                  @db.Uuid
+  materialId          String                  @db.Uuid
+  unitId              String                  @db.Uuid
+  orderedQuantity     Decimal                 @db.Decimal(18, 3)
+  receivedQuantity    Decimal                 @db.Decimal(18, 3)
+  acceptedQuantity    Decimal                 @db.Decimal(18, 3)
+  damagedQuantity     Decimal                 @default(0) @db.Decimal(18, 3)
+  rejectedQuantity    Decimal                 @default(0) @db.Decimal(18, 3)
+  notes               String?                 @db.VarChar(500)
+  goodsReceipt        GoodsReceipt            @relation(fields: [goodsReceiptId], references: [id], onDelete: Restrict)
+  purchaseOrderLine   PurchaseOrderLine       @relation(fields: [purchaseOrderLineId], references: [id], onDelete: Restrict)
+  material            Material                @relation(fields: [materialId], references: [id], onDelete: Restrict)
+  unit                UnitOfMeasure           @relation(fields: [unitId], references: [id], onDelete: Restrict)
   stockTransactions   StockTransaction[]
   exceptions          GoodsReceiptException[]
-  createdAt           DateTime           @default(now())
+  createdAt           DateTime                @default(now())
 
   @@unique([goodsReceiptId, purchaseOrderLineId])
   @@index([goodsReceiptId])
@@ -1078,45 +1084,48 @@ model GoodsReceiptLine {
 }
 
 model GoodsReceiptException {
-  id                   String                      @id @default(uuid()) @db.Uuid
-  goodsReceiptLineId   String                      @db.Uuid
-  type                 GoodsReceiptExceptionType
-  quantity             Decimal                     @db.Decimal(18, 3)
-  status               GoodsReceiptExceptionStatus @default(OPEN)
-  reason               String?                     @db.VarChar(1000)
-  evidenceReference    String?                     @db.VarChar(500)
-  resolutionNotes      String?                     @db.VarChar(1000)
-  goodsReceiptLine     GoodsReceiptLine            @relation(fields: [goodsReceiptLineId], references: [id], onDelete: Restrict)
-  createdAt            DateTime                    @default(now())
-  updatedAt            DateTime                    @updatedAt
+  id                      String                      @id @default(uuid()) @db.Uuid
+  goodsReceiptLineId      String                      @db.Uuid
+  type                    GoodsReceiptExceptionType
+  quantity                Decimal                     @db.Decimal(18, 3)
+  status                  GoodsReceiptExceptionStatus @default(OPEN)
+  reason                  String?                     @db.VarChar(1000)
+  evidenceReference       String?                     @db.VarChar(500)
+  resolutionNotes         String?                     @db.VarChar(1000)
+  financialResolutionType String?                     @db.VarChar(30)
+  financialResolutionId   String?                     @db.Uuid
+  financiallyResolvedAt   DateTime?
+  goodsReceiptLine        GoodsReceiptLine            @relation(fields: [goodsReceiptLineId], references: [id], onDelete: Restrict)
+  createdAt               DateTime                    @default(now())
+  updatedAt               DateTime                    @updatedAt
 
   @@unique([goodsReceiptLineId, type])
   @@index([status, createdAt])
 }
 
 model StockTransaction {
-  movementPosting CustomerMovementPosting?
-  id                 String               @id @default(uuid()) @db.Uuid
-  transactionNumber  String               @unique @db.VarChar(30)
-  type               StockTransactionType
-  locationId         String               @db.Uuid
-  materialId         String               @db.Uuid
-  unitId             String               @db.Uuid
-  quantity           Decimal              @db.Decimal(18, 3)
-  goodsReceiptLineId String?              @db.Uuid
-  reversalOfId       String?              @db.Uuid
-  reason             String?              @db.VarChar(1000)
-  createdById        String               @db.Uuid
-  location           InventoryLocation    @relation(fields: [locationId], references: [id], onDelete: Restrict)
-  material           Material             @relation(fields: [materialId], references: [id], onDelete: Restrict)
-  unit               UnitOfMeasure        @relation(fields: [unitId], references: [id], onDelete: Restrict)
-  goodsReceiptLine   GoodsReceiptLine?    @relation(fields: [goodsReceiptLineId], references: [id], onDelete: Restrict)
-  reversalOf         StockTransaction?    @relation("StockTransactionReversal", fields: [reversalOfId], references: [id], onDelete: Restrict)
-  reversals          StockTransaction[]   @relation("StockTransactionReversal")
-  negativeExceptionSource TemporaryNegativeStockException? @relation("NegativeStockSourceTransaction")
+  movementPosting            CustomerMovementPosting?
+  id                         String                            @id @default(uuid()) @db.Uuid
+  transactionNumber          String                            @unique @db.VarChar(30)
+  type                       StockTransactionType
+  locationId                 String                            @db.Uuid
+  materialId                 String                            @db.Uuid
+  unitId                     String                            @db.Uuid
+  quantity                   Decimal                           @db.Decimal(18, 3)
+  goodsReceiptLineId         String?                           @db.Uuid
+  reversalOfId               String?                           @db.Uuid
+  reason                     String?                           @db.VarChar(1000)
+  createdById                String                            @db.Uuid
+  location                   InventoryLocation                 @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  material                   Material                          @relation(fields: [materialId], references: [id], onDelete: Restrict)
+  unit                       UnitOfMeasure                     @relation(fields: [unitId], references: [id], onDelete: Restrict)
+  goodsReceiptLine           GoodsReceiptLine?                 @relation(fields: [goodsReceiptLineId], references: [id], onDelete: Restrict)
+  reversalOf                 StockTransaction?                 @relation("StockTransactionReversal", fields: [reversalOfId], references: [id], onDelete: Restrict)
+  reversals                  StockTransaction[]                @relation("StockTransactionReversal")
+  negativeExceptionSource    TemporaryNegativeStockException?  @relation("NegativeStockSourceTransaction")
   negativeExceptionsResolved TemporaryNegativeStockException[] @relation("NegativeStockResolutionTransaction")
-  createdBy          User                 @relation("StockTransactionCreator", fields: [createdById], references: [id], onDelete: Restrict)
-  createdAt          DateTime             @default(now())
+  createdBy                  User                              @relation("StockTransactionCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt                  DateTime                          @default(now())
 
   @@index([locationId, materialId, createdAt])
   @@index([materialId, createdAt])
@@ -1124,61 +1133,62 @@ model StockTransaction {
 
 // Additive Phase 6 records; Phase 5 models and migration history are retained.
 model CustomerStockMovement {
-  id String @id @default(uuid()) @db.Uuid
-  number String @unique @db.VarChar(30)
-  kind String @db.VarChar(20)
-  status String @default("REQUESTED") @db.VarChar(20)
-  sourceLocationId String @db.Uuid
-  destinationLocationId String? @db.Uuid
-  materialId String @db.Uuid
-  unitId String @db.Uuid
-  quantity Decimal @db.Decimal(18,3)
-  approvedQuantity Decimal? @db.Decimal(18,3)
-  actualQuantity Decimal? @db.Decimal(18,3)
-  bookQuantity Decimal? @db.Decimal(18,3)
-  unitCost Decimal? @db.Decimal(24,6)
-  reason String @db.VarChar(1000)
-  transitionReason String @db.VarChar(1000)
-  evidenceId String? @db.Uuid
-  latitude Decimal? @db.Decimal(9,6)
-  longitude Decimal? @db.Decimal(9,6)
-  gpsCapturedAt DateTime?
-  receiptLatitude Decimal? @db.Decimal(9,6)
-  receiptLongitude Decimal? @db.Decimal(9,6)
-  receiptGpsCapturedAt DateTime?
-  category String? @db.VarChar(20)
-  direction String @default("OUT") @db.VarChar(3)
-  disposition String @default("DISPOSAL") @db.VarChar(10)
-  originalIssueId String? @db.Uuid
-  varianceOfId String? @unique @db.Uuid
-  correctionOfId String? @db.Uuid
-  closureProjectId String? @db.Uuid
-  createdById String @db.Uuid
-  updatedById String @db.Uuid
-  approvedById String? @db.Uuid
-  dispatchedById String? @db.Uuid
-  approvedAt DateTime?
-  dispatchedAt DateTime?
-  completedAt DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  source InventoryLocation @relation("MovementSource", fields: [sourceLocationId], references: [id], onDelete: Restrict)
-  destination InventoryLocation? @relation("MovementDestination", fields: [destinationLocationId], references: [id], onDelete: Restrict)
-  material Material @relation(fields: [materialId], references: [id], onDelete: Restrict)
-  unit UnitOfMeasure @relation(fields: [unitId], references: [id], onDelete: Restrict)
-  evidence FileRecord? @relation(fields: [evidenceId], references: [id], onDelete: Restrict)
-  createdBy User @relation("MovementCreator", fields: [createdById], references: [id], onDelete: Restrict)
-  updatedBy User @relation("MovementActor", fields: [updatedById], references: [id], onDelete: Restrict)
-  approvedBy User? @relation("MovementApprover", fields: [approvedById], references: [id], onDelete: Restrict)
-  dispatchedBy User? @relation("MovementDispatcher", fields: [dispatchedById], references: [id], onDelete: Restrict)
-  originalIssue CustomerStockMovement? @relation("IssueReturns", fields: [originalIssueId], references: [id], onDelete: Restrict)
-  returns CustomerStockMovement[] @relation("IssueReturns")
-  varianceOf CustomerStockMovement? @relation("MovementVariance", fields: [varianceOfId], references: [id], onDelete: Restrict)
-  variance CustomerStockMovement? @relation("MovementVariance")
-  correctionOf CustomerStockMovement? @relation("MovementCorrection", fields: [correctionOfId], references: [id], onDelete: Restrict)
-  corrections CustomerStockMovement[] @relation("MovementCorrection")
-  closure ProjectStockClosure? @relation(fields: [closureProjectId], references: [projectId], onDelete: Restrict)
-  postings CustomerMovementPosting[]
+  id                    String                    @id @default(uuid()) @db.Uuid
+  number                String                    @unique @db.VarChar(30)
+  kind                  String                    @db.VarChar(20)
+  status                String                    @default("REQUESTED") @db.VarChar(20)
+  sourceLocationId      String                    @db.Uuid
+  destinationLocationId String?                   @db.Uuid
+  materialId            String                    @db.Uuid
+  unitId                String                    @db.Uuid
+  quantity              Decimal                   @db.Decimal(18, 3)
+  approvedQuantity      Decimal?                  @db.Decimal(18, 3)
+  actualQuantity        Decimal?                  @db.Decimal(18, 3)
+  bookQuantity          Decimal?                  @db.Decimal(18, 3)
+  unitCost              Decimal?                  @db.Decimal(24, 6)
+  reason                String                    @db.VarChar(1000)
+  transitionReason      String                    @db.VarChar(1000)
+  evidenceId            String?                   @db.Uuid
+  latitude              Decimal?                  @db.Decimal(9, 6)
+  longitude             Decimal?                  @db.Decimal(9, 6)
+  gpsCapturedAt         DateTime?
+  receiptLatitude       Decimal?                  @db.Decimal(9, 6)
+  receiptLongitude      Decimal?                  @db.Decimal(9, 6)
+  receiptGpsCapturedAt  DateTime?
+  category              String?                   @db.VarChar(20)
+  direction             String                    @default("OUT") @db.VarChar(3)
+  disposition           String                    @default("DISPOSAL") @db.VarChar(10)
+  originalIssueId       String?                   @db.Uuid
+  varianceOfId          String?                   @unique @db.Uuid
+  correctionOfId        String?                   @db.Uuid
+  closureProjectId      String?                   @db.Uuid
+  createdById           String                    @db.Uuid
+  updatedById           String                    @db.Uuid
+  approvedById          String?                   @db.Uuid
+  dispatchedById        String?                   @db.Uuid
+  approvedAt            DateTime?
+  dispatchedAt          DateTime?
+  completedAt           DateTime?
+  createdAt             DateTime                  @default(now())
+  updatedAt             DateTime                  @updatedAt
+  source                InventoryLocation         @relation("MovementSource", fields: [sourceLocationId], references: [id], onDelete: Restrict)
+  destination           InventoryLocation?        @relation("MovementDestination", fields: [destinationLocationId], references: [id], onDelete: Restrict)
+  material              Material                  @relation(fields: [materialId], references: [id], onDelete: Restrict)
+  unit                  UnitOfMeasure             @relation(fields: [unitId], references: [id], onDelete: Restrict)
+  evidence              FileRecord?               @relation(fields: [evidenceId], references: [id], onDelete: Restrict)
+  createdBy             User                      @relation("MovementCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  updatedBy             User                      @relation("MovementActor", fields: [updatedById], references: [id], onDelete: Restrict)
+  approvedBy            User?                     @relation("MovementApprover", fields: [approvedById], references: [id], onDelete: Restrict)
+  dispatchedBy          User?                     @relation("MovementDispatcher", fields: [dispatchedById], references: [id], onDelete: Restrict)
+  originalIssue         CustomerStockMovement?    @relation("IssueReturns", fields: [originalIssueId], references: [id], onDelete: Restrict)
+  returns               CustomerStockMovement[]   @relation("IssueReturns")
+  varianceOf            CustomerStockMovement?    @relation("MovementVariance", fields: [varianceOfId], references: [id], onDelete: Restrict)
+  variance              CustomerStockMovement?    @relation("MovementVariance")
+  correctionOf          CustomerStockMovement?    @relation("MovementCorrection", fields: [correctionOfId], references: [id], onDelete: Restrict)
+  corrections           CustomerStockMovement[]   @relation("MovementCorrection")
+  closure               ProjectStockClosure?      @relation(fields: [closureProjectId], references: [projectId], onDelete: Restrict)
+  postings              CustomerMovementPosting[]
+
   @@index([sourceLocationId, materialId, status])
   @@index([destinationLocationId, status])
   @@index([originalIssueId, status])
@@ -1186,23 +1196,410 @@ model CustomerStockMovement {
 }
 
 model CustomerMovementPosting {
-  id String @id @default(uuid()) @db.Uuid
-  movementId String @db.Uuid
-  transactionId String @unique @db.Uuid
-  leg String @db.VarChar(20)
-  unitCost Decimal @db.Decimal(24,6)
-  movement CustomerStockMovement @relation(fields: [movementId], references: [id], onDelete: Restrict)
-  transaction StockTransaction @relation(fields: [transactionId], references: [id], onDelete: Restrict)
+  id            String                @id @default(uuid()) @db.Uuid
+  movementId    String                @db.Uuid
+  transactionId String                @unique @db.Uuid
+  leg           String                @db.VarChar(20)
+  unitCost      Decimal               @db.Decimal(24, 6)
+  movement      CustomerStockMovement @relation(fields: [movementId], references: [id], onDelete: Restrict)
+  transaction   StockTransaction      @relation(fields: [transactionId], references: [id], onDelete: Restrict)
+
   @@unique([movementId, leg])
 }
 
 model ProjectStockClosure {
-  projectId String @id @db.Uuid
-  status String @default("OPEN") @db.VarChar(10)
-  createdById String @db.Uuid
-  createdAt DateTime @default(now())
-  closedAt DateTime?
-  project Project @relation(fields: [projectId], references: [id], onDelete: Restrict)
-  createdBy User @relation(fields: [createdById], references: [id], onDelete: Restrict)
-  movements CustomerStockMovement[]
+  projectId   String                  @id @db.Uuid
+  status      String                  @default("OPEN") @db.VarChar(10)
+  createdById String                  @db.Uuid
+  createdAt   DateTime                @default(now())
+  closedAt    DateTime?
+  project     Project                 @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  createdBy   User                    @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  movements   CustomerStockMovement[]
+}
+
+// Additive Phase 7 financial records. Foreign-key and immutability enforcement
+// is installed by the Phase 7 migration so existing operational models remain
+// untouched by financial posting behavior.
+model FinanceSequence {
+  id            String @id @default(uuid()) @db.Uuid
+  documentType  String @db.VarChar(20)
+  financialYear String @db.Char(5)
+  nextValue     Int    @default(1)
+
+  @@unique([documentType, financialYear])
+}
+
+model TaxRuleVersion {
+  id            String    @id @default(uuid()) @db.Uuid
+  code          String    @db.VarChar(80)
+  kind          String    @db.VarChar(20)
+  rate          Decimal   @db.Decimal(7, 4)
+  effectiveFrom DateTime  @db.Date
+  effectiveTo   DateTime? @db.Date
+  settings      Json?
+  approvedById  String    @db.Uuid
+  createdById   String    @db.Uuid
+  createdAt     DateTime  @default(now())
+
+  @@unique([code, effectiveFrom])
+  @@index([kind, effectiveFrom, effectiveTo])
+}
+
+model CompanyBankAccount {
+  id            String   @id @default(uuid()) @db.Uuid
+  accountName   String   @db.VarChar(160)
+  bankName      String   @db.VarChar(160)
+  maskedAccount String   @db.VarChar(40)
+  ifsc          String   @db.VarChar(20)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([bankName, maskedAccount])
+}
+
+model SupplierInvoice {
+  id                      String    @id @default(uuid()) @db.Uuid
+  internalNumber          String    @unique @db.VarChar(30)
+  supplierId              String    @db.Uuid
+  supplierIdentityKey     String    @db.VarChar(180)
+  supplierInvoiceNumber   String    @db.VarChar(100)
+  normalizedInvoiceNumber String    @db.VarChar(100)
+  invoiceDate             DateTime  @db.Date
+  financialYear           String    @db.Char(5)
+  placeOfSupply           String    @db.VarChar(120)
+  calculatedDueDate       DateTime  @db.Date
+  dueDate                 DateTime  @db.Date
+  creditTermsSource       String    @db.VarChar(30)
+  dueDateOverrideReason   String?   @db.VarChar(1000)
+  status                  String    @default("DRAFT") @db.VarChar(30)
+  currency                String    @default("INR") @db.Char(3)
+  taxableValue            Decimal   @default(0) @db.Decimal(18, 2)
+  cgstAmount              Decimal   @default(0) @db.Decimal(18, 2)
+  sgstAmount              Decimal   @default(0) @db.Decimal(18, 2)
+  igstAmount              Decimal   @default(0) @db.Decimal(18, 2)
+  cessAmount              Decimal   @default(0) @db.Decimal(18, 2)
+  tdsAmount               Decimal   @default(0) @db.Decimal(18, 2)
+  roundOff                Decimal   @default(0) @db.Decimal(6, 2)
+  invoiceTotal            Decimal   @default(0) @db.Decimal(18, 2)
+  approvedPayable         Decimal?  @db.Decimal(18, 2)
+  paidAmount              Decimal   @default(0) @db.Decimal(18, 2)
+  creditApplied           Decimal   @default(0) @db.Decimal(18, 2)
+  debitApplied            Decimal   @default(0) @db.Decimal(18, 2)
+  advanceApplied          Decimal   @default(0) @db.Decimal(18, 2)
+  taxRuleSnapshot         Json?
+  remarks                 String?
+  documentId              String?   @db.Uuid
+  createdById             String    @db.Uuid
+  reviewedById            String?   @db.Uuid
+  verifiedById            String?   @db.Uuid
+  approvedById            String?   @db.Uuid
+  rejectedById            String?   @db.Uuid
+  finalizedAt             DateTime?
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+
+  @@unique([supplierIdentityKey, normalizedInvoiceNumber, financialYear])
+  @@index([supplierId, status, dueDate])
+  @@index([status, createdAt])
+}
+
+model SupplierInvoicePurchaseOrder {
+  invoiceId       String   @db.Uuid
+  purchaseOrderId String   @db.Uuid
+  createdAt       DateTime @default(now())
+
+  @@id([invoiceId, purchaseOrderId])
+  @@index([purchaseOrderId])
+}
+
+model SupplierInvoiceGoodsReceipt {
+  invoiceId      String   @db.Uuid
+  goodsReceiptId String   @db.Uuid
+  createdAt      DateTime @default(now())
+
+  @@id([invoiceId, goodsReceiptId])
+  @@index([goodsReceiptId])
+}
+
+model SupplierInvoiceLine {
+  id                       String   @id @default(uuid()) @db.Uuid
+  invoiceId                String   @db.Uuid
+  purchaseOrderLineId      String   @db.Uuid
+  materialId               String   @db.Uuid
+  unitId                   String   @db.Uuid
+  hsnSac                   String   @db.VarChar(20)
+  taxRuleVersionId         String   @db.Uuid
+  tdsRuleVersionId         String?  @db.Uuid
+  cessRuleVersionId        String?  @db.Uuid
+  quantity                 Decimal  @db.Decimal(18, 3)
+  unitPrice                Decimal  @db.Decimal(18, 2)
+  discountBeforeTax        Decimal  @default(0) @db.Decimal(18, 2)
+  discountAfterTax         Decimal  @default(0) @db.Decimal(18, 2)
+  freightAmount            Decimal  @default(0) @db.Decimal(18, 2)
+  freightTaxable           Boolean  @default(false)
+  taxableValue             Decimal  @db.Decimal(18, 2)
+  gstRate                  Decimal  @db.Decimal(7, 4)
+  cgstAmount               Decimal  @default(0) @db.Decimal(18, 2)
+  sgstAmount               Decimal  @default(0) @db.Decimal(18, 2)
+  igstAmount               Decimal  @default(0) @db.Decimal(18, 2)
+  cessRate                 Decimal  @default(0) @db.Decimal(7, 4)
+  cessAmount               Decimal  @default(0) @db.Decimal(18, 2)
+  tdsRate                  Decimal  @default(0) @db.Decimal(7, 4)
+  tdsAmount                Decimal  @default(0) @db.Decimal(18, 2)
+  reverseCharge            Boolean  @default(false)
+  inputTaxCreditEligible   Boolean  @default(true)
+  linePayable              Decimal  @db.Decimal(18, 2)
+  matchStatus              String   @default("PENDING") @db.VarChar(20)
+  mismatchAcceptedById     String?  @db.Uuid
+  mismatchAcceptanceReason String?  @db.VarChar(1000)
+  position                 Int      @default(0)
+  createdAt                DateTime @default(now())
+
+  @@index([invoiceId, position])
+  @@index([purchaseOrderLineId])
+}
+
+model SupplierInvoiceAllocation {
+  id                 String   @id @default(uuid()) @db.Uuid
+  invoiceLineId      String   @db.Uuid
+  goodsReceiptLineId String   @db.Uuid
+  quantity           Decimal  @db.Decimal(18, 3)
+  createdAt          DateTime @default(now())
+
+  @@unique([invoiceLineId, goodsReceiptLineId])
+  @@index([goodsReceiptLineId])
+}
+
+model InvoiceMismatch {
+  id            String    @id @default(uuid()) @db.Uuid
+  invoiceId     String    @db.Uuid
+  invoiceLineId String?   @db.Uuid
+  field         String    @db.VarChar(80)
+  expectedValue String    @db.VarChar(500)
+  actualValue   String    @db.VarChar(500)
+  status        String    @default("OPEN") @db.VarChar(20)
+  reviewReason  String?   @db.VarChar(1000)
+  reviewedById  String?   @db.Uuid
+  reviewedAt    DateTime?
+  createdAt     DateTime  @default(now())
+
+  @@index([invoiceId, status])
+}
+
+model FinanceWorkflowEvent {
+  id          String   @id @default(uuid()) @db.Uuid
+  entityType  String   @db.VarChar(30)
+  entityId    String   @db.Uuid
+  action      String   @db.VarChar(30)
+  fromStatus  String   @db.VarChar(30)
+  toStatus    String   @db.VarChar(30)
+  actorUserId String   @db.Uuid
+  reason      String?  @db.VarChar(1000)
+  createdAt   DateTime @default(now())
+
+  @@index([entityType, entityId, createdAt])
+}
+
+model SupplierPayment {
+  id              String    @id @default(uuid()) @db.Uuid
+  paymentNumber   String    @unique @db.VarChar(30)
+  invoiceId       String?   @db.Uuid
+  supplierId      String    @db.Uuid
+  status          String    @default("PREPARED") @db.VarChar(25)
+  method          String    @db.VarChar(30)
+  amount          Decimal   @db.Decimal(18, 2)
+  paymentDate     DateTime  @db.Date
+  bankAccountId   String?   @db.Uuid
+  referenceNumber String?   @db.VarChar(120)
+  chequeNumber    String?   @db.VarChar(60)
+  chequeDate      DateTime? @db.Date
+  clearanceStatus String?   @db.VarChar(30)
+  proofDocumentId String    @db.Uuid
+  preparedById    String    @db.Uuid
+  approvedById    String?   @db.Uuid
+  reversalOfId    String?   @unique @db.Uuid
+  reason          String    @db.VarChar(1000)
+  finalizedAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([invoiceId, status])
+  @@index([supplierId, paymentDate])
+}
+
+model SupplierAdvance {
+  id                 String    @id @default(uuid()) @db.Uuid
+  advanceNumber      String    @unique @db.VarChar(30)
+  purchaseOrderId    String    @db.Uuid
+  supplierId         String    @db.Uuid
+  status             String    @default("PENDING_APPROVAL") @db.VarChar(25)
+  advancePercent     Decimal   @db.Decimal(5, 2)
+  approvedAmount     Decimal   @db.Decimal(18, 2)
+  appliedAmount      Decimal   @default(0) @db.Decimal(18, 2)
+  refundedAmount     Decimal   @default(0) @db.Decimal(18, 2)
+  method             String    @db.VarChar(30)
+  referenceNumber    String?   @db.VarChar(120)
+  evidenceDocumentId String    @db.Uuid
+  reason             String    @db.VarChar(1000)
+  preparedById       String    @db.Uuid
+  approvedById       String?   @db.Uuid
+  finalizedAt        DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@index([purchaseOrderId, status])
+  @@index([supplierId, status])
+}
+
+model SupplierAdvanceApplication {
+  id          String   @id @default(uuid()) @db.Uuid
+  advanceId   String   @db.Uuid
+  invoiceId   String   @db.Uuid
+  amount      Decimal  @db.Decimal(18, 2)
+  appliedById String   @db.Uuid
+  createdAt   DateTime @default(now())
+
+  @@unique([advanceId, invoiceId])
+  @@index([invoiceId])
+}
+
+model SupplierFinancialNote {
+  id             String    @id @default(uuid()) @db.Uuid
+  noteNumber     String    @unique @db.VarChar(30)
+  noteType       String    @db.VarChar(10)
+  invoiceId      String    @db.Uuid
+  goodsReceiptId String?   @db.Uuid
+  supplierId     String    @db.Uuid
+  financialYear  String    @db.Char(5)
+  reasonCode     String    @db.VarChar(40)
+  reason         String    @db.VarChar(1000)
+  taxableValue   Decimal   @db.Decimal(18, 2)
+  taxAmount      Decimal   @db.Decimal(18, 2)
+  totalAmount    Decimal   @db.Decimal(18, 2)
+  appliedAmount  Decimal   @default(0) @db.Decimal(18, 2)
+  status         String    @default("DRAFT") @db.VarChar(25)
+  documentId     String    @db.Uuid
+  createdById    String    @db.Uuid
+  approvedById   String?   @db.Uuid
+  reversalOfId   String?   @unique @db.Uuid
+  finalizedAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([invoiceId, status])
+  @@index([supplierId, financialYear])
+}
+
+model SupplierFinancialNoteLine {
+  id                   String   @id @default(uuid()) @db.Uuid
+  noteId               String   @db.Uuid
+  invoiceLineId        String   @db.Uuid
+  hsnSac               String   @db.VarChar(20)
+  quantity             Decimal  @db.Decimal(18, 3)
+  taxableValue         Decimal  @db.Decimal(18, 2)
+  taxRuleVersionId     String   @db.Uuid
+  gstRate              Decimal  @db.Decimal(7, 4)
+  taxAmount            Decimal  @db.Decimal(18, 2)
+  totalAmount          Decimal  @db.Decimal(18, 2)
+  createdAt            DateTime @default(now())
+
+  @@index([noteId])
+  @@index([invoiceLineId])
+}
+
+model FinancialBalanceEvent {
+  id          String   @id @default(uuid()) @db.Uuid
+  supplierId  String   @db.Uuid
+  invoiceId   String?  @db.Uuid
+  entityType  String   @db.VarChar(30)
+  entityId    String   @db.Uuid
+  direction   String   @db.Char(3)
+  amount      Decimal  @db.Decimal(18, 2)
+  reason      String   @db.VarChar(1000)
+  createdById String   @db.Uuid
+  createdAt   DateTime @default(now())
+
+  @@unique([entityType, entityId, direction])
+  @@index([supplierId, createdAt])
+  @@index([invoiceId, createdAt])
+}
+
+model ProjectCostAllocation {
+  id            String   @id @default(uuid()) @db.Uuid
+  invoiceLineId String   @db.Uuid
+  projectId     String   @db.Uuid
+  workPackage   String?  @db.VarChar(160)
+  amount        Decimal  @db.Decimal(18, 2)
+  createdAt     DateTime @default(now())
+
+  @@unique([invoiceLineId, projectId, workPackage])
+  @@index([projectId, createdAt])
+}
+
+model TallyExportEvent {
+  id             String    @id @default(uuid()) @db.Uuid
+  exportNumber   String    @unique @db.VarChar(30)
+  entityType     String    @db.VarChar(30)
+  entityId       String    @db.Uuid
+  idempotencyKey String    @unique @db.VarChar(160)
+  status         String    @default("PENDING") @db.VarChar(20)
+  payload        String
+  checksum       String    @db.Char(64)
+  attemptCount   Int       @default(0)
+  lastAttemptAt  DateTime?
+  lastError      String?
+  acknowledgedAt DateTime?
+  createdById    String    @db.Uuid
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([status, createdAt])
+  @@index([entityType, entityId])
+}
+
+model TallyExportAttempt {
+  id            String   @id @default(uuid()) @db.Uuid
+  exportEventId String   @db.Uuid
+  attemptNumber Int
+  status        String   @db.VarChar(20)
+  payload       String
+  checksum      String   @db.Char(64)
+  error         String?
+  attemptedAt   DateTime @default(now())
+
+  @@unique([exportEventId, attemptNumber])
+}
+
+model FinanceDocument {
+  id           String   @id @default(uuid()) @db.Uuid
+  entityType   String   @db.VarChar(30)
+  entityId     String   @db.Uuid
+  purpose      String   @db.VarChar(40)
+  fileRecordId String   @unique @db.Uuid
+  createdAt    DateTime @default(now())
+
+  @@index([entityType, entityId])
+}
+
+model NotificationOutbox {
+  id            String    @id @default(uuid()) @db.Uuid
+  dedupeKey     String?   @unique @db.VarChar(180)
+  eventType     String    @db.VarChar(50)
+  entityType    String    @db.VarChar(30)
+  entityId      String    @db.Uuid
+  recipientRole String    @db.VarChar(80)
+  channels      Json
+  payload       Json
+  status        String    @default("PENDING") @db.VarChar(20)
+  availableAt   DateTime  @default(now())
+  remindAt      DateTime?
+  escalateAt    DateTime?
+  attempts      Int       @default(0)
+  lastError     String?
+  createdAt     DateTime  @default(now())
+
+  @@index([status, availableAt])
+  @@index([entityType, entityId])
 }
