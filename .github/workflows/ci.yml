@@ -60,5 +60,7 @@ jobs:
       - run: npm run build
       - name: Reset ephemeral database for browser tests
         run: npx prisma migrate reset --force
+      - name: Seed browser-test database
+        run: npm run db:seed
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
