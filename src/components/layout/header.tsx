@@ -63,15 +63,15 @@ export function Header({ principal }: { principal: AuthenticatedPrincipal }) {
         </h1>
       </div>
       <div className="hidden w-full max-w-md lg:block">
-        <label className="relative block">
+        <form action="/search" method="get" className="relative block">
           <span className="sr-only">Global search</span>
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
           <Input
-            disabled
+            name="q"
             className="pl-9"
             placeholder="Search projects, suppliers, invoices, materials..."
           />
-        </label>
+        </form>
       </div>
       {canCreateRequirement ? (
         <Dropdown>

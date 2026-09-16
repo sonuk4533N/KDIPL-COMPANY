@@ -96,8 +96,11 @@ test("administrator can browse the Phase 2 project and master-data foundation", 
       .getByRole("main")
       .getByRole("heading", { name: "Projects", exact: true }),
   ).toBeVisible();
-  await expect(page.getByRole("link", { name: /DLF Residence/ })).toBeVisible();
-  await page.getByRole("link", { name: /DLF Residence/ }).click();
+  const seededProjectLink = page.getByRole("link", {
+    name: /PRJ-DLF-001.*DLF Residence/,
+  });
+  await expect(seededProjectLink).toBeVisible();
+  await seededProjectLink.click();
   await expect(
     page.getByRole("heading", { name: "DLF Residence" }),
   ).toBeVisible();

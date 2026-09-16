@@ -5,11 +5,19 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ApplicationState } from "@/components/ui/states";
 import { RequirementList } from "@/features/requirements/requirement-list";
 import { getRequirementWorkspace } from "@/features/requirements/requirement-queries";
+import { FinancePage } from "@/features/finance/finance-page";
 import { getCurrentPrincipal } from "@/server/auth/current-user";
 import { hasPermission } from "@/server/authorization/authorization";
 
 export default async function ApprovalsPage() {
   const principal = await getCurrentPrincipal();
+  if (
+    principal &&
+    (hasPermission(principal, "invoice.approve") ||
+      hasPermission(principal, "payment.approve")) &&
+    !hasPermission(principal, "material_requirement.view")
+  )
+    return <FinancePage mode="invoices" />;
   if (!principal || !hasPermission(principal, "material_requirement.view")) {
     return (
       <ApplicationState
