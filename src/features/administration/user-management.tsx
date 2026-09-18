@@ -245,6 +245,7 @@ export function UserManagement({
               <Button
                 type="submit"
                 disabled={pending || !availableEmployees.length}
+                className="relative z-10 w-full scroll-my-24 sm:w-auto"
               >
                 <UserPlus className="size-4" />
                 {pending ? "Creating..." : "Create login account"}
