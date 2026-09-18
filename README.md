@@ -1,6 +1,6 @@
 # KDIPL Operations Platform
 
-Phase 1 identity/access, Phase 2 project/master-data, Phase 3 material requirement approval, Phase 4 commercial sourcing, Phase 5 goods receiving, and Phase 6 customer-aligned stock movements for Kumar Designs India Private Limited's internal operations platform.
+Phases 1–9 implement KDIPL's identity, projects, procurement, inventory, accounts, reporting and mobile/offline workflows. Phase 10 final QA and production readiness is in progress.
 
 ## Foundation
 
@@ -62,7 +62,12 @@ Database tests require `RUN_DATABASE_TESTS=1` and an isolated `TEST_DATABASE_URL
 - [Phase 4 progress record](docs/phase-4-progress.md)
 - [Phase 5 progress record](docs/phase-5-progress.md)
 - [Phase 6 customer alignment](docs/phase-6-customer-alignment.md)
+- [Phase 7 progress](docs/phase-7-progress.md)
+- [Phase 8 progress](docs/phase-8-progress.md)
+- [Phase 9 mobile/offline](docs/phase-9-mobile-offline.md)
+- [Phase 10 progress](docs/phase-10-progress.md)
+- [Production release and recovery runbook](docs/production-runbook.md)
 
 ## Phase boundary
 
-Completed milestones are Phase 1 **Authentication, Employees, Users, Roles & Permissions**, Phase 2 **Clients, Projects, Sites, Assignments & Master Data**, Phase 3 **Material Requirements & Approval**, Phase 4 **RFQ Commercial Workflow through Draft PO Creation**, Phase 5 **Goods Receiving & Inventory Ledger**, and Phase 6 **Customer-aligned Stock Movements & Project Closure**. Phase 6 covers issue, transfer, return, adjustment, physical count, non-usable stock, and closure workflows without introducing a consumption register. External supplier communication, accounting, and reporting remain locked to future approved increments.
+Phases 1–9 have been merged. Phase 10 release validation and production operations are in progress. A passing build or CI run does not itself approve production deployment; use the [Phase 10 release gates](docs/phase-10-progress.md) and [production runbook](docs/production-runbook.md).
