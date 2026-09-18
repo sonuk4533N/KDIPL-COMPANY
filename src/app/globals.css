@@ -1,6 +1,8 @@
 @import "tailwindcss";
 
 :root {
+  --font-dm-sans: "Segoe UI", Arial, sans-serif;
+  --font-manrope: "Segoe UI", Arial, sans-serif;
   --background: #f5f7fa;
   --surface: #ffffff;
   --foreground: #111827;
