@@ -42,3 +42,30 @@ export async function consumeLoginAttempt(
 export async function clearLoginAttempts(keyHash: string): Promise<void> {
   await db.rateLimitBucket.deleteMany({ where: { keyHash } });
 }
+
+export async function consumeOperationAttempt(
+  identifier: string,
+  limit = 60,
+  windowMs = 60_000,
+  now = new Date(),
+): Promise<void> {
+  const keyHash = hashRateLimitKey(`operation:${identifier}`);
+  const expiresAt = new Date(now.getTime() + windowMs);
+  const rows = await db.$queryRaw<Array<{ count: number }>>`
+    INSERT INTO "RateLimitBucket" ("keyHash", "windowStart", "count", "expiresAt", "updatedAt")
+    VALUES (${keyHash}, ${now}, 1, ${expiresAt}, CURRENT_TIMESTAMP)
+    ON CONFLICT ("keyHash") DO UPDATE SET
+      "windowStart" = CASE WHEN "RateLimitBucket"."expiresAt" <= ${now} THEN ${now} ELSE "RateLimitBucket"."windowStart" END,
+      "count" = CASE WHEN "RateLimitBucket"."expiresAt" <= ${now} THEN 1 ELSE "RateLimitBucket"."count" + 1 END,
+      "expiresAt" = CASE WHEN "RateLimitBucket"."expiresAt" <= ${now} THEN ${expiresAt} ELSE "RateLimitBucket"."expiresAt" END,
+      "updatedAt" = CURRENT_TIMESTAMP
+    RETURNING "count"
+  `;
+  if ((rows[0]?.count ?? 1) > limit) {
+    throw new AppError(
+      "CONFLICT",
+      "Too many requests. Try again shortly.",
+      429,
+    );
+  }
+}

@@ -138,7 +138,7 @@ function RecordCard({
     <article className="rounded-xl border border-slate-200 bg-white p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
+          <p className="pointer-events-none text-xs font-bold uppercase tracking-wider text-slate-400">
             {code}
           </p>
           {href ? (

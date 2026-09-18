@@ -6,6 +6,14 @@ export const metadata: Metadata = {
   title: { default: "KDIPL Operations Platform", template: "%s | KDIPL" },
   description:
     "Secure operations foundation for Kumar Designs India Private Limited.",
+  manifest: "/manifest.webmanifest",
+  applicationName: "KDIPL Operations",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "KDIPL",
+  },
+  other: { "mobile-web-app-capable": "yes" },
 };
 
 export default async function RootLayout({

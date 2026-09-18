@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="KDIPL">
+  <rect width="512" height="512" fill="#1d4ed8"/>
+  <circle cx="256" cy="256" r="196" fill="#1e40af"/>
+  <path d="M142 128h68v112l94-112h83L276 256l119 146h-86L210 275v127h-68z" fill="#fff"/>
+</svg>

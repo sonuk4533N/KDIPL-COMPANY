@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   canAccessNavigationItem,
   primaryNavigation,
+  purchaseMobileNavigation,
   storeMobileNavigation,
   supervisorMobileNavigation,
 } from "@/components/layout/navigation";
@@ -18,11 +19,15 @@ export function BottomNavigation({
   principal: AuthenticatedPrincipal;
 }) {
   const pathname = usePathname();
-  const candidates = principal.roleCodes.includes("SITE_SUPERVISOR")
-    ? supervisorMobileNavigation
-    : principal.roleCodes.includes("STORE_KEEPER")
-      ? storeMobileNavigation
-      : primaryNavigation;
+  const candidates = principal.roleCodes.includes("PURCHASE_MANAGER")
+    ? purchaseMobileNavigation
+    : principal.roleCodes.some((role) =>
+          ["SITE_SUPERVISOR", "PROJECT_MANAGER"].includes(role),
+        )
+      ? supervisorMobileNavigation
+      : principal.roleCodes.includes("STORE_KEEPER")
+        ? storeMobileNavigation
+        : primaryNavigation;
   const items = candidates
     .filter((item) => canAccessNavigationItem(item, principal.permissions))
     .slice(0, 5);

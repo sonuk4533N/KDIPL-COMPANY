@@ -1126,6 +1126,21 @@ async function seedPhase7Demo() {
       type: "CENTRAL_STORE",
     },
   });
+  const siteLocation = await prisma.inventoryLocation.upsert({
+    where: { locationCode: "SITE-DLF-F03" },
+    update: {
+      projectId: project.id,
+      siteId: site.id,
+      isActive: true,
+    },
+    create: {
+      locationCode: "SITE-DLF-F03",
+      name: "DLF Floor 03 Site Store",
+      type: "SITE_STORE",
+      projectId: project.id,
+      siteId: site.id,
+    },
+  });
   let receipt = await prisma.goodsReceipt.findUnique({
     where: { grnNumber: "GRN-2026-P7DEMO" },
     include: { lines: true },
@@ -1299,6 +1314,16 @@ async function seedPhase7Demo() {
     },
     update: { isActive: true },
     create: { employeeId: storeKeeper.id, locationId: location.id },
+  });
+  await prisma.inventoryLocationAccess.upsert({
+    where: {
+      employeeId_locationId: {
+        employeeId: storeKeeper.id,
+        locationId: siteLocation.id,
+      },
+    },
+    update: { isActive: true },
+    create: { employeeId: storeKeeper.id, locationId: siteLocation.id },
   });
   const existingBudget = await prisma.projectBudgetRevision.findFirst({
     where: { projectId: project.id, workPackage: null, revisionNumber: 1 },

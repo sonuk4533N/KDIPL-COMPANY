@@ -14,10 +14,10 @@ function visibleLabels(permissions: PermissionCode[]) {
 }
 
 describe("permission-filtered navigation", () => {
-  it("shows a Store Keeper only the dashboard and inventory modules", () => {
+  it("shows a Store Keeper only operational modules", () => {
     expect(
       visibleLabels(["app.access", "inventory.view", "inventory.receive"]),
-    ).toEqual(["Dashboard", "Inventory"]);
+    ).toEqual(["Dashboard", "Inventory", "Mobile work"]);
     expect(
       storeMobileNavigation
         .filter((item) =>
@@ -28,7 +28,7 @@ describe("permission-filtered navigation", () => {
           ]),
         )
         .map((item) => item.label),
-    ).toEqual(["Home", "Stock", "Receive"]);
+    ).toEqual(["Home", "Stock", "Capture", "Receive"]);
   });
 
   it("does not expose modules without at least one required permission", () => {
@@ -40,6 +40,6 @@ describe("permission-filtered navigation", () => {
         "material_requirement.view",
         "material_requirement.create",
       ]),
-    ).toEqual(["Dashboard", "Projects", "Requirements"]);
+    ).toEqual(["Dashboard", "Projects", "Requirements", "Mobile work"]);
   });
 });
