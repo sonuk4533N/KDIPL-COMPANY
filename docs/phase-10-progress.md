@@ -4,7 +4,7 @@ Status: started on `phase-10-production-readiness` from merged Phase 9 `main`. T
 
 ## First increment
 
-- A deterministic production configuration validator checks for HTTPS application origin, real application secret, PostgreSQL URL syntax, S3 storage settings, secure custom storage endpoint and absence of test/demo bootstrap credentials.
+- A deterministic production configuration validator checks for HTTPS application origin, obvious placeholder secret values, PostgreSQL URL syntax, S3 storage settings, secure custom storage endpoint and absence of test/demo bootstrap credentials. It cannot prove secret strength or external service availability.
 - `npm run release:check` runs that validator against the candidate production environment. The command prints the missing configuration fields, never credentials or connection strings.
 - Unit tests exercise a valid deployment configuration and common unsafe configurations.
 - [Production runbook](production-runbook.md) defines staging, rollout, smoke checks, backup/restore drill, incident handling, monitoring and department/MD sign-off.
