@@ -4,7 +4,10 @@ import type { AppEnvironment } from "./env";
  * Checks values that can be verified without contacting production services.
  * Never include secrets or connection strings in returned messages.
  */
-export function productionReadinessIssues(config: AppEnvironment): string[] {
+export function productionReadinessIssues(
+  config: AppEnvironment,
+  options: { demoBusinessPassword?: string } = {},
+): string[] {
   const issues: string[] = [];
 
   if (config.NODE_ENV !== "production") {
@@ -32,7 +35,7 @@ export function productionReadinessIssues(config: AppEnvironment): string[] {
     config.BOOTSTRAP_ADMIN_EMAIL ||
     config.BOOTSTRAP_ADMIN_PASSWORD ||
     config.BOOTSTRAP_ADMIN_NAME ||
-    process.env.DEMO_BUSINESS_PASSWORD
+    options.demoBusinessPassword
   ) {
     issues.push("Development bootstrap and demo credentials must be removed.");
   }
