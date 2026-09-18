@@ -17,17 +17,17 @@ Status: started on `phase-10-production-readiness` from merged Phase 9 `main`. T
 
 ## Phase 10 completion gates still open
 
-| Gate | Evidence required |
-| --- | --- |
-| Production infrastructure | Actual India-region app/database/storage and domain; isolated staging/production; private storage and secret-manager configuration |
-| Backups and recovery | Daily backups, point-in-time recovery and a witnessed isolated restore; quarterly restore schedule and approved recovery objectives |
-| File security | Named approved production malware scanner and a verified fail-closed quarantine test |
-| Financial controls | CA-approved tax settings and stock valuation; Accounts sign-off on Tally and payment operations |
-| Security review | Role isolation and two-factor setup, secure uploads, sessions, audit retention, authorization and offline device/cache review |
-| Observability | Uptime, errors, latency, database, storage, backup and background-job alerts; on-call owner and one-hour critical response |
-| Performance/accessibility | Representative mid-range Android/4G field measurement and accessibility evidence |
-| Migration/data quality | All requested legacy imports validated, previewed and MD-approved; ledger/payable totals reconciled |
-| UAT and launch | Department lead sign-offs, MD approval and all-project launch plan |
-| Final validation | The exact release commit passes every CI gate and production preflight; staging smoke and recovery drill recorded |
+| Gate                      | Evidence required                                                                                                                   |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Production infrastructure | Actual India-region app/database/storage and domain; isolated staging/production; private storage and secret-manager configuration  |
+| Backups and recovery      | Daily backups, point-in-time recovery and a witnessed isolated restore; quarterly restore schedule and approved recovery objectives |
+| File security             | Named approved production malware scanner and a verified fail-closed quarantine test                                                |
+| Financial controls        | CA-approved tax settings and stock valuation; Accounts sign-off on Tally and payment operations                                     |
+| Security review           | Role isolation and two-factor setup, secure uploads, sessions, audit retention, authorization and offline device/cache review       |
+| Observability             | Uptime, errors, latency, database, storage, backup and background-job alerts; on-call owner and one-hour critical response          |
+| Performance/accessibility | Representative mid-range Android/4G field measurement and accessibility evidence                                                    |
+| Migration/data quality    | All requested legacy imports validated, previewed and MD-approved; ledger/payable totals reconciled                                 |
+| UAT and launch            | Department lead sign-offs, MD approval and all-project launch plan                                                                  |
+| Final validation          | The exact release commit passes every CI gate and production preflight; staging smoke and recovery drill recorded                   |
 
 Do not label Phase 10 complete or deploy production until the outstanding gates have real evidence. Provider and account selections are operational decisions for KDIPL; the repository can encode and test their chosen configuration after those details are available.

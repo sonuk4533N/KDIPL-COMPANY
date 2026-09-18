@@ -24,9 +24,7 @@ export function productionReadinessIssues(
   }
 
   if (
-    /replace-with|change[ -]?me|example|placeholder/i.test(
-      config.AUTH_SECRET,
-    )
+    /replace-with|change[ -]?me|example|placeholder/i.test(config.AUTH_SECRET)
   ) {
     issues.push("AUTH_SECRET must be a real production secret.");
   }
