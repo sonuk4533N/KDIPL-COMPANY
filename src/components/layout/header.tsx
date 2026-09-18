@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -21,6 +22,7 @@ import {
 } from "@/components/ui/dropdown";
 import { Input } from "@/components/ui/form-controls";
 import { logoutAction } from "@/features/auth/actions";
+import { clearOfflineUserData } from "@/features/offline/offline-storage";
 import type { AuthenticatedPrincipal } from "@/types/application";
 
 const labels: Record<string, string> = {
@@ -34,9 +36,12 @@ const labels: Record<string, string> = {
   reports: "Reports",
   notifications: "Notifications",
   administration: "Administration",
+  mobile: "Mobile work",
 };
 
 export function Header({ principal }: { principal: AuthenticatedPrincipal }) {
+  const [signingOut, setSigningOut] = useState(false);
+  const clearedForSignOut = useRef(false);
   const pathname = usePathname();
   const segment = pathname.split("/").filter(Boolean)[0] ?? "dashboard";
   const pageLabel = labels[segment] ?? "KDIPL";
@@ -93,7 +98,7 @@ export function Header({ principal }: { principal: AuthenticatedPrincipal }) {
       ) : null}
       <button
         aria-label="Notifications"
-        className="relative grid size-10 place-items-center rounded-lg text-slate-500 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+        className="relative grid size-11 place-items-center rounded-lg text-slate-500 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
       >
         <Bell className="size-5" />
         <span className="absolute right-2 top-2 size-2 rounded-full bg-red-500">
@@ -132,14 +137,27 @@ export function Header({ principal }: { principal: AuthenticatedPrincipal }) {
             Security & sessions
           </Link>
           <DropdownSeparator />
-          <form action={logoutAction}>
+          <form
+            action={logoutAction}
+            onSubmit={(event) => {
+              if (clearedForSignOut.current) return;
+              event.preventDefault();
+              const form = event.currentTarget;
+              setSigningOut(true);
+              void clearOfflineUserData(principal.userId).finally(() => {
+                clearedForSignOut.current = true;
+                form.requestSubmit();
+              });
+            }}
+          >
             <button
               type="submit"
               role="menuitem"
+              disabled={signingOut}
               className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-slate-700 outline-none hover:bg-slate-100 focus-visible:bg-slate-100"
             >
               <LogOut className="size-4" />
-              Sign out
+              {signingOut ? "Clearing device data..." : "Sign out"}
             </button>
           </form>
         </DropdownContent>

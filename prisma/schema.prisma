@@ -54,6 +54,41 @@ enum ReportExportStatus {
   RETRY_QUEUED
 }
 
+enum OfflineDraftType {
+  MATERIAL_REQUIREMENT
+  SITE_MATERIAL_ISSUE_REQUEST
+  DIRECT_SITE_GRN
+  SITE_RECEIPT_ACKNOWLEDGMENT
+  DAMAGED_REJECTED_REPORT
+  TRANSFER_RECEIPT
+  UNUSED_MATERIAL_RETURN
+  DAMAGE_LOSS_REPORT
+  PHYSICAL_STOCK_COUNT
+}
+
+enum OfflineSyncStatus {
+  LOCAL_DRAFT
+  QUEUED
+  SYNCING
+  SYNCED
+  CONFLICT
+  FAILED
+  RETRY_QUEUED
+  USER_ACTION_REQUIRED
+  DISCARDED
+}
+
+enum OfflineUploadStatus {
+  QUEUED
+  UPLOADING
+  UPLOADED
+  SCANNING
+  CLEAN
+  QUARANTINED
+  FAILED
+  CANCELLED
+}
+
 enum StorageProvider {
   LOCAL
   S3
@@ -1741,4 +1776,94 @@ model SupplierBlacklistEvent {
   createdAt   DateTime @default(now())
 
   @@index([supplierId, createdAt])
+}
+
+// Phase 9 accepts encrypted device drafts into an isolated server-side draft
+// boundary. These records never post inventory or approve a workflow; domain
+// services must still validate and finalize every business transaction.
+model DeviceDraftSubmission {
+  id                     String            @id @default(uuid()) @db.Uuid
+  userId                 String            @db.Uuid
+  employeeId             String?           @db.Uuid
+  localDraftId           String            @db.Uuid
+  draftType              OfflineDraftType
+  projectId              String?           @db.Uuid
+  siteId                 String?           @db.Uuid
+  schemaVersion          Int
+  referenceVersion       String            @db.VarChar(80)
+  lastKnownServerVersion Int?
+  payload                Json
+  payloadHash            String            @db.Char(64)
+  idempotencyKey         String            @unique @db.VarChar(160)
+  status                 OfflineSyncStatus @default(SYNCING)
+  deviceCapturedAt       DateTime
+  correlationId          String            @unique @db.Uuid
+  failureCode            String?           @db.VarChar(80)
+  failureReason          String?           @db.VarChar(1000)
+  acceptedAt             DateTime?
+  createdAt              DateTime          @default(now())
+  updatedAt              DateTime          @updatedAt
+
+  @@unique([userId, localDraftId])
+  @@index([userId, status, createdAt])
+  @@index([projectId, siteId, draftType])
+}
+
+model OfflineSyncAuditEvent {
+  id             String            @id @default(uuid()) @db.Uuid
+  submissionId   String            @db.Uuid
+  actorUserId    String            @db.Uuid
+  fromStatus     OfflineSyncStatus?
+  toStatus       OfflineSyncStatus
+  reasonCode     String?           @db.VarChar(80)
+  safeMetadata   Json?
+  correlationId  String            @db.Uuid
+  createdAt      DateTime          @default(now())
+
+  @@index([submissionId, createdAt])
+  @@index([actorUserId, createdAt])
+  @@index([correlationId])
+}
+
+model AttachmentUploadSession {
+  id             String              @id @default(uuid()) @db.Uuid
+  userId         String              @db.Uuid
+  localDraftId   String              @db.Uuid
+  filename       String              @db.VarChar(255)
+  mimeType       String              @db.VarChar(160)
+  size           BigInt
+  checksum       String              @db.Char(64)
+  documentType   String              @db.VarChar(80)
+  idempotencyKey String              @unique @db.VarChar(160)
+  status         OfflineUploadStatus @default(QUEUED)
+  uploadedBytes  BigInt              @default(0)
+  retryCount     Int                 @default(0)
+  fileRecordId   String?             @unique @db.Uuid
+  failureReason  String?             @db.VarChar(1000)
+  correlationId  String              @db.Uuid
+  expiresAt      DateTime
+  completedAt    DateTime?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  @@unique([userId, localDraftId, checksum])
+  @@index([userId, status, createdAt])
+  @@index([expiresAt])
+  @@index([correlationId])
+}
+
+model MobileTelemetryEvent {
+  id            String            @id @default(uuid()) @db.Uuid
+  userId        String?           @db.Uuid
+  eventType     String            @db.VarChar(80)
+  draftType     OfflineDraftType?
+  outcome       String            @db.VarChar(40)
+  retryCount    Int?
+  durationMs    Int?
+  correlationId String?           @db.Uuid
+  createdAt     DateTime          @default(now())
+
+  @@index([eventType, createdAt])
+  @@index([userId, createdAt])
+  @@index([correlationId])
 }

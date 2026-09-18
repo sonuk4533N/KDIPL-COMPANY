@@ -11,6 +11,7 @@ import {
   Settings,
   ShoppingCart,
   Warehouse,
+  Smartphone,
 } from "lucide-react";
 import type { PermissionCode } from "@/types/application";
 
@@ -75,6 +76,12 @@ export const primaryNavigation = [
     permissions: ["report.view"],
   },
   {
+    label: "Mobile work",
+    href: "/mobile",
+    icon: Smartphone,
+    permissions: ["app.access"],
+  },
+  {
     label: "Notifications",
     href: "/notifications",
     icon: Bell,
@@ -108,6 +115,12 @@ export const supervisorMobileNavigation = [
     permissions: ["material_requirement.view"],
   },
   {
+    label: "Capture",
+    href: "/mobile",
+    icon: Smartphone,
+    permissions: ["app.access"],
+  },
+  {
     label: "Stock",
     href: "/inventory",
     icon: Warehouse,
@@ -129,10 +142,49 @@ export const storeMobileNavigation = [
     permissions: ["inventory.view"],
   },
   {
+    label: "Capture",
+    href: "/mobile",
+    icon: Smartphone,
+    permissions: ["app.access"],
+  },
+  {
     label: "Receive",
     href: "/inventory",
     icon: PackageCheck,
     permissions: ["inventory.receive"],
+  },
+] as const;
+
+export const purchaseMobileNavigation = [
+  {
+    label: "Home",
+    href: "/dashboard",
+    icon: LayoutDashboard,
+    permissions: ["app.access"],
+  },
+  {
+    label: "Procurement",
+    href: "/procurement",
+    icon: ShoppingCart,
+    permissions: ["purchase.view"],
+  },
+  {
+    label: "Capture",
+    href: "/mobile",
+    icon: Smartphone,
+    permissions: ["app.access"],
+  },
+  {
+    label: "Reports",
+    href: "/reports",
+    icon: Boxes,
+    permissions: ["report.view"],
+  },
+  {
+    label: "Alerts",
+    href: "/notifications",
+    icon: Bell,
+    permissions: ["notification.view"],
   },
 ] as const;
 

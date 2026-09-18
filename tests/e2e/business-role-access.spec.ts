@@ -83,7 +83,10 @@ test("business accounts receive only their role-appropriate application access",
             !testInfo.project.name.startsWith("desktop") &&
             account.route === "/inventory"
               ? "Stock"
-              : account.allowedNavigation,
+              : !testInfo.project.name.startsWith("desktop") &&
+                  account.route === "/requirements"
+                ? "Request"
+                : account.allowedNavigation,
         }),
       ).toBeVisible();
       await expect(
