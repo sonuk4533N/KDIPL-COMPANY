@@ -297,7 +297,11 @@ export function EmployeeManagement({
               fields={fields}
             />
             <div className="md:col-span-2 xl:col-span-4">
-              <Button type="submit" disabled={pending}>
+              <Button
+                type="submit"
+                disabled={pending}
+                className="relative z-10 w-full scroll-my-24 sm:w-auto"
+              >
                 <UserPlus className="size-4" />
                 {pending ? "Creating..." : "Add employee"}
               </Button>

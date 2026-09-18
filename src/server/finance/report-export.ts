@@ -1,7 +1,9 @@
 export type ReportRow = Record<string, string | number | null>;
 
+import { sanitizeSpreadsheetCell } from "@/features/reporting/reporting-domain";
+
 function csvCell(value: unknown) {
-  const text = String(value ?? "");
+  const text = sanitizeSpreadsheetCell(value);
   return /[",\r\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
 }
 
@@ -99,7 +101,7 @@ export function toXlsx(rows: readonly ReportRow[]) {
             const reference = `${columnName(columnIndex)}${rowIndex + 1}`;
             return typeof value === "number"
               ? `<c r="${reference}"><v>${value}</v></c>`
-              : `<c r="${reference}" t="inlineStr"><is><t>${escapeXml(value)}</t></is></c>`;
+              : `<c r="${reference}" t="inlineStr"><is><t>${escapeXml(sanitizeSpreadsheetCell(value))}</t></is></c>`;
           })
           .join("")}</row>`,
     )
@@ -141,7 +143,14 @@ function pdfText(value: string) {
 }
 
 export function toPdf(title: string, rows: readonly ReportRow[]) {
-  const lines = [title, "", ...toCsv(rows).split("\r\n")].slice(0, 55);
+  const lines = [
+    title,
+    `Generated ${new Date().toISOString()}`,
+    "",
+    ...toCsv(rows).split("\r\n"),
+    "",
+    "Page 1 of 1",
+  ].slice(0, 58);
   const stream = `BT /F1 9 Tf 36 800 Td ${lines
     .map(
       (line, index) =>

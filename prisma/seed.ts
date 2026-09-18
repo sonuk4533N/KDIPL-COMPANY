@@ -30,6 +30,12 @@ const roles = [
 const businessRoleGrants = {
   MANAGING_DIRECTOR: [
     "app.access",
+    "project.view",
+    "site.view",
+    "catalog.view",
+    "supplier.view",
+    "material_requirement.view",
+    "purchase.view",
     "inventory.view",
     "invoice.view",
     "invoice.approve",
@@ -38,6 +44,7 @@ const businessRoleGrants = {
     "report.view",
     "report.export",
     "notification.view",
+    "audit.view",
   ],
   ACCOUNTS: [
     "app.access",
@@ -80,6 +87,8 @@ const businessRoleGrants = {
     "material_requirement.create",
     "inventory.view",
     "inventory.receive",
+    "report.view",
+    "notification.view",
   ],
   PROJECT_MANAGER: [
     "inventory.view",
@@ -89,6 +98,8 @@ const businessRoleGrants = {
     "material_requirement.view",
     "material_requirement.create",
     "material_requirement.approve",
+    "report.view",
+    "notification.view",
   ],
   PROJECT_DIRECTOR: [
     "inventory.view",
@@ -99,6 +110,17 @@ const businessRoleGrants = {
     "material_requirement.approve",
     "purchase.view",
     "purchase.approve",
+    "report.view",
+    "report.export",
+    "notification.view",
+  ],
+  BUSINESS_DEVELOPMENT_DIRECTOR: [
+    "app.access",
+    "project.view",
+    "site.view",
+    "report.view",
+    "report.export",
+    "notification.view",
   ],
   PURCHASE_MANAGER: [
     "app.access",
@@ -109,8 +131,17 @@ const businessRoleGrants = {
     "material_requirement.view",
     "purchase.view",
     "purchase.create",
+    "report.view",
+    "report.export",
+    "notification.view",
   ],
-  STORE_KEEPER: ["app.access", "inventory.view", "inventory.receive"],
+  STORE_KEEPER: [
+    "app.access",
+    "inventory.view",
+    "inventory.receive",
+    "report.view",
+    "notification.view",
+  ],
 } as const;
 
 const departments = [
@@ -156,6 +187,14 @@ const phase2Employees = [
     email: "accounts@kdipl.test",
     departmentCode: "ACCOUNTS",
     positionCode: "ACCOUNTS_EXECUTIVE",
+  },
+  {
+    employeeCode: "DEMO-BDD-001",
+    fullName: "Demo Business Development Director",
+    designation: "Business Development Director",
+    email: "business.director@kdipl.test",
+    departmentCode: "MANAGEMENT",
+    positionCode: "BUSINESS_DEVELOPMENT_DIRECTOR",
   },
   {
     employeeCode: "DEMO-ACCA-001",
@@ -233,6 +272,11 @@ const demoBusinessUsers = [
     employeeCode: "DEMO-ACC-001",
     roleCode: "ACCOUNTS",
     email: "accounts@kdipl.test",
+  },
+  {
+    employeeCode: "DEMO-BDD-001",
+    roleCode: "BUSINESS_DEVELOPMENT_DIRECTOR",
+    email: "business.director@kdipl.test",
   },
   {
     employeeCode: "DEMO-ACCA-001",
@@ -1204,9 +1248,73 @@ async function seedPhase7Demo() {
         retentionUntil: dateOnly("2035-03-31"),
       },
     });
-  console.info(
-    "Seeded Phase 7 PO, posted GRN, tax, bank, and document demo fixtures.",
-  );
+  const [accountsAdmin, storeKeeper] = await Promise.all([
+    prisma.user.findUniqueOrThrow({
+      where: { emailNormalized: "accounts.admin@kdipl.test" },
+    }),
+    prisma.employee.findUniqueOrThrow({
+      where: { employeeCode: "DEMO-SK-001" },
+    }),
+  ]);
+  await prisma.stockValuationPolicy.upsert({
+    where: { effectiveFrom: dateOnly("2026-04-01") },
+    update: { method: "QUANTITY_ONLY" },
+    create: {
+      method: "QUANTITY_ONLY",
+      effectiveFrom: dateOnly("2026-04-01"),
+      settings: { status: "AWAITING_CA_APPROVAL" },
+      approvedById: accountsAdmin.id,
+      createdById: accountsAdmin.id,
+    },
+  });
+  await prisma.lowStockSetting.upsert({
+    where: {
+      projectId_locationId_materialId: {
+        projectId: project.id,
+        locationId: location.id,
+        materialId: material.id,
+      },
+    },
+    update: {
+      minimumLevel: "25",
+      reorderLevel: "40",
+      updatedById: accounts.id,
+    },
+    create: {
+      projectId: project.id,
+      locationId: location.id,
+      materialId: material.id,
+      minimumLevel: "25",
+      reorderLevel: "40",
+      createdById: accounts.id,
+      updatedById: accounts.id,
+    },
+  });
+  await prisma.inventoryLocationAccess.upsert({
+    where: {
+      employeeId_locationId: {
+        employeeId: storeKeeper.id,
+        locationId: location.id,
+      },
+    },
+    update: { isActive: true },
+    create: { employeeId: storeKeeper.id, locationId: location.id },
+  });
+  const existingBudget = await prisma.projectBudgetRevision.findFirst({
+    where: { projectId: project.id, workPackage: null, revisionNumber: 1 },
+  });
+  if (!existingBudget)
+    await prisma.projectBudgetRevision.create({
+      data: {
+        projectId: project.id,
+        revisionNumber: 1,
+        approvedBudget: project.procurementBudget ?? "0",
+        reason: "Opening approved project procurement budget",
+        effectiveFrom: dateOnly("2026-04-01"),
+        approvedById: managingDirector.id,
+      },
+    });
+  console.info("Seeded Phase 7 fixtures and Phase 8 reporting defaults.");
 }
 
 async function main() {

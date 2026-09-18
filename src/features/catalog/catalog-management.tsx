@@ -144,7 +144,7 @@ function RecordCard({
           {href ? (
             <Link
               href={href}
-              className="mt-1 block truncate font-semibold text-slate-950 hover:text-blue-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+              className="relative z-10 -mx-1 mt-0.5 block scroll-my-24 truncate rounded px-1 py-0.5 font-semibold text-slate-950 hover:text-blue-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
             >
               {title}
             </Link>

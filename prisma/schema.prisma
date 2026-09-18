@@ -34,6 +34,24 @@ enum AuditAction {
   LOGIN
   LOGOUT
   PERMISSION_CHANGE
+  VIEW
+  EXPORT
+  DOWNLOAD
+}
+
+enum StockValuationMethod {
+  MOVING_WEIGHTED_AVERAGE
+  FIFO
+  LAST_APPROVED_PURCHASE_RATE
+  QUANTITY_ONLY
+}
+
+enum ReportExportStatus {
+  QUEUED
+  PROCESSING
+  COMPLETED
+  FAILED
+  RETRY_QUEUED
 }
 
 enum StorageProvider {
@@ -1602,4 +1620,125 @@ model NotificationOutbox {
 
   @@index([status, availableAt])
   @@index([entityType, entityId])
+}
+
+// Phase 8 reporting configuration and audit-safe user preferences. These
+// records are metadata only; every report remains rebuildable from the source
+// transactions created in Phases 1-7.
+model StockValuationPolicy {
+  id            String               @id @default(uuid()) @db.Uuid
+  method        StockValuationMethod @default(QUANTITY_ONLY)
+  effectiveFrom DateTime             @db.Date
+  effectiveTo   DateTime?            @db.Date
+  caReference   String?              @db.VarChar(240)
+  settings      Json?
+  approvedById  String               @db.Uuid
+  createdById   String               @db.Uuid
+  createdAt     DateTime             @default(now())
+
+  @@unique([effectiveFrom])
+  @@index([method, effectiveFrom, effectiveTo])
+}
+
+model LowStockSetting {
+  id           String   @id @default(uuid()) @db.Uuid
+  projectId    String   @db.Uuid
+  locationId   String   @db.Uuid
+  materialId   String   @db.Uuid
+  minimumLevel Decimal  @db.Decimal(18, 3)
+  reorderLevel Decimal  @db.Decimal(18, 3)
+  createdById  String   @db.Uuid
+  updatedById  String   @db.Uuid
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([projectId, locationId, materialId])
+  @@index([projectId, materialId])
+  @@index([locationId, materialId])
+}
+
+model InventoryLocationAccess {
+  id         String   @id @default(uuid()) @db.Uuid
+  employeeId String   @db.Uuid
+  locationId String   @db.Uuid
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([employeeId, locationId])
+  @@index([employeeId, isActive])
+  @@index([locationId, isActive])
+}
+
+model ProjectBudgetRevision {
+  id             String   @id @default(uuid()) @db.Uuid
+  projectId      String   @db.Uuid
+  workPackage    String?  @db.VarChar(160)
+  revisionNumber Int
+  approvedBudget Decimal  @db.Decimal(18, 2)
+  reason         String   @db.VarChar(1000)
+  effectiveFrom  DateTime @db.Date
+  approvedById   String   @db.Uuid
+  createdAt      DateTime @default(now())
+
+  @@unique([projectId, workPackage, revisionNumber])
+  @@index([projectId, effectiveFrom])
+}
+
+model SavedReportFilter {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @db.Uuid
+  name       String   @db.VarChar(120)
+  reportType String   @db.VarChar(80)
+  filters    Json
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([userId, name, reportType])
+  @@index([userId, updatedAt])
+}
+
+model RecentSearch {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @db.Uuid
+  query      String   @db.VarChar(160)
+  filters    Json?
+  searchedAt DateTime @default(now())
+
+  @@index([userId, searchedAt])
+}
+
+model ReportExportJob {
+  id             String             @id @default(uuid()) @db.Uuid
+  requestedById  String             @db.Uuid
+  reportType     String             @db.VarChar(80)
+  format         String             @db.VarChar(10)
+  filters        Json
+  financialYear String              @db.Char(5)
+  idempotencyKey String             @unique @db.VarChar(160)
+  status         ReportExportStatus @default(QUEUED)
+  rowCount       Int?
+  fileRecordId   String?            @unique @db.Uuid
+  error          String?
+  startedAt      DateTime?
+  completedAt    DateTime?
+  expiresAt      DateTime?
+  downloadedAt   DateTime?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  @@index([requestedById, createdAt])
+  @@index([status, createdAt])
+  @@index([expiresAt])
+}
+
+model SupplierBlacklistEvent {
+  id          String   @id @default(uuid()) @db.Uuid
+  supplierId  String   @db.Uuid
+  blacklisted Boolean
+  reason      String   @db.VarChar(1000)
+  actorUserId String   @db.Uuid
+  createdAt   DateTime @default(now())
+
+  @@index([supplierId, createdAt])
 }
