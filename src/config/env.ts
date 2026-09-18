@@ -12,6 +12,7 @@ export const envSchema = z.object({
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
   TEST_DATABASE_URL: z.string().min(1).optional(),
   APP_URL: z.url().default("http://localhost:3000"),
+  RELEASE_SHA: z.string().optional(),
   AUTH_SECRET: z.string().min(32, "AUTH_SECRET must be at least 32 characters"),
   SESSION_ABSOLUTE_HOURS: z.coerce.number().int().positive().default(12),
   SESSION_IDLE_MINUTES: z.coerce.number().int().positive().default(120),

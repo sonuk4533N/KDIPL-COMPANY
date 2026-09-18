@@ -37,6 +37,21 @@ test("protected routes redirect to sign in", async ({ page }) => {
   ).toBeVisible();
 });
 
+test("production responses enforce browser security headers", async ({
+  request,
+}) => {
+  const response = await request.get("/login");
+  const headers = response.headers();
+
+  expect(headers["content-security-policy"]).toContain("default-src 'self'");
+  expect(headers["content-security-policy"]).toContain("object-src 'none'");
+  expect(headers["strict-transport-security"]).toContain("max-age=31536000");
+  expect(headers["x-content-type-options"]).toBe("nosniff");
+  expect(headers["x-frame-options"]).toBe("DENY");
+  expect(headers["referrer-policy"]).toBe("strict-origin-when-cross-origin");
+  expect(headers["permissions-policy"]).toContain("payment=()");
+});
+
 test("bootstrap administrator can sign in and use the responsive shell", async ({
   page,
 }, testInfo) => {

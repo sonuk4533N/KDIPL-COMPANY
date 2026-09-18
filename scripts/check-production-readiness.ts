@@ -1,7 +1,7 @@
 import "dotenv/config";
 
-import { env } from "../src/config/env";
-import { productionReadinessIssues } from "../src/config/production-readiness";
+import { env } from "../src/config/env.ts";
+import { productionReadinessIssues } from "../src/config/production-readiness.ts";
 
 const issues = productionReadinessIssues(env, {
   demoBusinessPassword: process.env.DEMO_BUSINESS_PASSWORD,
