@@ -28,7 +28,26 @@ import { logger } from "@/server/logging/logger";
 import type { CommandResult } from "@/types/application";
 import { loginSchema } from "@/features/auth/login-schema";
 
-export type LoginState = CommandResult<{ redirectTo: string }> | null;
+import {
+  confirmTwoFactorEnrollment,
+  createTwoFactorChallengeToken,
+  getUserTwoFactorStatus,
+  initiateTwoFactorEnrollment,
+  verifyTwoFactorChallengeToken,
+  verifyUserTwoFactor,
+} from "@/features/auth/two-factor-service";
+
+export type LoginData = {
+  redirectTo?: string;
+  requiresTwoFactor?: boolean;
+  challengeToken?: string;
+  isEnrolling?: boolean;
+  secret?: string;
+  totpUri?: string;
+  backupCodes?: string[];
+};
+
+export type LoginState = CommandResult<LoginData> | null;
 
 export async function loginAction(
   _previous: LoginState,
@@ -69,6 +88,37 @@ export async function loginAction(
         accountHash: hashRateLimitKey(parsed.data.email),
       });
       throw new AppError("UNAUTHORIZED", "Email or password is incorrect.");
+    }
+
+    // Check two-factor authentication requirement for user / privileged roles
+    const twoFactorStatus = await getUserTwoFactorStatus(user.id);
+    if (twoFactorStatus.requiresTwoFactor) {
+      await clearLoginAttempts(bucketKey);
+      if (!twoFactorStatus.isEnrolled) {
+        const enrollment = await initiateTwoFactorEnrollment(user.id);
+        const challengeToken = createTwoFactorChallengeToken(user.id, true);
+        return {
+          ok: true,
+          data: {
+            requiresTwoFactor: true,
+            challengeToken,
+            isEnrolling: true,
+            secret: enrollment.secret,
+            totpUri: enrollment.totpUri,
+            backupCodes: enrollment.backupCodes,
+          },
+        };
+      } else {
+        const challengeToken = createTwoFactorChallengeToken(user.id, false);
+        return {
+          ok: true,
+          data: {
+            requiresTwoFactor: true,
+            challengeToken,
+            isEnrolling: false,
+          },
+        };
+      }
     }
 
     const ipHash = hashRateLimitKey(metadata.ip);
@@ -115,6 +165,91 @@ export async function loginAction(
     logger.error({
       err: error instanceof AppError ? { code: error.code } : error,
       event: "auth.login_error",
+    });
+    return toCommandError(error);
+  }
+}
+
+export async function verifyTwoFactorLoginAction(
+  _previous: LoginState,
+  formData: FormData,
+): Promise<LoginState> {
+  try {
+    await validateMutationOrigin();
+    const challengeToken = formData.get("challengeToken")?.toString();
+    const code = formData.get("code")?.toString();
+
+    if (!challengeToken || !code) {
+      return {
+        ok: false,
+        error: {
+          code: "VALIDATION_ERROR",
+          message: "Please enter your 6-digit authenticator or backup code.",
+        },
+      };
+    }
+
+    const { userId, isEnrolling } =
+      verifyTwoFactorChallengeToken(challengeToken);
+
+    if (isEnrolling) {
+      await confirmTwoFactorEnrollment(userId, code);
+    } else {
+      await verifyUserTwoFactor(userId, code);
+    }
+
+    const user = await db.user.findUnique({
+      where: { id: userId },
+      select: { id: true, authVersion: true, mustChangePassword: true },
+    });
+    if (!user) throw new AppError("NOT_FOUND", "User account not found.");
+
+    const metadata = await requestMetadata();
+    const ipHash = hashRateLimitKey(metadata.ip);
+
+    const created = await DatabaseTransactionRunner.run(async (transaction) => {
+      const result = await createSession(
+        user.id,
+        user.authVersion,
+        { ipHash, userAgent: metadata.userAgent },
+        transaction,
+      );
+      await AuditService.record(
+        {
+          actorUserId: user.id,
+          action: AuditAction.LOGIN,
+          entityType: "Session",
+          entityId: result.session.id,
+          metadata: { ipHash, twoFactorVerified: true },
+        },
+        transaction,
+      );
+      await transaction.user.update({
+        where: { id: user.id },
+        data: { lastLoginAt: new Date() },
+      });
+      return result;
+    });
+
+    (await cookies()).set(SESSION_COOKIE_NAME, created.token, {
+      httpOnly: true,
+      secure: env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      expires: created.session.absoluteExpiresAt,
+      priority: "high",
+    });
+
+    return {
+      ok: true,
+      data: {
+        redirectTo: user.mustChangePassword ? "/change-password" : "/dashboard",
+      },
+    };
+  } catch (error) {
+    logger.error({
+      err: error instanceof AppError ? { code: error.code } : error,
+      event: "auth.two_factor_login_error",
     });
     return toCommandError(error);
   }

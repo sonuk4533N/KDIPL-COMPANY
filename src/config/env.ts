@@ -42,6 +42,9 @@ export const envSchema = z.object({
     .positive()
     .max(52_428_800)
     .default(52_428_800),
+  FILE_SCANNER_PROVIDER: z.enum(["local", "clamav", "http"]).default("local"),
+  FILE_SCANNER_ENDPOINT: optionalUrl,
+  FILE_SCANNER_API_KEY: z.string().optional(),
   LOG_LEVEL: z
     .enum(["fatal", "error", "warn", "info", "debug", "trace"])
     .default("info"),

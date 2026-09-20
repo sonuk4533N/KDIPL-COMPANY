@@ -38,4 +38,15 @@ describe("Phase 5 evidence security", () => {
         .slice(0, 10),
     ).toBe("2034-03-31");
   });
+
+  it("async scanFile intercepts EICAR test signature and returns REJECTED", async () => {
+    const { scanFile } = await import("../../src/server/storage/file-security");
+    const result = await scanFile(
+      new TextEncoder().encode(
+        "X5O!P%@AP[4\\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE",
+      ),
+    );
+    expect(result.status).toBe("REJECTED");
+    expect(result.reference).toBe("BLOCKED_SIGNATURE");
+  });
 });

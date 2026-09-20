@@ -339,6 +339,10 @@ model User {
   goodsReceiptsPosted              GoodsReceipt[]                     @relation("GoodsReceiptPoster")
   goodsReceiptsCancelled           GoodsReceipt[]                     @relation("GoodsReceiptCanceller")
   stockTransactionsCreated         StockTransaction[]                 @relation("StockTransactionCreator")
+  twoFactorEnabled                 Boolean                            @default(false)
+  twoFactorSecret                  String?                            @db.VarChar(255)
+  twoFactorEnrolledAt              DateTime?
+  twoFactorBackupCodes             String[]                           @default([])
   createdAt                        DateTime                           @default(now())
   updatedAt                        DateTime                           @updatedAt
 

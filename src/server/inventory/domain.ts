@@ -108,6 +108,26 @@ export function stockDirectionForTransaction(type: string): StockDirection {
   }
 }
 
+export type InventoryBalanceTransaction = {
+  quantity: number;
+  transactionType: string;
+};
+
+export function calculateDerivedInventoryBalance(
+  transactions: readonly InventoryBalanceTransaction[],
+): { quantityOnHand: number } {
+  let quantityOnHand = 0;
+  for (const tx of transactions) {
+    const direction = stockDirectionForTransaction(tx.transactionType);
+    if (direction === "IN") {
+      quantityOnHand += tx.quantity;
+    } else {
+      quantityOnHand -= tx.quantity;
+    }
+  }
+  return { quantityOnHand };
+}
+
 export type PurchaseOrderStatus =
   | "DRAFT"
   | "ISSUED"

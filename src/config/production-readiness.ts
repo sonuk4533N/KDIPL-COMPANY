@@ -188,5 +188,29 @@ export function productionReadinessIssues(
     }
   }
 
+  if (config.FILE_SCANNER_PROVIDER !== "local") {
+    if (!config.FILE_SCANNER_ENDPOINT) {
+      issues.push(
+        "FILE_SCANNER_ENDPOINT is required when an external malware scanner provider is enabled.",
+      );
+    } else {
+      try {
+        const scannerUrl = new URL(config.FILE_SCANNER_ENDPOINT);
+        if (
+          scannerUrl.protocol !== "https:" ||
+          isNonProductionHostname(scannerUrl.hostname) ||
+          scannerUrl.username ||
+          scannerUrl.password
+        ) {
+          issues.push(
+            "FILE_SCANNER_ENDPOINT must be a credential-free production HTTPS endpoint.",
+          );
+        }
+      } catch {
+        issues.push("FILE_SCANNER_ENDPOINT must be a valid URL.");
+      }
+    }
+  }
+
   return issues;
 }
