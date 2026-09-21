@@ -1,6 +1,6 @@
 export type JobPriority = "CRITICAL" | "HIGH" | "NORMAL" | "LOW";
 
-export type BackgroundJob<T = any> = {
+export type BackgroundJob<T = unknown> = {
   jobId: string;
   queueName: string;
   payload: T;
@@ -20,11 +20,12 @@ export class EnterpriseScalabilityService {
    */
   static evaluateJobRetry(
     job: BackgroundJob,
-    error: string,
+    error?: string,
   ): {
     nextStatus: "QUEUED" | "DEAD_LETTER";
     retryCount: number;
     delaySeconds: number;
+    lastError?: string;
   } {
     const nextRetry = job.retryCount + 1;
     if (nextRetry > job.maxRetries) {
@@ -32,6 +33,7 @@ export class EnterpriseScalabilityService {
         nextStatus: "DEAD_LETTER",
         retryCount: nextRetry,
         delaySeconds: 0,
+        lastError: error,
       };
     }
 
@@ -41,6 +43,7 @@ export class EnterpriseScalabilityService {
       nextStatus: "QUEUED",
       retryCount: nextRetry,
       delaySeconds,
+      lastError: error,
     };
   }
 
@@ -48,10 +51,10 @@ export class EnterpriseScalabilityService {
    * In-Memory multi-tier tag-based cache engine.
    */
   static createTagCache() {
-    const store = new Map<string, { value: any; tags: string[]; expiresAt: number }>();
+    const store = new Map<string, { value: unknown; tags: string[]; expiresAt: number }>();
 
     return {
-      set(key: string, value: any, ttlSeconds: number, tags: string[] = []) {
+      set(key: string, value: unknown, ttlSeconds: number, tags: string[] = []) {
         store.set(key, {
           value,
           tags,

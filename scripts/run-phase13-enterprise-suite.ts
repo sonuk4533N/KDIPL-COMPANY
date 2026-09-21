@@ -2,7 +2,6 @@ import "dotenv/config";
 
 import {
   MultiCompanyFoundationService,
-  ENTERPRISE_ENTITIES,
   type CompanyFinancialSummary,
 } from "../src/server/enterprise/multi-company-service.ts";
 import {
@@ -27,10 +26,7 @@ import {
   AssetEquipmentManagementService,
   type AssetRegisterEntry,
 } from "../src/server/enterprise/asset-management-service.ts";
-import {
-  MaintenanceManagementService,
-  type MaintenanceTicket,
-} from "../src/server/enterprise/maintenance-service.ts";
+import { MaintenanceManagementService } from "../src/server/enterprise/maintenance-service.ts";
 import {
   CustomerBusinessDevelopmentService,
   type BusinessDevelopmentOpportunity,
@@ -38,12 +34,8 @@ import {
 import {
   AdvancedFinancialArchitectureService,
   type JournalVoucher,
-  type FinancialPeriod,
 } from "../src/server/enterprise/advanced-finance-service.ts";
-import {
-  EnterpriseGovernanceService,
-  type DelegationOfAuthorityRecord,
-} from "../src/server/enterprise/enterprise-governance-service.ts";
+import { EnterpriseGovernanceService } from "../src/server/enterprise/enterprise-governance-service.ts";
 import { EnterpriseIntegrationPlatformService } from "../src/server/enterprise/integration-platform-service.ts";
 import {
   EnterpriseScalabilityService,

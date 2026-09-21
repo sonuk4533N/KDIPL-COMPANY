@@ -181,12 +181,15 @@ export class WorkforceManagementService {
     isEligibleForDeployment: boolean;
     missingMandatoryDocuments: string[];
   } {
-    const mandatoryTypes = ["AADHAAR", "SAFETY_INDUCTION"];
+    const mandatoryTypes: EmployeeDocumentRecord["documentType"][] = [
+      "AADHAAR",
+      "SAFETY_INDUCTION",
+    ];
     const verifiedTypes = documents
       .filter((d) => d.verificationStatus === "VERIFIED")
       .map((d) => d.documentType);
 
-    const missing = mandatoryTypes.filter((m) => !verifiedTypes.includes(m as any));
+    const missing = mandatoryTypes.filter((m) => !verifiedTypes.includes(m));
 
     return {
       isEligibleForDeployment: missing.length === 0,

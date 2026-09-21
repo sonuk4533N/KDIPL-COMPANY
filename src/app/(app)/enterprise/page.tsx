@@ -1,19 +1,4 @@
-import {
-  Building2,
-  TrendingUp,
-  Truck,
-  HardHat,
-  Wrench,
-  DollarSign,
-  ShieldCheck,
-  Cpu,
-  Layers,
-  FileText,
-  AlertTriangle,
-  ArrowRight,
-  CheckCircle2,
-  Lock,
-} from "lucide-react";
+import { Building2, TrendingUp, Truck, ShieldCheck, Cpu, Layers } from "lucide-react";
 
 import { PageHeader } from "@/components/shared/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,12 +9,7 @@ import {
   type CompanyFinancialSummary,
 } from "@/server/enterprise/multi-company-service";
 import { AdvancedProjectCostService } from "@/server/enterprise/project-cost-service";
-import { ContractorVendorManagementService } from "@/server/enterprise/contractor-service";
-import { AssetEquipmentManagementService } from "@/server/enterprise/asset-management-service";
 import { CustomerBusinessDevelopmentService } from "@/server/enterprise/crm-service";
-import { AdvancedFinancialArchitectureService } from "@/server/enterprise/advanced-finance-service";
-import { EnterpriseGovernanceService } from "@/server/enterprise/enterprise-governance-service";
-import { EnterpriseIntegrationPlatformService } from "@/server/enterprise/integration-platform-service";
 
 export default async function EnterprisePage({
   searchParams,
