@@ -14,6 +14,8 @@
     "perf:load-test": "tsx scripts/run-load-test.ts",
     "backup:run": "tsx scripts/backup-database.ts",
     "restore:test": "tsx scripts/restore-database.ts",
+    "bi:test": "tsx scripts/run-phase12-bi-suite.ts",
+    "enterprise:test": "tsx scripts/run-phase13-enterprise-suite.ts",
     "start": "next start",
     "lint": "eslint . --max-warnings=0",
     "typecheck": "tsc --noEmit",

@@ -1,6 +1,7 @@
 import {
   Bell,
   Boxes,
+  Building2,
   CheckSquare2,
   ClipboardList,
   Database,
@@ -21,6 +22,12 @@ export const primaryNavigation = [
     href: "/dashboard",
     icon: LayoutDashboard,
     permissions: ["app.access"],
+  },
+  {
+    label: "Enterprise",
+    href: "/enterprise",
+    icon: Building2,
+    permissions: ["enterprise.view"],
   },
   {
     label: "Projects",

@@ -38,6 +38,13 @@ export const permissionCodes = [
   "audit.view",
   "user.manage",
   "role.manage",
+  "enterprise.view",
+  "enterprise.manage",
+  "company.manage",
+  "contractor.manage",
+  "asset.manage",
+  "hr.manage",
+  "governance.manage",
 ] as const;
 
 export type PermissionCode = (typeof permissionCodes)[number];
