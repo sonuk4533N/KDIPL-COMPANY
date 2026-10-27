@@ -2,6 +2,7 @@ import "dotenv/config";
 import { createHash } from "node:crypto";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client";
+import argon2 from "argon2";
 import { generateTotpCode, generateTotpUri } from "../src/server/auth/totp";
 
 const connectionString = process.env.DATABASE_URL;
@@ -63,9 +64,20 @@ async function setup() {
   // 2. Set 2FA secret and pre-hashed backup codes
   const hashedBackupCodes = BACKUP_CODES.map(hashBackupCode);
 
+  const newPasswordHash = await argon2.hash(
+    process.env.BOOTSTRAP_ADMIN_PASSWORD || "SonuDevPassword123!",
+    {
+      type: argon2.argon2id,
+      memoryCost: 19_456,
+      timeCost: 2,
+      parallelism: 1,
+    },
+  );
+
   await prisma.user.update({
     where: { id: user.id },
     data: {
+      passwordHash: newPasswordHash,
       twoFactorSecret: KNOWN_SECRET,
       twoFactorEnabled: true,
       twoFactorEnrolledAt: new Date(),
