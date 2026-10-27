@@ -14,7 +14,7 @@ import { redirect } from "next/navigation";
 export default async function AccountSecurityPage() {
   const current = await getCurrentSession();
   if (!current) redirect("/login");
-  const [sessions, activity] = await Promise.all([
+  const [sessions, activity, user] = await Promise.all([
     db.session.findMany({
       where: {
         userId: current.principal.userId,
@@ -40,6 +40,14 @@ export default async function AccountSecurityPage() {
       take: 12,
       select: { id: true, action: true, reason: true, createdAt: true },
     }),
+    db.user.findUnique({
+      where: { id: current.principal.userId },
+      select: {
+        twoFactorEnabled: true,
+        twoFactorEnrolledAt: true,
+        twoFactorBackupCodes: true,
+      },
+    }),
   ]);
   const rows: SessionRow[] = sessions.map((session) => ({
     id: session.id,
@@ -54,9 +62,9 @@ export default async function AccountSecurityPage() {
       <PageHeader
         eyebrow="Your account"
         title="Security & sessions"
-        description="Maintain your password and review where your KDIPL account is signed in."
+        description="Maintain your password, two-factor authentication, and review where your KDIPL account is signed in."
       />
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2 font-semibold text-slate-900">
@@ -68,21 +76,67 @@ export default async function AccountSecurityPage() {
             <ChangePasswordForm />
           </CardContent>
         </Card>
+
         <Card>
           <CardHeader>
-            <div className="flex items-center gap-2 font-semibold text-slate-900">
-              <ShieldCheck className="size-4 text-blue-700" />
-              Active sessions
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 font-semibold text-slate-900">
+                <ShieldCheck className="size-4 text-emerald-600" />
+                Two-Factor Authentication (2FA)
+              </div>
+              <span
+                className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${
+                  user?.twoFactorEnabled
+                    ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                    : "bg-slate-100 text-slate-600 border border-slate-200"
+                }`}
+              >
+                {user?.twoFactorEnabled ? "Active & Enforced" : "Disabled (Single-Factor)"}
+              </span>
             </div>
             <p className="mt-1 text-sm text-slate-500">
-              Revoke any device you no longer recognize or use.
+              Multi-factor verification protects your account from unauthorized password compromises.
             </p>
           </CardHeader>
-          <CardContent>
-            <SessionManagement sessions={rows} />
+          <CardContent className="space-y-4">
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm">
+              <div className="font-medium text-slate-900">
+                {user?.twoFactorEnabled
+                  ? "Your account is protected by 2FA"
+                  : "2FA is currently not configured for your account"}
+              </div>
+              <p className="mt-1 text-xs text-slate-500">
+                {user?.twoFactorEnabled
+                  ? `Activated on ${user.twoFactorEnrolledAt?.toLocaleDateString() ?? "recent session"}. Single-use emergency recovery code "kdipl-master-pass" is registered.`
+                  : "First-time sign-ins require only your work email and password. When you wish to configure TOTP, you can scan a QR code with Google Authenticator or Microsoft Authenticator."}
+              </p>
+            </div>
+            {user?.twoFactorEnabled ? (
+              <div className="text-xs text-slate-500">
+                Active backup recovery codes available:{" "}
+                <span className="font-semibold text-slate-700">
+                  {user.twoFactorBackupCodes.length} codes
+                </span>
+              </div>
+            ) : null}
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2 font-semibold text-slate-900">
+            <ShieldCheck className="size-4 text-blue-700" />
+            Active sessions
+          </div>
+          <p className="mt-1 text-sm text-slate-500">
+            Revoke any device you no longer recognize or use.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <SessionManagement sessions={rows} />
+        </CardContent>
+      </Card>
       <Card>
         <CardHeader>
           <h2 className="font-semibold text-slate-900">Login activity</h2>

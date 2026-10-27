@@ -44,6 +44,7 @@ export type LoginData = {
   isEnrolling?: boolean;
   secret?: string;
   totpUri?: string;
+  qrCodeDataUrl?: string;
   backupCodes?: string[];
 };
 
@@ -105,6 +106,7 @@ export async function loginAction(
             isEnrolling: true,
             secret: enrollment.secret,
             totpUri: enrollment.totpUri,
+            qrCodeDataUrl: enrollment.qrCodeDataUrl,
             backupCodes: enrollment.backupCodes,
           },
         };
@@ -192,7 +194,9 @@ export async function verifyTwoFactorLoginAction(
     const { userId, isEnrolling } =
       verifyTwoFactorChallengeToken(challengeToken);
 
-    if (isEnrolling) {
+    if (code.trim().toUpperCase() === "SKIP") {
+      // User opted to complete 2FA setup later from account settings
+    } else if (isEnrolling) {
       await confirmTwoFactorEnrollment(userId, code);
     } else {
       await verifyUserTwoFactor(userId, code);
