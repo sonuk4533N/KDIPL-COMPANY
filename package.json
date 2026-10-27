@@ -4,6 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "2fa": "tsx scripts/get-2fa-code.ts",
+    "seed:accounts": "tsx scripts/seed-all-accounts.ts",
+    "admin:setup": "tsx scripts/setup-full-access-admin.ts",
+    "admin:inspect": "tsx scripts/inspect-admin.ts",
     "dev": "next dev",
     "build": "next build",
     "release:check": "node --experimental-strip-types scripts/check-production-readiness.ts",
