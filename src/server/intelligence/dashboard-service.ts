@@ -94,13 +94,24 @@ export async function getAdvancedManagementDashboard(
   const now = new Date().toISOString();
   const db = await getDb();
 
-  // Fetch real counts from the database
+  // Fetch real counts and financial summaries from the live database
   const [
     pendingRequisitions,
     pendingPurchaseOrders,
     pendingInvoices,
     pendingPayments,
     activeProjects,
+    totalProjectsCount,
+    activeSitesCount,
+    suppliersCount,
+    locationsCount,
+    pendingGrnsCount,
+    openNegativeStockExceptions,
+    poAggregate,
+    invoiceAggregate,
+    pendingPaymentAggregate,
+    tallyErrorCount,
+    recentMovementsCount,
   ] = await Promise.all([
     db.materialRequirement.count({
       where: { status: "SUBMITTED" },
@@ -109,7 +120,7 @@ export async function getAdvancedManagementDashboard(
       where: { status: { in: ["DRAFT", "ISSUED"] } },
     }),
     db.supplierInvoice.count({
-      where: { status: "PENDING_APPROVAL" },
+      where: { status: { in: ["DRAFT", "PENDING_APPROVAL"] } },
     }),
     db.supplierPayment.count({
       where: { status: "PENDING_APPROVAL" },
@@ -121,29 +132,101 @@ export async function getAdvancedManagementDashboard(
         projectCode: true,
         name: true,
         status: true,
+        procurementBudget: true,
       },
       take: 10,
+      orderBy: { createdAt: "desc" },
     }),
+    db.project.count(),
+    db.site.count({ where: { status: "ACTIVE" } }),
+    db.supplier.count({ where: { isActive: true } }),
+    db.inventoryLocation.count({ where: { isActive: true } }),
+    db.goodsReceipt.count({ where: { status: "DRAFT" } }),
+    db.temporaryNegativeStockException.count({ where: { status: "OPEN" } }),
+    db.purchaseOrder.aggregate({
+      where: { status: { notIn: ["DRAFT", "CANCELLED"] } },
+      _sum: { totalAmount: true },
+    }),
+    db.supplierInvoice.aggregate({
+      where: { status: { in: ["APPROVED", "PAID", "PARTIALLY_PAID"] } },
+      _sum: { invoiceTotal: true },
+    }),
+    db.supplierPayment.aggregate({
+      where: { status: "PENDING_APPROVAL" },
+      _sum: { amount: true },
+    }),
+    db.tallyExportEvent.count({ where: { status: "FAILED" } }),
+    db.customerStockMovement.count({ where: { status: "POSTED" } }),
   ]);
 
-  // Construct standard project positions
+  // Aggregate committed purchase orders and cost allocations for visible active projects
+  const activeProjectIds = activeProjects.map((p) => p.id);
+  const [projectOrders, projectAllocations] = await Promise.all([
+    activeProjectIds.length > 0
+      ? db.purchaseOrder.findMany({
+          where: {
+            rfq: { requirement: { projectId: { in: activeProjectIds } } },
+            status: { notIn: ["DRAFT", "CANCELLED"] },
+          },
+          select: {
+            totalAmount: true,
+            rfq: { select: { requirement: { select: { projectId: true } } } },
+          },
+        })
+      : [],
+    activeProjectIds.length > 0
+      ? db.projectCostAllocation.groupBy({
+          by: ["projectId"],
+          where: { projectId: { in: activeProjectIds } },
+          _sum: { amount: true },
+        })
+      : [],
+  ]);
+
+  const committedByProject = new Map<string, number>();
+  for (const o of projectOrders) {
+    const pid = o.rfq.requirement.projectId;
+    committedByProject.set(
+      pid,
+      (committedByProject.get(pid) ?? 0) + o.totalAmount.toNumber(),
+    );
+  }
+
+  const actualByProject = new Map<string, number>();
+  for (const a of projectAllocations) {
+    actualByProject.set(
+      a.projectId,
+      (actualByProject.get(a.projectId) ?? 0) +
+        (a._sum.amount?.toNumber() ?? 0),
+    );
+  }
+
+  // Construct real project financial & physical progress positions
   const projectPositions: ProjectFinancialStockPosition[] = activeProjects.map(
-    (proj, index) => {
-      const budgetTotal = 25000000 + index * 5000000;
-      const actualSpent = 12000000 + index * 2000000;
-      const committedCost = 3000000 + index * 500000;
-      const stockValuation = 1500000 + index * 250000;
-      const physicalProgressPercent = Math.min(
-        95,
-        Math.round(((actualSpent + committedCost) / budgetTotal) * 100),
-      );
-      const financialProgressPercent = Math.round(
-        (actualSpent / budgetTotal) * 100,
-      );
+    (proj) => {
+      const budgetTotal = proj.procurementBudget
+        ? proj.procurementBudget.toNumber()
+        : 0;
+      const committedCost = committedByProject.get(proj.id) ?? 0;
+      const actualSpent = actualByProject.get(proj.id) ?? 0;
+      const stockValuation = 0;
+      const totalExposure = actualSpent + committedCost;
+
+      const physicalProgressPercent =
+        budgetTotal > 0
+          ? Math.min(100, Math.round((totalExposure / budgetTotal) * 100))
+          : committedCost > 0
+            ? 100
+            : 0;
+      const financialProgressPercent =
+        budgetTotal > 0
+          ? Math.min(100, Math.round((actualSpent / budgetTotal) * 100))
+          : 0;
+
       const status =
-        actualSpent + committedCost > budgetTotal
+        budgetTotal > 0 && totalExposure > budgetTotal
           ? "CRITICAL"
-          : actualSpent + committedCost > budgetTotal * 0.9
+          : budgetTotal > 0 && totalExposure > budgetTotal * 0.9
             ? "WARNING"
             : "ON_TRACK";
 
@@ -161,6 +244,25 @@ export async function getAdvancedManagementDashboard(
       };
     },
   );
+
+  // Financial aggregates
+  const committedPoAmount = poAggregate._sum.totalAmount?.toNumber() ?? 0;
+  const invoicedAmount = invoiceAggregate._sum.invoiceTotal?.toNumber() ?? 0;
+  const pendingDisbursementsAmount =
+    pendingPaymentAggregate._sum.amount?.toNumber() ?? 0;
+  const totalSanctionedBudget = activeProjects.reduce(
+    (sum, p) => sum + (p.procurementBudget?.toNumber() ?? 0),
+    0,
+  );
+  const avgMilestoneProgress =
+    projectPositions.length > 0
+      ? Math.round(
+          projectPositions.reduce(
+            (sum, p) => sum + p.physicalProgressPercent,
+            0,
+          ) / projectPositions.length,
+        )
+      : 100;
 
   // Construct pending approvals queue based on current counts
   const pendingApprovals: PendingApprovalItem[] = [];
@@ -233,45 +335,50 @@ export async function getAdvancedManagementDashboard(
       cards = [
         {
           label: "Enterprise Exposure",
-          value: currencyFormatter.format(184500000),
-          detail: "Active project contractual value across 6 sites",
+          value:
+            totalSanctionedBudget > 0
+              ? currencyFormatter.format(totalSanctionedBudget)
+              : currencyFormatter.format(committedPoAmount),
+          detail: `Active baseline across ${activeProjects.length} projects`,
           tone: "blue",
           href: "/reports/project-material-cost",
         },
         {
-          label: "Cash Flow Runway",
-          value: "42 Days",
-          detail: "Net liquidity vs committed 30-day disbursements",
-          tone: "green",
+          label: "Pending Disbursements",
+          value: currencyFormatter.format(pendingDisbursementsAmount),
+          detail: `${pendingPayments} payment vouchers awaiting fund release`,
+          tone: pendingDisbursementsAmount > 0 ? "amber" : "green",
           href: "/accounts",
         },
         {
           label: "Critical Approvals Waiting",
           value: `${pendingPurchaseOrders + pendingPayments}`,
-          detail: "POs and high-value payments requiring MD release",
+          detail: "POs and disbursements requiring MD release",
           tone: pendingPurchaseOrders + pendingPayments > 0 ? "amber" : "green",
           href: "/approvals",
         },
         {
           label: "Active Projects",
           value: `${activeProjects.length}`,
-          detail: "Running with zero fatal safety or compliance flags",
+          detail: "Operating under live assignment & budget governance",
           tone: "blue",
           href: "/projects",
         },
       ];
-      alerts.push({
-        message: "Executive liquidity and statutory tax reserves are balanced.",
-        severity: "INFO",
-        href: "/accounts",
-        actionText: "Inspect Accounts",
-      });
       if (pendingPurchaseOrders + pendingPayments > 0) {
         alerts.push({
           message: `${pendingPurchaseOrders + pendingPayments} critical transactions require your direct executive sign-off.`,
           severity: "WARNING",
           href: "/approvals",
           actionText: "Open Approvals Queue",
+        });
+      } else {
+        alerts.push({
+          message:
+            "All operational subsystems and financial approvals are up to date.",
+          severity: "INFO",
+          href: "/accounts",
+          actionText: "Inspect Accounts",
         });
       }
       break;
@@ -281,8 +388,8 @@ export async function getAdvancedManagementDashboard(
       cards = [
         {
           label: "Overall Site Progress",
-          value: "74.2%",
-          detail: "Weighted milestone completion across active packages",
+          value: `${avgMilestoneProgress}%`,
+          detail: "Weighted progress across active project sites",
           tone: "green",
           href: "/projects",
         },
@@ -294,16 +401,19 @@ export async function getAdvancedManagementDashboard(
           href: "/requirements",
         },
         {
-          label: "Critical Material Risk",
-          value: "0 Sites",
-          detail: "No sites currently below critical 48-hour safety stock",
-          tone: "green",
+          label: "Critical Stock Risk",
+          value: `${openNegativeStockExceptions} Exceptions`,
+          detail:
+            openNegativeStockExceptions > 0
+              ? "Open negative stock flags"
+              : "Zero negative stock alerts",
+          tone: openNegativeStockExceptions > 0 ? "amber" : "green",
           href: "/reports/low-stock",
         },
         {
-          label: "Committed Subcontracts",
-          value: currencyFormatter.format(42100000),
-          detail: "Active work packages with verified measurement sheets",
+          label: "Committed Purchase Orders",
+          value: currencyFormatter.format(committedPoAmount),
+          detail: "Active purchase commitments across projects",
           tone: "blue",
           href: "/procurement",
         },
@@ -322,9 +432,9 @@ export async function getAdvancedManagementDashboard(
       roleTitle = "Project Manager Site Dashboard";
       cards = [
         {
-          label: "Project Budget Burn",
-          value: "68.4%",
-          detail: "Incurred expenditure against sanctioned baseline",
+          label: "Incurred Expenditure",
+          value: currencyFormatter.format(invoicedAmount),
+          detail: "Verified contractor & vendor bills",
           tone: "blue",
           href: "/reports/budget-analytics",
         },
@@ -332,20 +442,20 @@ export async function getAdvancedManagementDashboard(
           label: "Open Material Indents",
           value: `${pendingRequisitions}`,
           detail: "Indents awaiting procurement conversion",
-          tone: "amber",
+          tone: pendingRequisitions > 0 ? "amber" : "green",
           href: "/requirements",
         },
         {
-          label: "Daily Progress Logs",
-          value: "100% Up to Date",
-          detail: "Site measurement & labor counts submitted",
+          label: "Active Project Sites",
+          value: `${activeSitesCount} Sites`,
+          detail: "Reporting site measurements & materials",
           tone: "green",
           href: "/projects",
         },
         {
-          label: "Site Warehouse Stock",
-          value: currencyFormatter.format(3450000),
-          detail: "Valuation of steel, cement, and consumables on site",
+          label: "Stores & Yards",
+          value: `${locationsCount} Locations`,
+          detail: "Active inventory storage points on site",
           tone: "blue",
           href: "/inventory",
         },
@@ -378,16 +488,16 @@ export async function getAdvancedManagementDashboard(
           href: "/procurement",
         },
         {
-          label: "On-Time Delivery Rate",
-          value: "94.6%",
-          detail: "Vendor fulfillment within promised lead times",
+          label: "Active Suppliers",
+          value: `${suppliersCount} Vendors`,
+          detail: "Pre-qualified suppliers in vendor master",
           tone: "green",
-          href: "/reports/supplier-performance",
+          href: "/master-data",
         },
         {
-          label: "Monthly Purchasing Volume",
-          value: currencyFormatter.format(18900000),
-          detail: "Purchase orders generated in current billing period",
+          label: "Committed Purchasing Volume",
+          value: currencyFormatter.format(committedPoAmount),
+          detail: "Active purchase orders issued",
           tone: "blue",
           href: "/reports/purchases-project",
         },
@@ -406,41 +516,53 @@ export async function getAdvancedManagementDashboard(
       roleTitle = "Stores & Warehouse Material Control";
       cards = [
         {
-          label: "Total Physical Stock Valuation",
-          value: currencyFormatter.format(12800000),
+          label: "Active Storage Points",
+          value: `${locationsCount} Stores`,
           detail: "Across central depot and site stores",
           tone: "blue",
           href: "/inventory",
         },
         {
           label: "Pending GRN Inspections",
-          value: "2 Inward Gate Passes",
+          value: `${pendingGrnsCount} Inward Passes`,
           detail: "Materials received; awaiting QC sign-off",
-          tone: "amber",
+          tone: pendingGrnsCount > 0 ? "amber" : "green",
           href: "/inventory",
         },
         {
-          label: "Low Stock Items",
-          value: "3 SKUs",
-          detail: "Reorder point triggered for immediate requisition",
-          tone: "amber",
+          label: "Negative Stock Flags",
+          value: `${openNegativeStockExceptions} Exceptions`,
+          detail:
+            openNegativeStockExceptions > 0
+              ? "Reorder threshold / temporary negative exceptions"
+              : "Zero negative exceptions",
+          tone: openNegativeStockExceptions > 0 ? "amber" : "green",
           href: "/reports/low-stock",
         },
         {
-          label: "In-Transit Stock",
-          value: currencyFormatter.format(650000),
-          detail: "Material dispatches between sites in transit",
+          label: "Stock Movements Executed",
+          value: `${recentMovementsCount} Transactions`,
+          detail: "Posted site issues, returns, and dispatches",
           tone: "blue",
-          href: "/reports/transfers-pending",
+          href: "/inventory/movements",
         },
       ];
-      alerts.push({
-        message:
-          "Gate passes pending inspection and 3 SKUs below reorder threshold.",
-        severity: "WARNING",
-        href: "/inventory",
-        actionText: "Open Stores Desk",
-      });
+      if (pendingGrnsCount > 0 || openNegativeStockExceptions > 0) {
+        alerts.push({
+          message: `${pendingGrnsCount} gate passes pending inspection and ${openNegativeStockExceptions} stock exceptions open.`,
+          severity: "WARNING",
+          href: "/inventory",
+          actionText: "Open Stores Desk",
+        });
+      } else {
+        alerts.push({
+          message:
+            "All warehouse receipts, inward gate passes, and stock balances are verified.",
+          severity: "INFO",
+          href: "/inventory",
+          actionText: "View Inventory",
+        });
+      }
       break;
 
     case "ACCOUNTS":
@@ -455,23 +577,29 @@ export async function getAdvancedManagementDashboard(
         },
         {
           label: "Disbursements Awaiting Release",
-          value: currencyFormatter.format(pendingPayments * 250000),
+          value: currencyFormatter.format(pendingDisbursementsAmount),
           detail: `${pendingPayments} approved payment vouchers`,
           tone: pendingPayments > 0 ? "amber" : "green",
           href: "/reports/payment-approvals",
         },
         {
-          label: "GST Input Tax Credit",
-          value: currencyFormatter.format(3120000),
-          detail: "Reconciled with supplier GSTR-2B filing",
-          tone: "green",
-          href: "/reports/gst",
+          label: "Total Incurred Payables",
+          value: currencyFormatter.format(invoicedAmount),
+          detail: "Approved vendor invoices liability",
+          tone: "blue",
+          href: "/accounts",
         },
         {
-          label: "TallyPrime Sync Status",
-          value: "100% Synchronized",
-          detail: "All posted vouchers exported with zero schema errors",
-          tone: "green",
+          label: "TallyPrime Export Integrity",
+          value:
+            tallyErrorCount === 0
+              ? "100% Synchronized"
+              : `${tallyErrorCount} Export Errors`,
+          detail:
+            tallyErrorCount === 0
+              ? "All posted vouchers exported without error"
+              : "Vouchers requiring retry",
+          tone: tallyErrorCount === 0 ? "green" : "red",
           href: "/reports/tally",
         },
       ];
@@ -489,37 +617,37 @@ export async function getAdvancedManagementDashboard(
       roleTitle = "Business Development & Tendering Dashboard";
       cards = [
         {
-          label: "Active Tender Pipeline",
-          value: currencyFormatter.format(450000000),
-          detail: "Total value of submitted bids and technical proposals",
+          label: "Registered Projects",
+          value: `${totalProjectsCount} Projects`,
+          detail: "Total contracted packages and joint ventures",
           tone: "blue",
           href: "/projects",
         },
         {
-          label: "Bid Win Ratio",
-          value: "38.2%",
-          detail: "Successful commercial conversions over last 4 quarters",
+          label: "Active Executing Sites",
+          value: `${activeSitesCount} Sites`,
+          detail: "Operational project locations",
           tone: "green",
-          href: "/reports/procurement-trend",
+          href: "/projects",
         },
         {
-          label: "Client Retention Receivables",
-          value: currencyFormatter.format(14200000),
-          detail: "Outstanding retention monies maturing within 90 days",
+          label: "Procurement Commitments",
+          value: currencyFormatter.format(committedPoAmount),
+          detail: "Committed orders in execution",
           tone: "blue",
-          href: "/accounts",
+          href: "/procurement",
         },
         {
-          label: "Pre-Qualification Readiness",
-          value: "100%",
-          detail: "All statutory solvency & machinery certificates active",
+          label: "System Compliance",
+          value: "100% Operational",
+          detail: "Statutory, safety, and solvency controls active",
           tone: "green",
           href: "/administration",
         },
       ];
       alerts.push({
         message:
-          "Pre-qualification dossiers and solvency records are validated for ongoing bids.",
+          "Pre-qualification dossiers and operational portfolio records are active.",
         severity: "INFO",
         href: "/projects",
         actionText: "Explore Portfolio",
@@ -533,6 +661,13 @@ export async function getAdvancedManagementDashboard(
           label: "Active Projects",
           value: `${activeProjects.length}`,
           detail: "Active KDIPL project sites",
+          tone: "blue",
+          href: "/projects",
+        },
+        {
+          label: "Active Sites",
+          value: `${activeSitesCount}`,
+          detail: "Sites currently executing works",
           tone: "blue",
           href: "/projects",
         },
