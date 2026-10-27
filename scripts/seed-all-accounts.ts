@@ -97,6 +97,12 @@ async function seedAllAccounts() {
   console.log("Seeding/updating all demo accounts...");
 
   for (const demo of demoBusinessUsers) {
+    if (
+      demo.email === "sonu_kumar@example.com" ||
+      demo.email === process.env.BOOTSTRAP_ADMIN_EMAIL
+    ) {
+      continue;
+    }
     const employee = await prisma.employee.findUnique({
       where: { employeeCode: demo.employeeCode },
       select: { id: true, fullName: true },
@@ -147,33 +153,8 @@ async function seedAllAccounts() {
     console.log(`✓ Configured ${demo.roleCode}: ${demo.email}`);
   }
 
-  // Also ensure bootstrap admin Sonu Kumar is updated with the same password and 2FA backup codes
-  const adminEmail =
-    process.env.BOOTSTRAP_ADMIN_EMAIL?.trim().toLowerCase() ||
-    "sonu_kumar@example.com";
-  const adminUser = await prisma.user.findFirst({
-    where: { emailNormalized: adminEmail },
-  });
-
-  if (adminUser) {
-    await prisma.user.update({
-      where: { id: adminUser.id },
-      data: {
-        passwordHash,
-        status: "ACTIVE",
-        mustChangePassword: false,
-        passwordChangedAt: new Date(),
-        twoFactorSecret: KNOWN_2FA_SECRET,
-        twoFactorEnabled: true,
-        twoFactorEnrolledAt: new Date(),
-        twoFactorBackupCodes: hashedBackupCodes,
-      },
-    });
-    console.log(`✓ Configured Super Administrator: ${adminEmail}`);
-  }
-
   console.log(
-    "\nAll accounts are ready with working email, password, and 2FA backup codes!",
+    "\nAll role accounts are ready with working email, password, and 2FA backup codes! Admin was left strictly untouched.",
   );
 }
 
