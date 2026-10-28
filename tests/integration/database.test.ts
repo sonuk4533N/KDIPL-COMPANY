@@ -16,12 +16,15 @@ import { TransactionNumberService } from "@/server/transactions/transaction-numb
 import { CredentialService } from "@/features/auth/credential-service";
 import { hashPassword, verifyPassword } from "@/server/auth/password";
 
-const enabled = process.env.RUN_DATABASE_TESTS === "1";
-const connectionString =
-  process.env.TEST_DATABASE_URL ?? process.env.DATABASE_URL ?? "";
-const testDb = enabled
-  ? new PrismaClient({ adapter: new PrismaPg({ connectionString }) })
-  : null;
+const testDatabaseUrl = process.env.TEST_DATABASE_URL?.trim();
+const enabled =
+  process.env.RUN_DATABASE_TESTS === "1" && Boolean(testDatabaseUrl);
+const testDb =
+  enabled && testDatabaseUrl
+    ? new PrismaClient({
+        adapter: new PrismaPg({ connectionString: testDatabaseUrl }),
+      })
+    : null;
 
 describe.skipIf(!enabled)("PostgreSQL foundation", () => {
   beforeEach(async () => {

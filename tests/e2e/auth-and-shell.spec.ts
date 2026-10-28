@@ -1,32 +1,82 @@
 import { expect, test } from "@playwright/test";
+import { generateTotpCode } from "../../src/server/auth/totp";
+
+function resolveTotpCode(email: string): string {
+  const envSecret =
+    process.env.TEST_2FA_SECRET ??
+    (email === process.env.BOOTSTRAP_ADMIN_EMAIL
+      ? process.env.BOOTSTRAP_ADMIN_2FA_SECRET
+      : process.env.DEMO_BUSINESS_2FA_SECRET);
+
+  if (!envSecret) {
+    throw new Error(
+      `Dedicated test-only 2FA secret is not configured for ${email}. Set TEST_2FA_SECRET, BOOTSTRAP_ADMIN_2FA_SECRET, or DEMO_BUSINESS_2FA_SECRET in the test environment.`,
+    );
+  }
+
+  return generateTotpCode(envSecret);
+}
+
+async function handleTwoFactorIfChallenged(
+  page: import("@playwright/test").Page,
+  email: string,
+) {
+  if (page.url().includes("/dashboard")) {
+    return;
+  }
+
+  const twoFactorInput = page.locator('input#code, input[name="code"]');
+  const isChallenged = await Promise.race([
+    twoFactorInput
+      .waitFor({ state: "visible", timeout: 8000 })
+      .then(() => true)
+      .catch(() => false),
+    page
+      .waitForURL(/\/dashboard$/, { timeout: 8000 })
+      .then(() => false)
+      .catch(() => false),
+  ]);
+
+  if (isChallenged && !page.url().includes("/dashboard")) {
+    const totpCode = await resolveTotpCode(email);
+    await twoFactorInput.fill(totpCode);
+    await page.getByRole("button", { name: "Verify & Sign in" }).click();
+  }
+
+  await expect(page).toHaveURL(/\/dashboard$/);
+}
 
 async function signInAsBootstrapAdministrator(
   page: import("@playwright/test").Page,
 ) {
   const email = process.env.BOOTSTRAP_ADMIN_EMAIL;
   const password = process.env.BOOTSTRAP_ADMIN_PASSWORD;
+  const secret =
+    process.env.TEST_2FA_SECRET ?? process.env.BOOTSTRAP_ADMIN_2FA_SECRET;
   test.skip(
-    !email || !password,
-    "Bootstrap credentials are required for authenticated E2E coverage.",
+    !email || !password || !secret,
+    "Bootstrap credentials and dedicated test 2FA secret are required for authenticated E2E coverage.",
   );
   await page.goto("/login");
   await page.getByLabel("Work email").fill(email!);
   await page.getByLabel("Password").fill(password!);
   await page.getByRole("button", { name: "Sign in securely" }).click();
-  await expect(page).toHaveURL(/\/dashboard$/);
+  await handleTwoFactorIfChallenged(page, email!);
 }
 
 async function signInAsProjectManager(page: import("@playwright/test").Page) {
   const password = process.env.DEMO_BUSINESS_PASSWORD;
+  const secret =
+    process.env.TEST_2FA_SECRET ?? process.env.DEMO_BUSINESS_2FA_SECRET;
   test.skip(
-    !password,
-    "DEMO_BUSINESS_PASSWORD is required for business-role E2E coverage.",
+    !password || !secret,
+    "DEMO_BUSINESS_PASSWORD and dedicated test 2FA secret are required for business-role E2E coverage.",
   );
   await page.goto("/login");
   await page.getByLabel("Work email").fill("project.manager@kdipl.test");
   await page.getByLabel("Password").fill(password!);
   await page.getByRole("button", { name: "Sign in securely" }).click();
-  await expect(page).toHaveURL(/\/dashboard$/);
+  await handleTwoFactorIfChallenged(page, "project.manager@kdipl.test");
 }
 
 test("protected routes redirect to sign in", async ({ page }) => {
@@ -116,6 +166,7 @@ test("administrator can browse the Phase 2 project and master-data foundation", 
   });
   await expect(seededProjectLink).toBeVisible();
   await seededProjectLink.click();
+  await expect(page).toHaveURL(/\/projects\/[0-9a-fA-F-]+$/);
   await expect(
     page.getByRole("heading", { name: "DLF Residence" }),
   ).toBeVisible();
@@ -241,10 +292,29 @@ test("administrator can provision an employee with forced temporary-password rep
   const employeeForm = page.locator("form").filter({
     has: page.getByRole("button", { name: "Add employee" }),
   });
-  await employeeForm.getByLabel("Employee code").fill(employeeCode);
-  await employeeForm.getByLabel("Full name").fill(employeeName);
-  await employeeForm.getByLabel("Work email").fill(email);
-  await employeeForm.getByRole("button", { name: "Add employee" }).click();
+  const employeeCodeInput = employeeForm.getByLabel("Employee code");
+  const fullNameInput = employeeForm.getByLabel("Full name");
+  const emailInput = employeeForm.getByLabel("Work email");
+  const addEmployeeButton = employeeForm.getByRole("button", {
+    name: "Add employee",
+  });
+
+  await expect(employeeForm).toBeVisible();
+  await expect(addEmployeeButton).toBeVisible();
+
+  await employeeCodeInput.fill(employeeCode);
+  await fullNameInput.fill(employeeName);
+  await emailInput.fill(email);
+
+  if ((await employeeCodeInput.inputValue()) !== employeeCode) {
+    await employeeCodeInput.fill(employeeCode);
+  }
+
+  await expect(employeeCodeInput).toHaveValue(employeeCode);
+  await expect(fullNameInput).toHaveValue(employeeName);
+  await expect(emailInput).toHaveValue(email);
+
+  await addEmployeeButton.click();
   await expect(page.getByText("Employee created.")).toBeVisible();
 
   const accountForm = page.locator("form").filter({

@@ -1,4 +1,50 @@
 import { expect, test } from "@playwright/test";
+import { generateTotpCode } from "../../src/server/auth/totp";
+
+function resolveTotpCode(email: string): string {
+  const envSecret =
+    process.env.TEST_2FA_SECRET ??
+    (email === process.env.BOOTSTRAP_ADMIN_EMAIL
+      ? process.env.BOOTSTRAP_ADMIN_2FA_SECRET
+      : process.env.DEMO_BUSINESS_2FA_SECRET);
+
+  if (!envSecret) {
+    throw new Error(
+      `Dedicated test-only 2FA secret is not configured for ${email}. Set TEST_2FA_SECRET, BOOTSTRAP_ADMIN_2FA_SECRET, or DEMO_BUSINESS_2FA_SECRET in the test environment.`,
+    );
+  }
+
+  return generateTotpCode(envSecret);
+}
+
+async function handleTwoFactorIfChallenged(
+  page: import("@playwright/test").Page,
+  email: string,
+) {
+  if (page.url().includes("/dashboard")) {
+    return;
+  }
+
+  const twoFactorInput = page.locator('input#code, input[name="code"]');
+  const isChallenged = await Promise.race([
+    twoFactorInput
+      .waitFor({ state: "visible", timeout: 8000 })
+      .then(() => true)
+      .catch(() => false),
+    page
+      .waitForURL(/\/dashboard$/, { timeout: 8000 })
+      .then(() => false)
+      .catch(() => false),
+  ]);
+
+  if (isChallenged && !page.url().includes("/dashboard")) {
+    const totpCode = await resolveTotpCode(email);
+    await twoFactorInput.fill(totpCode);
+    await page.getByRole("button", { name: "Verify & Sign in" }).click();
+  }
+
+  await expect(page).toHaveURL(/\/dashboard$/);
+}
 
 const businessAccounts = [
   {
@@ -47,9 +93,11 @@ test("business accounts receive only their role-appropriate application access",
   page,
 }, testInfo) => {
   const password = process.env.DEMO_BUSINESS_PASSWORD;
+  const secret =
+    process.env.TEST_2FA_SECRET ?? process.env.DEMO_BUSINESS_2FA_SECRET;
   test.skip(
-    !password,
-    "DEMO_BUSINESS_PASSWORD is required for business-role E2E coverage.",
+    !password || !secret,
+    "DEMO_BUSINESS_PASSWORD and dedicated test 2FA secret are required for business-role E2E coverage.",
   );
 
   for (const account of businessAccounts) {
@@ -58,7 +106,7 @@ test("business accounts receive only their role-appropriate application access",
       await page.getByLabel("Work email").fill(account.email);
       await page.getByLabel("Password").fill(password!);
       await page.getByRole("button", { name: "Sign in securely" }).click();
-      await expect(page).toHaveURL(/\/dashboard$/);
+      await handleTwoFactorIfChallenged(page, account.email);
 
       await page.goto(account.route);
       await expect(

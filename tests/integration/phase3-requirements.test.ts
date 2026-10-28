@@ -7,12 +7,15 @@ import { PrismaClient } from "../../src/generated/prisma/client";
 import { RequirementService } from "@/features/requirements/requirement-service";
 import type { AuthenticatedPrincipal } from "@/types/application";
 
-const connectionString = process.env.TEST_DATABASE_URL ?? "";
+const testDatabaseUrl = process.env.TEST_DATABASE_URL?.trim();
 const enabled =
-  process.env.RUN_DATABASE_TESTS === "1" && connectionString.length > 0;
-const testDb = enabled
-  ? new PrismaClient({ adapter: new PrismaPg({ connectionString }) })
-  : null;
+  process.env.RUN_DATABASE_TESTS === "1" && Boolean(testDatabaseUrl);
+const testDb =
+  enabled && testDatabaseUrl
+    ? new PrismaClient({
+        adapter: new PrismaPg({ connectionString: testDatabaseUrl }),
+      })
+    : null;
 
 const created = {
   requirementIds: [] as string[],
